@@ -1,0 +1,90 @@
+@startuml
+autonumber
+title Two people meet in real live and connect instances with QR-Code (paring information (PI))
+
+participant Instance1
+participant CommServer
+participant Instance2
+
+legend
+|= Abbreviation |= Description |
+| PI | Pairing information |
+| Instance1Keys | Instance1 id hash, public encryption key, public sign key |
+| inst1PubKey | Instance1 public encryption key |
+| inst1PrivKey | Instance1 private encryption key |
+| inst1PersonPubKeys | Instance1 person id hash, person public encryption key, person public sign key |
+| inst1PersonPrivKey | Instance1 owner person private encryption key |
+| inst1PersonPubEncrKey | Instance1 person public encryption key |
+| inst1PersonPrivEncrKey | Instance1 person private encryption key |
+| Instance2Keys | Instance2 id hash, public encryption key, public sign key |
+| inst2PubKey | Instance2 public encryption key |
+| inst2PrivKey | Instance2 private encryption key |
+| inst2PersonPubKeys | Instance2 person id hash, person public encryption key, person public sign key |
+| inst2PersonPrivKey | Instance2 owner person private encryption key |
+| inst2PersonPubEncrKey | Instance2 person public encryption key |
+| inst2PersonPrivEncrKey | Instance2 person private encryption key |
+| authTag | authentication tag a randomString |
+| connectionTag | connection tag a randomString |
+endlegend
+
+== Connection establishment ==
+alt public keys need to be exchanged
+    Instance1 -> Instance1 : generate expiring PI {inst1PubKey, authTag, connectionTag} (store in RAM)
+    Instance1 <-> CommServer : send {connectionTag (identifies expected partner), inst1PubKey}
+    Instance1 -> Instance2 : send {PI} over a secure channel (e.g. QR-Code in person)
+    Instance2 -> CommServer : send {connectionTag, inst1PubKey}
+    CommServer -> CommServer: connects them via inst1PubKey + connectionTag
+else keys are exchanged
+    Instance1 -> CommServer : send {inst2PubKey, inst1PubKey}
+    Instance2 -> CommServer : send {inst2PubKey, inst1PubKey}
+    CommServer -> CommServer: connects them via inst1PubKey + inst2PubKey
+end
+
+== Authentication ==
+alt public keys need to be exchanged
+Instance2 -> Instance2: extract authTag from PI
+Instance2 -> Instance2: encrypt(inst1PubKey,inst2PrivKey, authTag)
+note left: encrytion uses **nonce**s and they are send with the messages
+Instance2 -> Instance1: send {encryptedAuthTag, Instance2Keys}
+Instance1 -> Instance1: decrypt(inst2PubKey, inst1PrivKey, encryptedAuthTag)
+Instance1 -> Instance1: compare authTag and authTagDecrypted -> Instance1 authenticated Instance2
+Instance1 -> Instance1: store Instance2Keys
+Instance1 -> Instance1: encrypt(inst2PubKey, inst1PrivKey, authTag)
+Instance1 -> Instance2: send {encryptedAuthTag, Instance1Keys}
+Instance2 -> Instance2: decrypt (inst1PubKey, inst2PrivKey, encryptedAuthTag)
+Instance2 -> Instance2: compare authTag and authTagDecrypted \n -> Instance2 authenticated Instance1
+Instance2 -> Instance2: store Instance1Keys
+group repeat for Instance1 (exchange person pubKeys)
+    Instance2 -> Instance2: encrypt(inst1PubKey, inst2PrivKey, inst2PersonPubKeys)
+    Instance2 -> Instance1: send encrypted inst2PersonPubKeys
+    Instance1 -> Instance1: decrypt(inst2PubKey, inst1PrivKey, inst2PersonPubKeys)
+    note over Instance1, Instance2: challenge Instance2 if he has the matching inst2PersonPrivKey.
+    Instance1 -> Instance1: generate authTagPersonKeys
+    Instance1 -> Instance1: encrypt(inst2PersonPubEncrKey, inst1PersonPrivEncrKey, authTagPersonKeys)
+    Instance1 -> Instance2: send encrypted authTag
+    Instance2 -> Instance2: decrypt(inst1PersonPubEncrKey, inst2PersonPrivEncrKey, authTagPersonKeys)
+    Instance2 -> Instance2: encrypt(inst1PersonPubEncrKey, inst2PersonPrivEncrKey, authTagPersonKeys)
+    Instance1 <- Instance2: send encrypted authTagPersonKeys
+    Instance1 -> Instance1: compare authTagPersonKeys and decrypted version \n -> Instance2 has proven to have the matching \n person private key for the inst2PersonPubKeys
+    Instance1 -> Instance1: store inst2PersonPubKeys
+end
+
+else keys are exchanged
+    group repeat for Instance1
+    Instance2 -> Instance2 : generate authTag
+    Instance2 -> Instance2 : encrypt(inst1PubKey, inst2PrivKey, authTag)
+    Instance2 -> Instance1 : send {encryptedAuthTag}
+    Instance1 -> Instance1: decrypt(inst2PubKey, inst1PrivKey, encryptedAuthTag)
+    Instance1 -> Instance1 : encrypt(inst2PubKey, inst1PrivKey, authTag)
+    Instance1 -> Instance2 : send {encryptedAuthTag}
+    Instance2 -> Instance2: decrypt (inst1PubKey, inst2PrivKey, encryptedAuthTag)
+    Instance2 -> Instance2: compare authTag and authTagDecrypted \n -> Instance2 authenticated Instance1
+    end
+end
+
+note over Instance1, Instance2
+ Public keys are exchanged and parties are authenticated.
+ Continue with default symmetrically encrypted communication see [[https://github.com/dchest/tweetnacl-js/wiki/Examples#secretbox TweetNaCl]] documentation.
+end note
+
+@enduml

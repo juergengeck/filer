@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["node-runtime/index.ts"],
+  "exclude": ["node-runtime/node_modules_resolved", "test", "**/*-test.ts", "**/*.test.ts"]
+}

@@ -1,0 +1,311 @@
+// black is for objects
+// red is for index, context objects
+// green is for story objects
+// blue is for location objects
+
+// todo: legende schreiben...
+
+digraph one {
+
+    node [
+        shape=plaintext
+    ]
+
+    // the cat is the source
+    authObject [SHAPE="ROUND", label=<
+              <TABLE ALIGN="RIGHT" BORDER="0" CELLBORDER="0" CELLSPACING="0"
+              CELLPADDING="4"
+               COLOR="black">
+                <TR>
+                    <TD><IMG SRC="kitten.jpg"/></TD>
+                </TR>
+            </TABLE>
+        >];
+
+    // the story object describes the creation, ie. the past of an object
+    instanceStory [label=<
+          <TABLE ALIGN="LEFT" BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"
+          COLOR="green">
+            <TR>
+                <TD bgcolor="green"><FONT COLOR="white">instanceStory</FONT></TD>
+            </TR>
+            <TR>
+                <TD PORT="object">object</TD>
+            </TR>
+            <TR>
+                <TD PORT="date">date</TD>
+            </TR>
+            <TR>
+                <TD PORT="story">story</TD>
+            </TR>
+        </TABLE>
+    >];
+
+    // there is only one instance object
+    instance [label=<
+          <TABLE ALIGN="LEFT" BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"
+           COLOR="black">
+            <TR>
+                <TD bgcolor="black"><FONT COLOR="white">instance</FONT></TD>
+            </TR>
+            <TR>
+                <TD PORT="name">name : string</TD>
+            </TR>
+            <TR>
+                <TD PORT="ownerId">ownerId : personHash</TD>
+            </TR>
+            <TR>
+                <TD PORT="module">module : moduleHash</TD>
+            </TR>
+        </TABLE>
+    >];
+
+    instance:ownerId -> instanceOwner [style="dashed"]
+
+    // for now we assume the core module to just be there, and for its provides to be
+    // part of instance
+
+    // instanceOwnerPerson
+
+    // the story object describes the creation, ie. the past of an object,
+    // hence we define the story first, and then the object
+    instanceOwnerStory [label=<
+          <TABLE ALIGN="LEFT" BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"
+          COLOR="green">
+            <TR>
+                <TD bgcolor="green"><FONT COLOR="white">instanceOwnerStory
+                </FONT></TD>
+            </TR>
+            <TR>
+                <TD PORT="object">object : object</TD>
+            </TR>
+            <TR>
+                <TD PORT="date">date : string</TD>
+            </TR>
+            <TR>
+                <TD PORT="story">story : storyHash</TD>
+            </TR>
+        </TABLE>
+    >];
+
+    instanceOwnerStory:object -> instanceOwner
+
+    instanceOwnerStoryIndex [label=<
+          <TABLE ALIGN="LEFT" BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"
+          COLOR="red">
+            <TR>
+                <TD bgcolor="red">
+                <FONT COLOR="white">instanceOwnerStoryIndex</FONT></TD>
+            </TR>
+            <TR>
+                <TD PORT="from">from : object</TD>
+            </TR>
+            <TR>
+                <TD PORT="to">to : Story</TD>
+            </TR>
+            <TR>
+                <TD PORT="IndexItem">IndexItem : IndexItemHash</TD>
+            </TR>
+        </TABLE>
+    >];
+
+    instanceOwnerStoryIndex:IndexItem -> instanceOwnerStory
+
+    instanceOwnerContext [label=<
+          <TABLE ALIGN="LEFT" BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"
+          COLOR="red">
+            <TR>
+                <TD bgcolor="red"><FONT COLOR="white">instanceOwnerContext</FONT></TD>
+            </TR>
+            <TR>
+                <TD PORT="id">id : instanceOwner</TD>
+            </TR>
+            <TR>
+                <TD PORT="storyIndexHash">index : storyIndexHash</TD>
+            </TR>
+            <TR>
+                <TD PORT="instanceOwnerGrantIndexHash">index : instanceOwnerGrantIndex</TD>
+            </TR>
+        </TABLE>
+    >];
+
+    instanceOwnerContext:instanceOwnerGrantIndexHash -> instanceOwnerGrantIndex
+    instanceOwnerGrantIndex:from -> instanceAccessGrant
+    instanceOwnerContext:storyIndexHash -> instanceOwnerStoryIndex
+    contextIndex -> instanceOwnerContext
+
+    authObject -> contextIndex
+
+    // context objects contain all the "meta" information available per object id.
+    // there is no meta data in one, as all data is described in the same way, hence
+    // meta data is just yet more data
+
+    // Email describes an email object, and the meta data from its header
+    contextIndex [label=<
+          <TABLE ALIGN="LEFT" BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"
+          COLOR="red">
+            <TR>
+                <TD bgcolor="red"><FONT COLOR="white">contextIndex</FONT></TD>
+            </TR>
+            <TR>
+                <TD PORT="from">from : objectId</TD>
+            </TR>
+            <TR>
+                <TD PORT="to">to : contextHash</TD>
+            </TR>
+            <TR>
+                <TD PORT="IndexItem">IndexItem : IndexItemHash</TD>
+            </TR>
+        </TABLE>
+    >];
+
+    contextIndex -> instanceContext:contextIndexHash
+
+    // story objects connect versions of an object. they also store time of change
+    // we have a choice to either make context index very big, or story index
+    // for now we go with context index, therefor story indexes can be in object contexts
+
+    instanceContext [label=<
+          <TABLE ALIGN="LEFT" BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"
+          COLOR="red">
+            <TR>
+                <TD bgcolor="red"><FONT COLOR="white">instanceContext</FONT></TD>
+            </TR>
+            <TR>
+                <TD PORT="id">id : instanceId</TD>
+            </TR>
+            <TR>
+                <TD PORT="accessIndexHash">index : accessIndexHash</TD>
+            </TR>
+            <TR>
+                <TD PORT="storyIndexHash">index : storyIndexHash</TD>
+            </TR>
+        </TABLE>
+    >];
+
+    instanceContext:accessIndexHash  -> accessIndex
+    instanceContext:storyIndexHash  -> instanceStoryIndex
+
+    instanceStoryIndex [label=<
+          <TABLE ALIGN="LEFT" BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" COLOR="red">
+            <TR>
+                <TD bgcolor="red"><FONT COLOR="white">instanceStoryIndex</FONT></TD>
+            </TR>
+            <TR>
+                <TD PORT="from">from : object</TD>
+            </TR>
+            <TR>
+                <TD PORT="to">to : story(parent)ObjectHash</TD>
+            </TR>
+            <TR>
+                <TD PORT="IndexItem">IndexItem : IndexItemHash</TD>
+            </TR>
+        </TABLE>
+    >];
+
+    instanceStoryIndex:to -> instanceStory
+    instanceStory:object  -> instance
+
+    accessIndex [label=<
+          <TABLE ALIGN="LEFT" BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" COLOR="red">
+            <TR>
+                <TD bgcolor="red"><FONT COLOR="white">accessIndex</FONT></TD>
+            </TR>
+            <TR>
+                <TD PORT="from">from : object</TD>
+            </TR>
+            <TR>
+                <TD PORT="to">to : access(parent)ObjectHash</TD>
+            </TR>
+            <TR>
+                <TD PORT="IndexItem">IndexItem : IndexItemHash</TD>
+            </TR>
+        </TABLE>
+    >];
+
+    accessIndex:from -> instanceAccess
+
+    instanceOwnerGrantIndex [label=<
+          <TABLE ALIGN="LEFT" BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" COLOR="red">
+            <TR>
+                <TD bgcolor="red"><FONT COLOR="white">instanceOwnerGrantIndex</FONT></TD>
+            </TR>
+            <TR>
+                <TD PORT="from">from : accessIsGrantedTo(for now: Person)</TD>
+            </TR>
+            <TR>
+                <TD PORT="to">to : grant(parent)ObjectHash</TD>
+            </TR>
+            <TR>
+                <TD PORT="IndexItem">IndexItem : IndexItemHash</TD>
+            </TR>
+        </TABLE>
+    >];
+
+    personIndex [label=<
+          <TABLE ALIGN="LEFT" BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"
+          COLOR="red">
+            <TR>
+                <TD bgcolor="red"><FONT COLOR="white">personIndex</FONT></TD>
+            </TR>
+            <TR>
+                <TD PORT="from">from : Person</TD>
+            </TR>
+            <TR>
+                <TD PORT="to">to : parentObjectHash</TD>
+            </TR>
+            <TR>
+                <TD PORT="IndexItem">IndexItem : IndexItemHash</TD>
+            </TR>
+        </TABLE>
+    >];
+
+    instanceOwner [label=<
+          <TABLE ALIGN="LEFT" BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"
+          COLOR="black">
+            <TR>
+                <TD bgcolor="black"><FONT COLOR="white">instanceOwner</FONT></TD>
+            </TR>
+            <TR>
+                <TD PORT="email">email : string</TD>
+            </TR>
+            <TR>
+                <TD PORT="secret">secret : string</TD>
+            </TR>
+        </TABLE>
+    >];
+
+    instanceAccess[label=<
+          <TABLE ALIGN="LEFT" BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"
+          COLOR="blue">
+            <TR>
+                <TD bgcolor="blue"><FONT COLOR="white">instanceAccess</FONT></TD>
+            </TR>
+            <TR>
+                <TD PORT="object">object : instanceHash</TD>
+            </TR>
+            <TR>
+                <TD PORT="grant">grant : instanceAccessGrant</TD>
+            </TR>
+        </TABLE>
+    >];
+
+    instanceAccess:object -> instance
+
+    instanceAccessGrant[label=<
+          <TABLE ALIGN="LEFT" BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"
+          COLOR="blue">
+            <TR>
+                <TD bgcolor="blue"><FONT COLOR="white">instanceAccessGrant</FONT></TD>
+            </TR>
+            <TR>
+                <TD PORT="accessIsGrantedTo">accessIsGrantedTo : instanceOwner</TD>
+            </TR>
+        </TABLE>
+    >];
+
+    personIndex:from -> instanceOwner
+
+    instanceAccess:grant -> instanceAccessGrant
+    instanceAccessGrant:accessIsGrantedTo -> instanceOwner
+}

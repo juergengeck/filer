@@ -1,0 +1,71 @@
+// black is for objects
+// red is for index, context objects
+// green is for story objects
+// blue is for access objects
+
+// todo: legende schreiben...
+
+digraph one {
+
+    // plan Id -> plan Context -> plan Story -> plan result
+
+    Code [shape=ellipse]
+    Parameters [shape=ellipse]
+
+    Code -> "calculate planHash"
+    Parameters -> "calculate planHash"
+
+    "calculate planHash" [shape=box]
+
+    "calculate planHash" -> planHash
+
+    planHash [shape=parallelogram, color=black, style=filled, fillcolor=black, fontcolor=white]
+
+    planHash -> "lookup planHash in Plan-Story-Index"
+
+    "lookup planHash in Plan-Story-Index" [shape=box]
+
+    "lookup planHash in Plan-Story-Index" -> "is there already a plan?"
+
+    "is there already a plan?" [shape=diamond]
+    { rank=same; "is there already a plan?"; "lookup story"}
+
+    "is there already a plan?" -> "lookup story" [label="yes"]
+
+    "is there already a plan?" -> "create new Plan object" [label="no"; splines=polyline]
+
+    "create new Plan object" [shape=box]
+
+    "create new Plan object" -> "new plan object"
+
+    "new plan object" [shape=parallelogram]
+
+    "new plan object" -> "eval plan.code with plan.parameters"
+
+    "eval plan.code with plan.parameters" [shape=box]
+
+//    "eval plan.code with plan.parameters" -> planResult
+
+
+    "lookup story" [shape=box]
+
+    "lookup story" -> story
+
+    story [shape=parallelogram, color=green, style=filled, fillcolor=green, fontcolor=black]
+
+    story ->  object
+
+    "create Story object containing (plan.)code, (plan.)parameters, and planResult as object" [shape=box]
+
+    "eval plan.code with plan.parameters" ->
+    "create Story object containing (plan.)code, (plan.)parameters, and planResult as object"
+
+    "create Story object containing (plan.)code, (plan.)parameters, and planResult as object" ->
+    "update Indexes"
+
+    "update Indexes" [shape=box]
+
+    "update Indexes" -> "(new) object"
+
+}
+

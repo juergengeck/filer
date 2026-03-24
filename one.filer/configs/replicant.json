@@ -1,0 +1,15 @@
+{
+    "directory": "data",
+    "commServerUrl": "wss://comm10.dev.refinio.one",
+    "createEveryoneGroup": false,
+    "useFiler": false,
+    "connectionsConfig": {
+        "commServerUrl": "wss://comm10.dev.refinio.one",
+        "acceptIncomingConnections": true,
+        "acceptUnknownInstances": true,
+        "acceptUnknownPersons": true,
+        "allowPairing": false,
+        "pairingTokenExpirationDuration": 2147483647,
+        "establishOutgoingConnections": false
+    }
+}

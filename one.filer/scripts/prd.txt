@@ -1,0 +1,261 @@
+# Product Requirements Document: one.filer WSL Integration
+
+## Project Overview
+
+**Product Name:** one.filer WSL Bridge  
+**Version:** 1.0  
+**Target Platform:** Windows 10/11 with WSL2 (Debian)  
+**Primary Objective:** Enable seamless access to one objects through Windows Explorer by running one.filer via FUSE in WSL2 Debian environment.
+
+## Executive Summary
+
+This project aims to bridge the gap between the one.core ecosystem and Windows users by leveraging WSL2's file system integration capabilities. Users will be able to browse, read, and manipulate one objects directly from Windows Explorer as if they were regular files and folders, while the actual FUSE implementation runs transparently in a Debian WSL2 environment.
+
+## Business Requirements
+
+### Primary Goals
+1. **Seamless Integration**: one objects appear as native files/folders in Windows Explorer
+2. **Cross-Platform Compatibility**: Leverage existing one.filer FUSE implementation without major rewrites
+3. **Performance**: Minimize latency between Windows Explorer operations and WSL2 FUSE responses
+4. **User Experience**: Zero-configuration setup for end users after initial installation
+
+### Success Metrics
+- Windows Explorer can browse one object hierarchies without noticeable lag
+- File operations (read, write, copy, delete) work reliably across the WSL2 boundary
+- Installation process takes less than 10 minutes for technical users
+- Memory footprint remains under 100MB during normal operation
+
+## Technical Requirements
+
+### Architecture Overview
+```
+Windows Explorer → WSL2 File System Bridge → Debian WSL2 → one.filer FUSE → one.core
+```
+
+### Core Components
+
+#### 1. WSL2 Debian Environment Setup
+- **Requirement**: Automated WSL2 Debian distribution setup
+- **Dependencies**: Windows 10 version 2004+ or Windows 11
+- **Configuration**: 
+  - Enable WSL2 feature
+  - Install Debian distribution
+  - Configure networking for one.core communication
+  - Install required dependencies (Node.js, FUSE libraries)
+
+#### 2. one.filer FUSE Implementation Enhancement
+- **Base**: Existing one.filer codebase
+- **Enhancements Required**:
+  - WSL2-specific mount point configuration
+  - Windows file attribute mapping
+  - Performance optimizations for cross-boundary operations
+  - Error handling for WSL2-specific scenarios
+
+#### 3. Windows Integration Layer
+- **Mount Point**: `/mnt/c/one-objects/` or similar accessible path
+- **File System Bridge**: Leverage WSL2's automatic Windows file system integration
+- **Permissions**: Handle Windows vs Linux permission model differences
+
+#### 4. Configuration Management
+- **WSL2 Configuration**: Automatic detection and setup
+- **one.core Connection**: Configure connection to one.core instance
+- **Mount Options**: Configurable mount points and FUSE options
+- **Logging**: Centralized logging accessible from both Windows and WSL2
+
+### Technical Specifications
+
+#### Performance Requirements
+- **File Listing**: < 500ms for directories with 100+ objects
+- **File Read**: < 100ms additional latency compared to native FUSE
+- **File Write**: < 200ms additional latency compared to native FUSE
+- **Memory Usage**: < 100MB total footprint
+
+#### Compatibility Requirements
+- **Windows Versions**: Windows 10 (2004+), Windows 11
+- **WSL2**: Debian 11+ (Bullseye)
+- **Node.js**: Version 18+ (LTS)
+- **Dependencies**: Compatible with existing one.core and one.models versions
+
+#### Security Requirements
+- **File Permissions**: Respect one.core access controls
+- **Network Security**: Secure communication between WSL2 and one.core
+- **Isolation**: WSL2 environment isolation from Windows host
+- **Authentication**: Integrate with existing one.core authentication
+
+## Functional Requirements
+
+### Core Features
+
+#### F1: WSL2 Environment Management
+- **F1.1**: Detect existing WSL2 installation
+- **F1.2**: Install Debian distribution if not present
+- **F1.3**: Configure WSL2 networking and resources
+- **F1.4**: Install and configure required packages
+
+#### F2: FUSE Mount Management
+- **F2.1**: Mount one objects as file system in WSL2
+- **F2.2**: Expose mount point to Windows via WSL2 integration
+- **F2.3**: Handle mount/unmount operations gracefully
+- **F2.4**: Automatic remounting on WSL2 restart
+
+#### F3: File System Operations
+- **F3.1**: Browse one object hierarchies in Windows Explorer
+- **F3.2**: Read one objects as files
+- **F3.3**: Write/modify one objects through file operations
+- **F3.4**: Delete one objects via Windows file operations
+- **F3.5**: Copy/move operations between one objects and Windows files
+
+#### F4: Configuration and Setup
+- **F4.1**: One-time setup wizard for WSL2 and dependencies
+- **F4.2**: Configuration file management
+- **F4.3**: Connection setup to one.core instance
+- **F4.4**: Troubleshooting and diagnostic tools
+
+#### F5: Error Handling and Recovery
+- **F5.1**: Graceful handling of WSL2 disconnections
+- **F5.2**: Recovery from one.core connection failures
+- **F5.3**: User-friendly error messages in Windows
+- **F5.4**: Automatic retry mechanisms for transient failures
+
+### User Interface Requirements
+
+#### Windows Integration
+- **UI1**: Windows Explorer integration (no custom UI needed)
+- **UI2**: System tray icon for status and basic controls
+- **UI3**: Windows notification system integration for errors/status
+- **UI4**: Context menu integration for one-specific operations
+
+#### Configuration Interface
+- **UI5**: Web-based configuration interface accessible from Windows
+- **UI6**: Command-line tools for advanced configuration
+- **UI7**: Setup wizard for initial configuration
+
+## Non-Functional Requirements
+
+### Performance
+- **P1**: Sub-second response times for common file operations
+- **P2**: Efficient memory usage (< 100MB total)
+- **P3**: Minimal CPU overhead during idle periods
+- **P4**: Scalable to handle 1000+ one objects
+
+### Reliability
+- **R1**: 99.9% uptime during normal operation
+- **R2**: Graceful degradation when one.core is unavailable
+- **R3**: Data consistency guarantees for write operations
+- **R4**: Automatic recovery from common failure scenarios
+
+### Usability
+- **U1**: Zero-configuration operation after setup
+- **U2**: Familiar Windows Explorer experience
+- **U3**: Clear error messages and troubleshooting guidance
+- **U4**: Minimal learning curve for existing one.core users
+
+### Maintainability
+- **M1**: Modular architecture for easy updates
+- **M2**: Comprehensive logging and diagnostics
+- **M3**: Automated testing for WSL2 integration scenarios
+- **M4**: Documentation for setup, configuration, and troubleshooting
+
+## Implementation Phases
+
+### Phase 1: Foundation (Weeks 1-2)
+- WSL2 detection and setup automation
+- Basic FUSE mount in WSL2 environment
+- Windows file system bridge verification
+- Core error handling framework
+
+### Phase 2: Core Functionality (Weeks 3-4)
+- Complete file system operations implementation
+- Performance optimization for WSL2 boundary
+- Configuration management system
+- Basic testing framework
+
+### Phase 3: Integration and Polish (Weeks 5-6)
+- Windows Explorer integration testing
+- User interface components (system tray, notifications)
+- Comprehensive error handling and recovery
+- Documentation and setup guides
+
+### Phase 4: Testing and Deployment (Weeks 7-8)
+- End-to-end testing on various Windows configurations
+- Performance benchmarking and optimization
+- User acceptance testing
+- Release preparation and packaging
+
+## Technical Constraints
+
+### WSL2 Limitations
+- **C1**: File system performance overhead compared to native Windows
+- **C2**: WSL2 startup time affects initial mount availability
+- **C3**: Windows Defender may impact performance
+- **C4**: Limited to WSL2-supported Windows versions
+
+### FUSE Limitations
+- **C5**: FUSE operations are inherently slower than native file system
+- **C6**: Some Windows-specific file attributes may not translate perfectly
+- **C7**: Network file system semantics vs local file system expectations
+
+### one.core Integration
+- **C8**: Dependent on one.core API stability
+- **C9**: Network connectivity requirements for one.core access
+- **C10**: Authentication and authorization model constraints
+
+## Risk Assessment
+
+### High Risk
+- **R1**: WSL2 file system bridge performance may be insufficient
+- **R2**: Windows Defender interference with FUSE operations
+- **R3**: Complex permission model mapping between Windows and one.core
+
+### Medium Risk
+- **R4**: WSL2 installation complexity for non-technical users
+- **R5**: one.core API changes affecting integration
+- **R6**: Windows Explorer caching interfering with dynamic content
+
+### Low Risk
+- **R7**: Node.js version compatibility issues
+- **R8**: Debian package dependency conflicts
+- **R9**: Configuration file format changes
+
+## Success Criteria
+
+### Minimum Viable Product (MVP)
+1. one objects visible in Windows Explorer via WSL2 mount
+2. Basic read operations working reliably
+3. Automated WSL2 setup for technical users
+4. Basic error handling and logging
+
+### Full Release Criteria
+1. All file operations (read, write, delete, copy) working seamlessly
+2. Sub-second response times for common operations
+3. One-click setup for end users
+4. Comprehensive error handling and recovery
+5. Complete documentation and troubleshooting guides
+
+## Dependencies
+
+### External Dependencies
+- Windows 10 (2004+) or Windows 11 with WSL2 support
+- Debian WSL2 distribution
+- Node.js 18+ LTS
+- FUSE libraries for Linux
+- Access to one.core instance
+
+### Internal Dependencies
+- one.core library and API
+- one.models library
+- Existing one.filer FUSE implementation
+- Build and testing infrastructure
+
+## Appendix
+
+### Glossary
+- **WSL2**: Windows Subsystem for Linux version 2
+- **FUSE**: Filesystem in Userspace
+- **one.core**: Core library for the one ecosystem
+- **one objects**: Data objects managed by the one ecosystem
+
+### References
+- WSL2 Documentation: https://docs.microsoft.com/en-us/windows/wsl/
+- FUSE Documentation: https://www.kernel.org/doc/html/latest/filesystems/fuse.html
+- one.core Documentation: [Internal documentation links] 

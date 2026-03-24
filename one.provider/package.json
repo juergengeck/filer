@@ -1,0 +1,34 @@
+{
+  "name": "@refinio/one.provider",
+  "version": "1.0.0",
+  "description": "Apple File Provider integration for ONE - macOS filesystem bridge",
+  "type": "module",
+  "main": "lib/index.js",
+  "scripts": {
+    "prepare:deps": "npm --prefix node-runtime run prepare:deps",
+    "build": "npm run prepare:deps && tsc && cp node-runtime/package.json node-runtime/lib/package.json",
+    "build:swift": "swift build",
+    "dev": "tsc --watch",
+    "clean": "rm -rf lib node-runtime/lib",
+    "test:ipc": "npm run prepare:deps && node test/ipc-bridge-test.js",
+    "test:swift-ipc": "swift test/swift-ipc-test.swift",
+    "test:connection": "node test/integration/connection-test.js"
+  },
+  "keywords": [
+    "file-provider",
+    "macos",
+    "filesystem",
+    "one"
+  ],
+  "author": "REFINIO GmbH",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "pkg": "^5.8.1",
+    "postject": "^1.0.0-alpha.6",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

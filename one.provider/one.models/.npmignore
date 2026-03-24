@@ -1,0 +1,56 @@
+# Source files (not needed in package)
+src/
+test/
+
+# Config files
+.eslintrc.cjs
+.prettierrc
+tsconfig.json
+src/tsconfig.json
+test/tsconfig.json
+webpack.config.cjs
+api-extractor.json
+appspec.yml
+app.json
+
+# Build artifacts
+*.tsbuildinfo
+build.js
+tsconfig.tsbuildinfo
+
+# IDE
+.idea/
+.vscode/
+.claude/
+.cursorignore
+.cursorrules
+.eslintignore
+
+# Documentation source
+*.md
+!README.md
+!LICENSE.md
+
+# CI/CD
+.github/
+aws/
+
+# Development
+node_modules/
+*.log
+.DS_Store
+
+# Bundle source maps (keep bundles, exclude maps)
+*.bundle.js.map
+*.bundle.js.LICENSE.txt
+
+# Mobile (from original)
+android
+ios
+.expo
+
+# Vendor directory (old packages)
+vendor/
+
+# Package files
+*.tgz

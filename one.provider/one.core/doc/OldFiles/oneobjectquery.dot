@@ -1,0 +1,45 @@
+// black is for objects
+// red is for index, context objects
+// green is for story objects
+// blue is for location objects
+
+// todo: legende schreiben ...
+
+// calculate objectId
+// find contextHash by contextId in context index
+// find story index in context
+// find most recent object in story index
+
+
+digraph one {
+
+
+    node [
+        shape=plaintext
+    ]
+
+    //
+    wantedObjectId [shape=ellipse]
+    contextIndex [shape=parallelogram, color=red, style=filled, fillcolor=red, fontcolor=white]
+    "look up contextHash in contextIndex" [shape=box]
+
+    wantedObjectId -> "look up contextHash in contextIndex"
+    contextIndex -> "look up contextHash in contextIndex"
+
+    //
+    context [shape=parallelogram, color=red, style=filled, fillcolor=red, fontcolor=white]
+
+    "look up contextHash in contextIndex" -> context
+
+    //
+    storyIndex [shape=parallelogram, color=red, style=filled, fillcolor=red, fontcolor=white]
+
+    context -> storyIndex
+
+    //
+    hashLookup [label="find story with most recent date in storyIndex", shape=box]
+    objectHash [shape=ellipse]
+
+    storyIndex -> hashLookup
+    hashLookup -> objectHash
+}

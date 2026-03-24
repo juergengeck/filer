@@ -1,0 +1,32 @@
+[Unit]
+Description=ONE Leute Replicant - Federated File System Service
+Documentation=https://github.com/refinio/one.leute.replicant
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=one-replicant
+Group=one-replicant
+WorkingDirectory=/opt/one-leute-replicant
+ExecStart=/usr/bin/node --enable-source-maps lib/index.js -c /etc/one-leute-replicant/config.json --secret dummy
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=one-leute-replicant
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/one-leute-replicant /var/log/one-leute-replicant /etc/one-leute-replicant /mnt
+
+# Environment
+Environment=NODE_ENV=production
+Environment=ONE_LOG_LEVEL=info
+
+[Install]
+WantedBy=multi-user.target 

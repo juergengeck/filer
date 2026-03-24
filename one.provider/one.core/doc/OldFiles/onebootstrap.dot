@@ -1,0 +1,113 @@
+// black is for objects
+// red is for index, context objects
+// green is for story objects
+// blue is for location objects
+
+digraph onebootstrap {
+
+    node [
+        shape=plaintext
+    ]
+
+//    commandLineInput -> ownerEmailAddress
+//    commandLineInput -> instanceName
+//    commandLineInput -> secret
+
+    ownerEmailAddress -> instanceId
+    instanceName -> instanceId
+
+    instanceId -> "is there a previous instanceContext?"
+
+
+    // look for previous instanceContext
+    "is there a previous instanceContext?" [shape=diamond] [group=g0]
+
+    { rank=same; "is there a previous instanceContext?"; "create plan for instanceContext"}
+
+
+
+    // if there is an instanceContext
+    "is there a previous instanceContext?" -> instanceContext [label="yes"]
+
+    instanceContext [label=<
+          <TABLE ALIGN="LEFT" BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"
+          COLOR="red">
+            <TR>
+                <TD bgcolor="red"><FONT COLOR="white">instanceContext</FONT></TD>
+            </TR>
+            <TR>
+                <TD PORT="id">id : instanceId</TD>
+            </TR>
+            <TR>
+                <TD PORT="storyIndexHash">storyIndex : storyIndexHash</TD>
+            </TR>
+            <TR>
+                <TD PORT="personIndexHash">personIndex : personIndexHash</TD>
+            </TR>
+            <TR>
+                <TD PORT="mailIndexHash">mailIndexHash : mailIndexHash</TD>
+            </TR>
+            <TR>
+                <TD PORT="imageIndexHash">imageIndex : imageIndexHash</TD>
+            </TR>
+        </TABLE>
+    >] [group=g0];
+
+    // if there is no instanceContext
+
+    "is there a previous instanceContext?" -> "create plan for instanceContext" [label="no"; splines=polyline]
+
+    // create new storyIndex
+    "create plan for instanceContext" [shape=box] [group=g1]
+    "create plan for instanceContext" -> "create newInstanceContext"
+
+    "create newInstanceContext" [shape=box] [group=g1]
+    "create newInstanceContext" -> instanceContext
+
+
+    instanceContext:storyIndexHash -> instanceStoryIndex
+
+
+    instanceStoryIndex [label=<
+          <TABLE ALIGN="LEFT" BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" COLOR="red">
+            <TR>
+                <TD bgcolor="red"><FONT COLOR="white">instanceStoryIndex</FONT></TD>
+            </TR>
+            <TR>
+                <TD PORT="from">from : objectHash</TD>
+            </TR>
+            <TR>
+                <TD PORT="to">to : Story</TD>
+            </TR>
+            <TR>
+                <TD PORT="IndexItem">IndexItem : Reference</TD>
+            </TR>
+        </TABLE>
+    >];
+
+    instanceStoryIndex -> mostRecentInstanceHash
+    mostRecentInstanceHash -> instance
+
+
+    // there is only one instance object
+    instance [label=<
+          <TABLE ALIGN="LEFT" BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4"
+           COLOR="black">
+            <TR>
+                <TD bgcolor="black"><FONT COLOR="white">instance</FONT></TD>
+            </TR>
+            <TR>
+                <TD PORT="name">name : string</TD>
+            </TR>
+            <TR>
+                <TD PORT="owner">owner : personHash</TD>
+            </TR>
+            <TR>
+                <TD PORT="module">module : moduleHash</TD>
+            </TR>
+        </TABLE>
+    >];
+
+    instance:module -> "stuff to load ..."
+
+}

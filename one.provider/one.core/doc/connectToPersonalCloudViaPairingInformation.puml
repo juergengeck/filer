@@ -1,0 +1,67 @@
+@startuml
+autonumber
+title Connect new Instance to personal Cloud via QR-Code (paring information (PI))
+
+participant Personal_Cloud_Instance
+participant CommServer
+participant New_Instance
+
+legend
+|= Abbreviation |= Description |
+| PI | Pairing information |
+| pubKey1 | Personal_Cloud_Instance public key |
+| privKey1 | Personal_Cloud_Instance private key |
+| pubKey2 | New_Instance public key |
+| privKey2 | New_Instance private key |
+| New_InstancePubKeys | Keys object of New_Instance {instanceIdHash, pubKey2} |
+| Personal_Cloud_InstancePubKeys | Keys object of Personal_Cloud_Instance {instanceIdHash, pubKey1} |
+| persPubKeyPair | Personal_Cloud_Instance owner person public signing and encrytion key |
+| persPrivKeyPair | Personal_Cloud_Instance owner person private signing and encrytion key |
+| authTag | authentication Tag|
+| connectionTag | connection tag a randomString |
+| takeoverFlag | Do instance takeover |
+endlegend
+
+== Connection establishment ==
+
+Personal_Cloud_Instance -> Personal_Cloud_Instance : generate expiring PI {takeoverFlag, pubKey1, authTag, connectionTag}\n (store in RAM)
+Personal_Cloud_Instance -> Personal_Cloud_Instance: remember at least in the communicationManager,\n that I'm in instance takover mode
+Personal_Cloud_Instance <-> CommServer : send {connectionTag (identifies expected partner), pubKey1}
+Personal_Cloud_Instance -> New_Instance : send {PI} over a secure channel (e.g. QR-Code in person)
+New_Instance -> New_Instance: remember at least in the communicationManager,\n that my instance will be taken over
+New_Instance -> CommServer : send {connectionTag, pubKey1}
+CommServer -> CommServer: connects them via pubKey1 + connectionTag
+
+== Authentication ==
+New_Instance -> New_Instance: extract authTag
+New_Instance -> New_Instance: encrypt(pubKey1,privKey2, authTag)
+note left: encrytion uses **nonce**s and they are send with the messages
+New_Instance -> Personal_Cloud_Instance: send {encryptedAuthTag, New_InstancePubKeys}
+Personal_Cloud_Instance -> Personal_Cloud_Instance: decrypt(pubKey2, privKey1, encryptedAuthTag)
+Personal_Cloud_Instance -> Personal_Cloud_Instance: compare authTag and authTagDecrypted ->\n Personal_Cloud_Instance authenticated New_Instance
+Personal_Cloud_Instance -> Personal_Cloud_Instance: store New_InstancePubKeys
+Personal_Cloud_Instance -> Personal_Cloud_Instance: encrypt(pubKey2, privKey1, authTag)
+Personal_Cloud_Instance -> New_Instance: send {encryptedAuthTag, Personal_Cloud_InstancePubKeys}
+New_Instance -> New_Instance: decrypt (pubKey1, privKey2, encryptedAuthTag)
+New_Instance -> New_Instance: compare authTag and authTagDecrypted \n -> New_Instance authenticated Personal_Cloud_Instance
+New_Instance -> New_Instance: store Personal_Cloud_InstancePubKeys
+
+== Exchange symetric key ==
+Personal_Cloud_Instance -> Personal_Cloud_Instance: generates and memorise symmetricKey
+Personal_Cloud_Instance -> Personal_Cloud_Instance: encrypt(pubKey1, privKey2, symmetricKey)
+Personal_Cloud_Instance -> New_Instance: send encryptedSymmetricKey
+New_Instance -> New_Instance: decrypt(pubKey2, privKey1, encryptedSymmetricKey)
+New_Instance -> New_Instance: memorise symmetricKey
+
+
+== Instance take over ==
+Personal_Cloud_Instance -> Personal_Cloud_Instance: encrypt(symetricKey, persPubKeyPair)
+Personal_Cloud_Instance -> Personal_Cloud_Instance: encrypt(symetricKey, persPrivKeyPair)
+Personal_Cloud_Instance -> New_Instance: send encryptedPersPubKeyPair, encryptedPersPrivKeyPair
+New_Instance -> New_Instance: overwrite local person key pairs with received ones
+
+note over New_Instance, Personal_Cloud_Instance
+ Joined personal cloude and now has the same person keys
+end note
+
+@enduml

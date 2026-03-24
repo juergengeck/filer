@@ -1,0 +1,72 @@
+{
+    "name": "@refinio/one.core",
+    "version": "0.6.1-beta-3",
+    "publishConfig": {
+        "registry": "https://npm.pkg.github.com/"
+    },
+    "author": "REFINIO GmbH (https://refinio.net/)",
+    "license": "SEE LICENSE IN LICENSE.md",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/refinio/one.core.git"
+    },
+    "type": "module",
+    "bugs": {
+        "url": "https://github.com/refinio/one.core/issues"
+    },
+    "homepage": "https://github.com/refinio/one.core/",
+    "types": "./@OneObjectInterfaces.d.ts",
+    "scripts": {
+        "build": "node ./scripts/build.js",
+        "install": "node scripts/install.js",
+        "prepare": "node scripts/prepare.js",
+        "prepublishOnly": "node scripts/prepublishOnly.js",
+        "test": "npx --no-install mocha test/build/*-test.js --exit",
+        "make-docs": "node ./scripts/makeDocs.js",
+        "comm-server": "node ./test/build/_communication-server.js -b"
+    },
+    "files": [
+        "@OneObjectInterfaces.d.ts",
+        "lib/**/*.d.ts",
+        "lib/**/*.js",
+        "lib/**/*.js.map",
+        "scripts/**/*.js",
+        "package.json"
+    ],
+    "mocha": {
+        "require": [
+            "source-map-support/register"
+        ],
+        "enable-source-maps": true
+    },
+    "dependencies": {
+        "base64-js": "*",
+        "scrypt-js": "*",
+        "tweetnacl": "*"
+    },
+    "devDependencies": {
+        "@babel/core": "*",
+        "@babel/preset-typescript": "*",
+        "@types/chai": "*",
+        "@types/debug": "^4.1.12",
+        "@types/mocha": "*",
+        "@types/node": "*",
+        "@types/ws": "*",
+        "@typescript-eslint/eslint-plugin": "*",
+        "@typescript-eslint/parser": "*",
+        "chai": "*",
+        "eslint": "*",
+        "eslint-config-prettier": "*",
+        "eslint-plugin-jsdoc": "*",
+        "eslint-plugin-node": "*",
+        "eslint-plugin-prettier": "*",
+        "jsdoc": "*",
+        "jsdoc-babel": "*",
+        "mocha": "*",
+        "prettier": "*",
+        "source-map-support": "*",
+        "typedoc": "*",
+        "typescript": "*",
+        "ws": "*"
+    }
+}

@@ -1,0 +1,32 @@
+@startuml
+title Take over a replicant Instance
+
+participant PersonInstance
+participant CommServer
+participant ReplicantInstance
+participant ReplicantHoster
+
+legend
+|= Abbreviation |= Description |
+| PI | Pairing information |
+endlegend
+
+note over PersonInstance, ReplicantHoster
+Doesen't work like this because of the experation of the PI
+**Option1:** special PI -> changes in core
+**Option2:** PersonInstance has a secure channel with the ReplicantHoster
+And can tell him when to create the ReplicantInstance so that the PI
+would still be valid
+end note
+
+activate ReplicantHoster
+ReplicantHoster -> ReplicantInstance: init takeover Instance
+activate ReplicantInstance
+ReplicantInstance -> ReplicantInstance: init
+ReplicantHoster -> ReplicantInstance: generate PI
+ReplicantInstance -> ReplicantInstance: generate PI
+ReplicantHoster <- ReplicantInstance: return PI
+deactivate ReplicantInstance
+ReplicantHoster -> PersonInstance: securly send PI
+deactivate ReplicantHoster
+@enduml

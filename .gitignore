@@ -1,0 +1,10 @@
+.DS_Store
+Thumbs.db
+**/.DS_Store
+**/.git/
+**/node_modules/
+**/.build/
+**/build/
+**/dist/
+**/.swiftpm/
+**/*.tgz

@@ -1,0 +1,114 @@
+// black is for objects
+// red is for index, context objects
+// green is for story objects
+// blue is for access objects
+
+// todo: legende schreiben ...
+
+digraph one {
+
+    // create object
+    "create object" [shape=ellipse]
+    object [shape=parallelogram style="filled" fillcolor="black" fontcolor="white"]
+
+    "create object" -> object
+
+    // calculate objectId
+
+    "calculate objectId from object" [shape=box]
+    object -> "calculate objectId from object"
+
+    objectId [shape=parallelogram style="filled" fillcolor="black" fontcolor="white"]
+    "calculate objectId from object" -> objectId
+
+    objectId -> "create story"
+
+    // create story
+    "create story" [shape=box]
+    story [shape=parallelogram style="filled" fillcolor="green" fontcolor="white"]
+    "create story" -> story
+
+//    story -> "create newStoryIndex"
+//    story -> "append story to storyIndex"
+
+
+    story -> "look up objectId in (instance.)contextIndex"
+
+    // look up objectId
+    "look up objectId in (instance.)contextIndex" [shape=box]
+    "objectId reference in (instance.)contextIndex" [shape=parallelogram
+        style="filled" fillcolor="black" fontcolor="white"]
+
+    "look up objectId in (instance.)contextIndex" ->
+        "objectId reference in (instance.)contextIndex"
+
+    "objectId reference in (instance.)contextIndex" -> "is there a previous context?"
+
+    // look for previous context
+    "is there a previous context?" [shape=diamond]
+
+//    { rank=same; objectId; "create story"; story}
+    { rank=same; "is there a previous context?"; "append story to storyIndex"}
+
+    // if objectId is not in contextIndex
+
+        "is there a previous context?" -> "create newStoryIndex" [label="no"; splines=polyline]
+
+        // create new storyIndex
+        "create newStoryIndex" [shape=box]
+        newStoryIndex [shape=parallelogram style="filled" fillcolor="red" fontcolor="white"]
+        "create newStoryIndex" -> newStoryIndex
+
+        newStoryIndex -> "create context"
+
+        // create newContext
+        "create context" [shape=box]
+        newContext [shape=parallelogram style="filled" fillcolor="red" fontcolor="white"]
+        "create context" -> newContext
+
+        newContext -> "update contextIndex"
+
+    // if objectId is in contextIndex
+
+        "is there a previous context?" -> "append story to storyIndex" [label="yes"]
+
+        // append story to storyIndex
+        "append story to storyIndex" [shape=box]
+        "append story to storyIndex" -> "rename index to new hash"
+
+        //rename index to new hash
+        "rename index to new hash" [shape=box]
+        "updated (new) storyIndex" [shape=parallelogram style="filled" fillcolor="red" fontcolor="white"]
+        "rename index to new hash" -> "updated (new) storyIndex"
+
+        "updated (new) storyIndex" -> "update storyIndex attribute in context"
+
+        // update context
+        "update storyIndex attribute in context" [shape=box]
+        "updated context" [shape=parallelogram style="filled" fillcolor="red" fontcolor="white"]
+        "update storyIndex attribute in context" -> "updated context"
+
+    "updated context" -> "update contextIndex"
+
+//    { rank=same; "newContext"; "update contextIndex"; "updated context"}
+
+    // update contextIndex
+    "update contextIndex" [shape=box]
+    "updated contextIndex" [shape=parallelogram style="filled" fillcolor="red" fontcolor="white"]
+    "update contextIndex" -> "updated contextIndex"
+
+    "updated contextIndex" -> "update instanceContextIndex"
+
+   // update instanceContextIndex
+    "update instanceContextIndex" [shape=box]
+    "updated instanceContextIndex" [shape=parallelogram style="filled" fillcolor="red" fontcolor="white"]
+    "update instanceContextIndex" -> "updated instanceContextIndex"
+
+    "updated instanceContextIndex" -> "update instanceContext"
+
+    // update instanceContext
+    "update instanceContext" [shape=box]
+    "updated instanceContext" [shape=parallelogram style="filled" fillcolor="red" fontcolor="white"]
+    "update instanceContext" -> "updated instanceContext"
+
+}

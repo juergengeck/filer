@@ -1,0 +1,72 @@
+{
+  "comment": "WSL2 Configuration for one.leute.replicant",
+  "description": "Optimized configuration for running ONE packages in WSL2 with Windows Explorer integration",
+  
+  "instance": {
+    "name": "one-filer-wsl2",
+    "description": "ONE instance for Windows Explorer integration via WSL2",
+    "dataDir": "/tmp/one-data",
+    "tempDir": "/tmp/one-temp"
+  },
+  
+  "network": {
+    "host": "0.0.0.0",
+    "port": 9008,
+    "cors": {
+      "enabled": true,
+      "origins": ["*"]
+    }
+  },
+  
+  "filer": {
+    "enabled": true,
+    "mountPoint": "/mnt/c/one-files",
+    "options": {
+      "allow_other": true,
+      "auto_unmount": true,
+      "debug": true
+    }
+  },
+  
+  "storage": {
+    "type": "file",
+    "path": "/tmp/one-storage",
+    "backup": {
+      "enabled": true,
+      "interval": "1h",
+      "path": "/tmp/one-backup"
+    }
+  },
+  
+  "logging": {
+    "level": "debug",
+    "file": "/tmp/one-filer.log",
+    "console": true
+  },
+  
+  "features": {
+    "dataIngestion": {
+      "enabled": true,
+      "structuredDataTypes": [".json", ".xml", ".yaml", ".yml", ".csv"],
+      "binaryDataTypes": [".pdf", ".jpg", ".png", ".gif", ".mp4", ".zip", ".exe"],
+      "textDataTypes": [".txt", ".md", ".log", ".js", ".ts", ".html", ".css"]
+    },
+    "windowsIntegration": {
+      "enabled": true,
+      "explorerIntegration": true,
+      "contextMenu": false,
+      "notifications": false
+    }
+  },
+  
+  "security": {
+    "encryption": {
+      "enabled": true,
+      "algorithm": "aes-256-gcm"
+    },
+    "authentication": {
+      "enabled": false,
+      "type": "none"
+    }
+  }
+} 

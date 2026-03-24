@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Browser Tests</title>
+        <link
+            href="https://cdnjs.cloudflare.com/ajax/libs/mocha/5.0.5/mocha.min.css"
+            rel="stylesheet"
+        />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mocha/5.0.5/mocha.min.js"></script>
+        <style>
+            #errors pre {
+                width: 50em;
+                margin: 2em 4em;
+                padding: 1em;
+                border: 1px solid red;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="errors"></div>
+        <div id="mocha"></div>
+        <script>
+            'use strict';
+
+            console.clear();
+            let db;
+
+            function init(onReady) {
+                if (navigator.storage && navigator.storage.persist) {
+                    navigator.storage.persist().then(function (persistent) {
+                        if (persistent) {
+                            console.log(
+                                'Storage will not be cleared except by explicit user action'
+                            );
+                        } else {
+                            console.log('Storage may be cleared by the UA under storage pressure.');
+                        }
+                    });
+                }
+
+                const request = indexedDB.open('myDB', 1);
+                request.onerror = () => console.log(request.error);
+                request.onblocked = () =>
+                    console.log(new Error('Upgrade of database blocked by open connections'));
+                request.onupgradeneeded = () => {
+                    const db = request.result;
+                    db.createObjectStore('store');
+                };
+                request.onsuccess = () => {
+                    db = request.result;
+                    db.onerror = () => console.log(new Error('Error in database'));
+                    console.log('Store created');
+                    onReady(db);
+                };
+            }
+
+            function demo(db) {
+                const transaction = db.transaction('store', 'readwrite');
+                transaction.oncomplete = () => console.log('Created');
+                transaction.onerror = () => console.log('Error: ', transaction.error);
+                const objectStore = transaction.objectStore('store');
+                for (let i = 0; i < 2000; i++) {
+                    const b = crypto.getRandomValues(new Uint8Array(Math.floor(5000)));
+                    const writeRequest = objectStore.put(b.buffer, 'a' + i);
+                    writeRequest.onerror = event => {
+                        if (writeRequest.error.name === 'ConstraintError') {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            console.log('Key exists');
+                        } else {
+                            console.log(writeRequest.error);
+                        }
+                    };
+                    writeRequest.onsuccess = event => {
+                        // console.log('CREATED', writeRequest.result);
+                    };
+                }
+                console.log('CREATED');
+                navigator.storage.estimate().then(data => console.log(data));
+            }
+
+            navigator.storage.estimate().then(data => {
+                console.log(data);
+                init(demo);
+            });
+        </script>
+    </body>
+</html>

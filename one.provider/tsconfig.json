@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "node",
+    "lib": ["ES2022"],
+    "outDir": "./node-runtime/lib",
+    "rootDir": "./node-runtime",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@refinio/one.core/*": [
+        "../one/packages/one.core/lib/*",
+        "./one.core/lib/*",
+        "./node-runtime/node_modules/@refinio/one.core/lib/*"
+      ],
+      "@refinio/one.models/*": [
+        "../one/packages/one.models/lib/*",
+        "./one.models/lib/*",
+        "./node-runtime/node_modules/@refinio/one.models/lib/*"
+      ]
+    }
+  },
+  "include": ["node-runtime/**/*.ts"],
+  "exclude": ["node_modules", "lib", "node-runtime/lib", "node-runtime/node_modules_resolved", "packages"]
+}

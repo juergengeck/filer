@@ -1,0 +1,75 @@
+// black is for objects
+// red is for index, context objects
+// green is for story objects
+// blue is for access objects
+
+// todo: legende schreiben...
+
+digraph one {
+
+    node [
+        shape=plaintext
+    ]
+
+    // lookup person access grants for some object
+    someObject [shape=ellipse]
+    "calculate objectId from someObject" [shape=box]
+    someObjectId [shape=parallelogram, color=black, style=filled, fillcolor=black, fontcolor=white]
+    "look up objectContext for someObjectId" [shape=box]
+    objectContext [shape=parallelogram, color=red, style=filled, fillcolor=red, fontcolor=white]
+    objectAccessIndex [shape=parallelogram, color=red, style=filled, fillcolor=red, fontcolor=white]
+    "collect access grants from access objects referenced in accessIndex" [shape=box]
+    "access grants[]" [shape=parallelogram, color=blue, style=filled, fillcolor=blue, fontcolor=white]
+    "collect list of person objects from access grants[]" [shape=box]
+    "list of person objects we propagate someObject to"  [shape=ellipse]
+
+    someObject -> "calculate objectId from someObject"
+
+    "calculate objectId from someObject" -> someObjectId
+
+    someObjectId -> "look up objectContext for someObjectId"
+
+    "look up objectContext for someObjectId" -> objectContext
+
+    objectContext -> objectAccessIndex
+
+    objectAccessIndex -> "collect access grants from access objects referenced in accessIndex"
+
+    "collect access grants from access objects referenced in accessIndex" ->
+        "access grants[]"
+
+    "access grants[]" -> "collect list of person objects from access grants[]"
+
+    "collect list of person objects from access grants[]" ->
+        "list of person objects we propagate someObject to"
+
+    // lookup objects a person object is granted access to
+
+    somePersonObject [shape=ellipse]
+
+    "calculate objectId from somePersonObject" [shape=box]
+    somePersonObject -> "calculate objectId from somePersonObject"
+
+    somePersonObjectId [shape=parallelogram, color=black, style=filled, fillcolor=black, fontcolor=white]
+    "calculate objectId from somePersonObject" -> somePersonObjectId
+
+    somePersonObjectId -> "look up context for somePersonObjectId"
+
+    // look up somePersonObject context
+    "look up context for somePersonObjectId" [shape=box]
+    personContext [shape=parallelogram, color=red, style=filled, fillcolor=red, fontcolor=white]
+    grantIndex [shape=parallelogram, color=red, style=filled, fillcolor=red, fontcolor=white]
+    "collect objects from Access Objects" [shape=box]
+    grantContext [shape=parallelogram, color=red, style=filled, fillcolor=red, fontcolor=white]
+    "accessibleObjects[]" [shape=ellipse, color=blue, style=filled, fillcolor=blue, fontcolor=white]
+    grantAccessIndex [shape=parallelogram, color=red, style=filled, fillcolor=red, fontcolor=white]
+
+    "look up context for somePersonObjectId" -> personContext
+    personContext -> grantIndex
+    grantIndex -> grantContext
+    grantContext -> grantAccessIndex
+    grantAccessIndex -> "collect objects from Access Objects"
+
+
+    "collect objects from Access Objects" -> "accessibleObjects[]"
+}

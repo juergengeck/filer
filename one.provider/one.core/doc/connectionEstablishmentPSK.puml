@@ -1,0 +1,88 @@
+@startuml
+autonumber
+title Connect new Instance to personal Cloud with Pre-shared-key (PSK) and email
+
+participant New_Instance_PSK
+participant MatchingServer
+participant CommServer
+participant Personal_Cloud_Instance_PSK
+
+legend
+|= Abbreviation |= Description |
+| PI | Pairing information |
+| authTag | authentication Tag|
+| inst1PubEncKey | New_Instance_PSK public encrytion Key |
+| inst1PrivEncKey | New_Instance_PSK private encrytion Key |
+| inst2PubEncKey | Personal_Cloud_Instance_PSK public encrytion Key |
+| inst2PrivEncKey | Personal_Cloud_Instance_PSK private encrytion Key |
+| persPubKeyPair | Personal_Cloud_Instance_PSK owner person public signing and encrytion key |
+| persPrivKeyPair | Personal_Cloud_Instance_PSK owner person private signing and encrytion key |
+| KDF | Key derivation function e.g. scrypt|
+endlegend
+
+== Connection establishment ==
+note over New_Instance_PSK, Personal_Cloud_Instance_PSK
+ Another problem is how to decide who is suppling and who is receiving
+ especially related to the person private keys that need to be changed but also
+ for who generates the kdfNonce
+
+ The matching server users exchange pub instance key as identity of the instance,
+ so we already have exchanged the pub keys of the instances
+end note
+Personal_Cloud_Instance_PSK -> Personal_Cloud_Instance_PSK: create Supply -> {myId}
+Personal_Cloud_Instance_PSK -> MatchingServer : send Supply match: email
+activate MatchingServer
+note left: The matching server still operates with the old chum ... \nso that won't work
+New_Instance_PSK -> New_Instance_PSK: create Demand -> {myId}
+New_Instance_PSK -> MatchingServer : send Demand match: email
+MatchingServer -> Personal_Cloud_Instance_PSK: MatchResponse: otherIdentity
+MatchingServer -> New_Instance_PSK: MatchResponse: otherIdentity
+deactivate MatchingServer
+note over New_Instance_PSK, Personal_Cloud_Instance_PSK
+ Going over the matching server allows to use the same match property (email) to connect more
+ then 2 instances. From here on communication is over the CommServer.
+end note
+note over New_Instance_PSK, Personal_Cloud_Instance_PSK
+ They now exchanged their public instance keys. Remember for future connections
+end note
+Personal_Cloud_Instance_PSK -> CommServer : send {pubKey2: otherIdentity, pubKey1: myId}
+New_Instance_PSK -> CommServer : send {pubKey2: otherIdentity, pubKey1: myId}
+CommServer -> CommServer: connects them via pubKey1 + pubKey2
+
+
+== Verify both have/know the same password ==
+Personal_Cloud_Instance_PSK -> Personal_Cloud_Instance_PSK: generate kdfNonce
+Personal_Cloud_Instance_PSK -> Personal_Cloud_Instance_PSK: KDF(password, kdfNonce) => PSK
+Personal_Cloud_Instance_PSK -> Personal_Cloud_Instance_PSK : symmetrically encrypt(PSK, email)
+note left: the encrypted email has an additional nonce for the message
+Personal_Cloud_Instance_PSK -> New_Instance_PSK : send encrypted email + kdfNonce
+note over New_Instance_PSK, Personal_Cloud_Instance_PSK
+For generating the PSK we need to keep the password in memory
+end note
+New_Instance_PSK -> New_Instance_PSK: KDF(password, kdfNonce) => PSK
+note over New_Instance_PSK, Personal_Cloud_Instance_PSK
+ Both sites now have the same PSK
+end note
+New_Instance_PSK -> New_Instance_PSK: symmetrically decrypt(PSK, email)
+New_Instance_PSK -> New_Instance_PSK: compare decrypted email with my email \n -> send the encrypted email back as a confirmation
+New_Instance_PSK -> New_Instance_PSK : symmetrically encrypt(PSK, email)
+New_Instance_PSK -> Personal_Cloud_Instance_PSK : send encrypted email
+Personal_Cloud_Instance_PSK -> Personal_Cloud_Instance_PSK: symmetrically decrypt(PSK, email)
+Personal_Cloud_Instance_PSK -> Personal_Cloud_Instance_PSK: compare decrypted email with my email
+
+note over New_Instance_PSK, Personal_Cloud_Instance_PSK
+ Authenticated as valid new addition to Personal could
+end note
+
+== share persons key pairs with New_Instance_PSK ==
+New_Instance_PSK <-> Personal_Cloud_Instance_PSK: genarate and share a new symetric key
+Personal_Cloud_Instance_PSK -> Personal_Cloud_Instance_PSK: encrypt(symetricKey, persPubKeyPair)
+Personal_Cloud_Instance_PSK -> Personal_Cloud_Instance_PSK: encrypt(symetricKey, persPrivKeyPair)
+Personal_Cloud_Instance_PSK -> New_Instance_PSK: send encryptedPersPubKeyPair, encryptedPersPrivKeyPair
+New_Instance_PSK -> New_Instance_PSK: overwrite local person key pairs with received ones
+
+note over New_Instance_PSK, Personal_Cloud_Instance_PSK
+ Joined personal cloude and now has the same person keys
+end note
+
+@enduml

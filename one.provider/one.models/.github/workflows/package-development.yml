@@ -1,0 +1,71 @@
+name: Create dev package and upload to S3
+
+on:
+    push:
+        branches:
+            - master
+jobs:
+    package-development:
+        runs-on: ubuntu-latest
+
+        steps:
+            # Setup env
+            - uses: actions/checkout@v3
+            - uses: webfactory/ssh-agent@v0.7.0
+              with:
+                  ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+            - uses: aws-actions/configure-aws-credentials@v1
+              with:
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  aws-region: eu-central-1
+
+            - name: Setup Node
+              uses: actions/setup-node@v3
+              with:
+                  node-version: 22
+
+            - name: Cache Node Modules
+              id: cache-node-modules
+              uses: actions/cache@v3
+              with:
+                  path: node_modules
+                  key: node-modules-${{ hashFiles('package-lock.json') }}
+
+            - name: Install if cache-miss
+              env:
+                  GITHUB_ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN_FOR_PACKAGE_REGISTRY }}
+              if: steps.cache-node-modules.outputs.cache-hit != 'true'
+              run: npm install
+
+            - name: Build if cache-hit
+              if: steps.cache-node-modules.outputs.cache-hit == 'true'
+              run: npm run build
+
+            - name: Create commserver bundle
+              run: npm run bundle
+              env:
+                  # We first need to fix all warnings before we can enable it
+                  CI: false
+
+            - name: Set filename
+              id: release_info
+              run: echo ::set-output name=filename::one.models.bundles-dev.tar.gz
+
+            - name: Package zip
+              run: |
+                  cd ..
+                  tar -czvf ${{steps.release_info.outputs.filename}} \
+                  one.models/comm_server.bundle.js \
+                  one.models/password_recovery_server.bundle.js \
+                  one.models/generate_identity.bundle.js
+                  mv ${{steps.release_info.outputs.filename}} one.models/
+            - name: Upload to s3
+              run: >
+                  aws s3 cp ${{steps.release_info.outputs.filename}} s3://refinio-artefacts --metadata
+                  '{
+                  "github-repository":"${{ github.repository }}",
+                  "github-ref":"${{ github.ref }}",
+                  "github-sha":"${{ github.sha }}"
+                  }'

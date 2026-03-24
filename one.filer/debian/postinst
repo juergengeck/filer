@@ -1,0 +1,50 @@
+#!/bin/bash
+set -e
+
+# Post-installation script for one-leute-replicant
+echo "🔧 Configuring ONE Leute Replicant..."
+
+# Create system user for ONE services
+if ! id "one-replicant" &>/dev/null; then
+    useradd --system --home /opt/one-leute-replicant --shell /bin/bash one-replicant
+    echo "✅ Created system user: one-replicant"
+fi
+
+# Set up directories and permissions
+mkdir -p /opt/one-leute-replicant/{data,logs,configs}
+mkdir -p /var/log/one-leute-replicant
+mkdir -p /etc/one-leute-replicant
+
+# Copy configuration files
+cp /opt/one-leute-replicant/configs/wsl2-filer.json /etc/one-leute-replicant/config.json
+chown -R one-replicant:one-replicant /opt/one-leute-replicant
+chown -R one-replicant:one-replicant /var/log/one-leute-replicant
+chown -R one-replicant:one-replicant /etc/one-leute-replicant
+
+# Install Node.js dependencies
+cd /opt/one-leute-replicant
+sudo -u one-replicant npm install --production
+echo "✅ Installed Node.js dependencies"
+
+# Build the application
+sudo -u one-replicant npm run build
+echo "✅ Built ONE Leute Replicant"
+
+# Enable and start systemd service
+systemctl daemon-reload
+systemctl enable one-leute-replicant.service
+echo "✅ Enabled ONE Leute Replicant service"
+
+# Add user to fuse group for FUSE access
+usermod -a -G fuse one-replicant
+echo "✅ Added one-replicant user to fuse group"
+
+# Set up FUSE permissions
+echo "user_allow_other" >> /etc/fuse.conf
+echo "✅ Configured FUSE permissions"
+
+echo "🎉 ONE Leute Replicant installation complete!"
+echo "📁 Configuration: /etc/one-leute-replicant/config.json"
+echo "📋 Logs: /var/log/one-leute-replicant/"
+echo "🚀 Start service: sudo systemctl start one-leute-replicant"
+echo "📊 Check status: sudo systemctl status one-leute-replicant" 

@@ -1,0 +1,153 @@
+## Zusammenfassung:
+
+- Kommunikation als Promises (auch die über webSockets).
+
+- Jeder request bekommt eine unique ID
+SentRequest = { requestID: Number, message: Object }
+
+- Beim senden des request wird zusätlich die "resolve" Funktion als Wert zusammen mit der ID als Key
+ in eine Map eintragen.
+RequestMap = { [requestID: dataProcessingFuntion], ...}
+
+- Alle Responses enthalten die Request ID
+ReceivedResponse = { requestID: Number, message: Object }
+
+- Der Empfänger nimmt dann die Request ID um die "resolve" Funktion mit den empfangenen Daten
+  aufzurufen.
+onmessage(data => {RequestMap.get(data.requestID)(data.message)})
+
+KOMMENTAR: die RequestMap muss gesynct werden. Außer ich sende die dataProcessingFunction immer mit.
+
+Bsp.: send getObject(foobar):
+    SentRequest = {
+        requestID: 1,
+        message: {
+            type: getObject,
+            params: foobar
+        }
+    }
+
+### Vorschlag:
+
+funktione(request) => Promise(result);
+
+Die Funktion braucht request typen dadurch weis sie was sie machen soll und paramter
+
+WebsocketAbstractor.send(type: string, ...args: Array<mixed>){
+    services.forEach( (serviceType, fnc) => {
+        if(serviceType === type){
+            fnc(args);
+        }
+    } );
+}
+
+Server:
+- Enthält lediglich funtionen und liefert die daten zurück die ein Client erwartet.
+Bsp.: chum-server.js
+module.exports.login = function (personHash, personPassword) {
+    //gets person from ONE
+    //checks login data
+    //returns true or error message. ???
+}
+
+Chum-Sync:
+- Initialisiert den WebsocketAbstractor
+WebsocketAbstractor.init( url: string, services: {[string]: Function});
+Bsp.: chum-sync.js
+services: {
+    'login': loginFn,
+    'getObject': getObjectFn,
+    ...
+}
+
+Für Flow unterstützung:
+
+- Jeder request type bekommt eine eigene Funktion
+- Eine Parent Funktion die die dann diese ganzen Funktionen aufruft sollte auch sanity checks machen
+  ob man wirklich das richitge ergebniss bekommen hat.
+
+Zu Löschen
+STATUS_CODES, die WsMessages kommen in den  WebsocketAbstractor
+
+Request codes braucht man doch zweimal weil die chum-sync die beim server regestriern muss.
+
+
+
+
+
+
+
+## Aus Skype Chat
+
+Alle Kommunikation als promises machen. Also auch requests die über webSockets an das Gegenüber
+gehen.
+
+- Alle requests über websocket in "new Promise((resolve, reject) => {...})" wrappen
+- JEDER request bekommt eine unique ID (fortlaufende number - das reicht bis 2^53 also ewig)
+- Bei senden des requests per websocket die "resolve" function als value zusammen mit der ID als
+  key in eine Map eintragen
+- Alle Antworten enthalten die request ID
+- Der Empfänger schuat auf die request ID, in die Map, und ruft resolve(data) auf mit den in der
+  message erhaltenen Daten
+
+So kannst du alle websocket kommunikation als promises machen, und du kannst mit async/await
+"linear" programmieren und dabei ignorieren, dass requests über websocket gehen.
+
+Also du sendest getObject(foobar) und das liefert das Ergebnis über die promise,
+obwohl es über websockets ging.
+
+Ich denke über lower-level Zeugs nach. Die genannte Infrastruktur - und darin über den Teil,
+dass binary streams erstmal zusammengesetzt werden vom websocket layer, bevor das resolve()
+erfolgt. Dazu muss ich die genannte request ID (number) mit im Buffer übertragen, denn es gibt ja
+nur entweder string oder buffer als message Typ. Dann muss ich das stream Ende auch signalisieren.
+Und alles ist durch die request ID (same as response ID) voneinander isoliert - d.h.
+anders als im alten http-chum Code kann man alles auf einmal und durcheinander machen.
+
+Vorschlag:
+
+Du ignorierst websockets und schreibst mit promises. Nimm an, da gibt es ein module
+websocket-abstractor.js. Das gibt dir eine Funktion, bei der du requests abliefern kannst, und in
+einer promise bekommst du das Ergebnis. Du brauchst für die Funktion
+- request type string (es gibt nur eine Funktion, und was die machen/liefern soll,
+  weiß sie nur dadurch)
+- parameters
+
+Für den Server machst du websocket-mäßig gar nichts. Du stellst einfach exportierte Funktionen
+am chum-server Module bereit, die bei Afuruf entsrpechende Daten liefern. Die Funktionen sollten
+dem entsprechen, was ein chum-client haben wollen wird.
+
+Dass der chum-sync parent mitbekommt, was der Server macht machen wwir dann so: chum-sync parent
+initialisiert den WebsocketAbstractor. Von sich aus weiß und kann der nichts, er kennt keine
+lokalen (Server) Funktionen und keine Gegenstelle. Beim Initialisieren wird ihm eine Liste von
+Server-Funktionen übergeben plus die strings/Kennungen, unter der die zur Verfügung gestellt
+werden sollen.
+
+Ich schreib' den websocket-adstractor.js, du die chums.
+
+Statt immer direkt die eine Funktion des WebsocketAbstractors aufzurufen könntest du dir - auch
+um Flow zu unterstützen - für jeden request type eine eigene Funktion definieren,
+die diesen Aufruf macht. Dann hast du in deinem eigentlichen Code jeweils genau eine konkrete
+Funktion zum Aufrufen, die auch genau den richtigen Ergebnistyp hat - bei nur einer Funktion müsste
+der generisch sein. In diesen wrapper functions machst du auch type/sanity checks am
+erhaltenen Ergebnis - über's Netz kann man ja alles mögliche bekommen.
+
+PS: By the way, module.exports.STATUS_CODES (chum-base-websocket.js) sollte weg.
+Diese status codes sind von HTTP und entsprechen da den HTTP codes (zB 404 "NOT FOUND").
+Wenn du dem Schema zustimmst soltlest du keinen Bedarf mehr haben für das,
+was jetzt in chum-base-websocket.js drin ist. Der WsMessage Typ nicht,
+das macht der WebsocketAbstractor alles intern.
+
+Die request codes auch nicht - du definierst wie oben deine Funktionen, die jeweils die eine
+generische WebsocketAdaptor request function aufrufen, und nur da drin kommen die request
+type strings vor. ALLERDINGS sollte es für jeden request type string, für die der client eine
+function hat, ein Äquivalent im server geben, und der chum-sync-parent muss die (vom server) mit
+diesen Namen beim WebsocketAbstractor registrieren. Also okay, die request type strings
+kommen also doch zweimal vor.
+
+Der Rahmen steht, siehe websocket-abstractor. Du rufst connectBlaBla auf mit der comm.server URL
+und der Liste der Server-Dienste, und du bekommst eine send() function. Das war's eigentlich schon,
+mehr fällt mir gerade nicht ein, außer dann noch Statistik Funktionen (wie viele Daten wurden
+übertragen, sind noch requests offen,, solches Blabla Zeugs).
+
+Du importierst dir den Typ "WebsocketAbstractor" von der Datei. Oder auch nicht,
+bekommst du ja implizit.

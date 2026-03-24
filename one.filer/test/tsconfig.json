@@ -1,0 +1,43 @@
+{
+    "compilerOptions": {
+        "allowJs": true,
+        "alwaysStrict": true,
+        "checkJs": true,
+        "composite": true,
+        "declaration": true,
+        "declarationDir": "./",
+        "declarationMap": true,
+        "downlevelIteration": false,
+        "emitDeclarationOnly": true,
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "importHelpers": false,
+        "importsNotUsedAsValues": "error",
+        "isolatedModules": false,
+        "lib": [
+            "esnext",
+            "dom"
+        ],
+        "module": "CommonJS",
+        "moduleResolution": "node",
+        "newLine": "LF",
+        "noEmit": false,
+        "noImplicitAny": true,
+        "noImplicitReturns": true,
+        "noImplicitThis": true,
+        "outDir": ".",
+        "removeComments": true,
+        "sourceMap": true,
+        "strict": true,
+        "target": "ESNext",
+        "tsBuildInfoFile": "../tsconfig.test.tsbuildinfo",
+        "useUnknownInCatchVariables": false
+    },
+    "exclude": [],
+    "include": [
+        "./*.ts",
+        "./**/*.ts",
+        "../lib/*.ts",
+        "../lib/**/*.ts"
+    ]
+}

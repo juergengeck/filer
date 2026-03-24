@@ -1,0 +1,286 @@
+<!doctype html>
+<!--suppress NestedFunctionJS, XHTMLIncompatabilitiesJS, ES6ModulesDependencies -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Browser Tests</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=" />
+    <link
+        href="https://cdnjs.cloudflare.com/ajax/libs/mocha/10.1.0/mocha.css"
+        rel="stylesheet"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mocha/10.1.0/mocha.min.js"></script>
+    <script src="../node_modules/base64-js/base64js.min.js"></script>
+    <script src="../node_modules/tweetnacl/nacl-fast.min.js"></script>
+    <script src="../node_modules/scrypt-js/scrypt.js"></script>
+    <script src="../node_modules/source-map-support/browser-source-map-support.js"></script>
+    <script>
+        // noinspection JSUnresolvedReference
+        sourceMapSupport.install();
+    </script>
+    <style>
+        #errors pre {
+            width: 50em;
+            margin: 2em 4em;
+            padding: 1em;
+            border: 1px solid red;
+        }
+
+        #console-log-div p {
+            margin: 0;
+            padding: 0;
+            line-height: 1.5em;
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "chai": "../node_modules/chai/chai.js",
+                "base64-js": "./_3rd-party-esm-dummies/base64js.js",
+                "scrypt-js": "./_3rd-party-esm-dummies/scrypt.js",
+                "tweetnacl": "./_3rd-party-esm-dummies/tweetnacl.js",
+                "@one/": "../lib/"
+            }
+        }
+    </script>
+</head>
+<body>
+<div id="errors"></div>
+<div id="mocha"></div>
+<script>
+    /*global chai, mocha */
+    'use strict';
+
+    // CAPTURE console. output and copy it to a DIV on page
+    (function initConsoleLogDiv() {
+        if (console.log.toDiv) {
+            return;
+        }
+
+        function toString(x) {
+            if (x instanceof Error) {
+                return x.message;
+            }
+            return typeof x === 'string' ? x : JSON.stringify(x);
+        }
+
+        const log = console.log.bind(console);
+        const error = console.error.bind(console);
+        const warn = console.warn.bind(console);
+        const table = console.table ? console.table.bind(console) : null;
+        const id = 'console-log-div';
+
+        function createOuterElement() {
+            let outer = document.getElementById(id);
+            if (!outer) {
+                outer = document.createElement('fieldset');
+                outer.id = id;
+                document.body.appendChild(outer);
+            }
+            outer.classList.add(id);
+            const style = outer.style;
+            // style.width = '100%';
+            // style.minHeight = '200px';
+            style.fontFamily = 'monospace';
+            style.fontSize = '10px';
+            style.marginTop = '20px';
+            style.marginBottom = '30px';
+            style.marginLeft = '10px';
+            style.marginRight = '10px';
+            // style.whiteSpace = 'pre';
+            style.border = '1px solid black';
+            style.borderRadius = '5px';
+            style.padding = '5px 10px';
+            return outer;
+        }
+
+        const logTo = (function createLogDiv() {
+            const outer = createOuterElement();
+            const caption = document.createTextNode('console output');
+            const legend = document.createElement('legend');
+            legend.appendChild(caption);
+            outer.appendChild(legend);
+            const div = document.createElement('div');
+            div.id = 'console-log-text';
+            outer.appendChild(div);
+            return div;
+        })();
+
+        function printToDiv() {
+            let msg;
+            if (
+                arguments.length === 2 &&
+                typeof arguments[0].includes === 'function' &&
+                arguments[0].includes('%c')
+            ) {
+                msg = `<p style="${arguments[1]}">${toString(
+                    arguments[0].replace('%c ', '')
+                )}</p>`;
+            } else {
+                msg = `<p>${Array.prototype.slice
+                    .call(arguments, 0)
+                    .map(toString)
+                    .join(' ')}</p>`;
+            }
+            const text = logTo.innerHTML;
+            logTo.innerHTML = text + msg + '\n';
+        }
+
+        function logWithCopy() {
+            log.apply(null, arguments);
+            printToDiv.apply(null, arguments);
+        }
+
+        console.log = logWithCopy;
+        console.log.toDiv = true;
+
+        console.error = function errorWithCopy() {
+            error.apply(null, arguments);
+            const args = Array.prototype.slice.call(arguments, 0);
+            args.unshift('ERROR:');
+            printToDiv.apply(null, args);
+        };
+
+        console.warn = function logWarning() {
+            warn.apply(null, arguments);
+            const args = Array.prototype.slice.call(arguments, 0);
+            args.unshift('WARNING:');
+            printToDiv.apply(null, args);
+        };
+
+        function printTable(objArr, keys) {
+            const numCols = keys.length;
+            const len = objArr.length;
+            const $table = document.createElement('table');
+            $table.style.width = '100%';
+            $table.setAttribute('border', '1');
+            const $head = document.createElement('thead');
+            let $tdata = document.createElement('td');
+            $tdata.innerHTML = 'Index';
+            $head.appendChild($tdata);
+            for (let k = 0; k < numCols; k++) {
+                $tdata = document.createElement('td');
+                $tdata.innerHTML = keys[k];
+                $head.appendChild($tdata);
+            }
+            $table.appendChild($head);
+            for (let i = 0; i < len; i++) {
+                const $line = document.createElement('tr');
+                $tdata = document.createElement('td');
+                $tdata.innerHTML = String(i);
+                $line.appendChild($tdata);
+
+                for (let j = 0; j < numCols; j++) {
+                    $tdata = document.createElement('td');
+                    $tdata.innerHTML = objArr[i][keys[j]];
+                    $line.appendChild($tdata);
+                }
+                $table.appendChild($line);
+            }
+            const div = document.getElementById('console-log-text');
+            div.appendChild($table);
+        }
+
+        console.table = function logTable() {
+            if (typeof table === 'function') {
+                table.apply(null, arguments);
+            }
+            const objArr = arguments[0];
+            let keys;
+            if (typeof objArr[0] !== 'undefined') {
+                keys = Object.keys(objArr[0]);
+            }
+            printTable(objArr, keys);
+        };
+
+        self.addEventListener('error', function(err) {
+            printToDiv(
+                'EXCEPTION:',
+                err.message + '\n  ' + err.filename,
+                err.lineno + ':' + err.colno
+            );
+        });
+    })();
+
+    // The entire function of this WS is to exist. It is kept alive by the comm.server
+    // with ping/pong, and is used to determine if there is a browser test page (this one).
+    // If not, i.e. this connection does not exist and therefore there are no pong
+    // responses, the comm.server will auto-shutdown after a minute.
+    void new WebSocket('ws://localhost:8001');
+
+    mocha.setup({
+        ui: 'bdd',
+        bail: false,
+        checkLeaks: true,
+        timeout: 6000
+    });
+
+    const mochaTestScripts = [
+        'chum-sync-alice',
+        'crdt-async',
+        'crdt-instances-up-down',
+        'crdt-metadata-generation',
+        'crdt-orregister',
+        'crdt-orset',
+        'crdt-recursive',
+        'crdt-rule-inheritance',
+        'crdt-sync',
+        'crypto-helpers',
+        'encryption-decryption',
+        'instance-change-password',
+        'instance',
+        'keychain',
+        'master-key-manager',
+        'microdata-exploder',
+        'microdata-imploder',
+        'microdata-to-id-hash',
+        'microdata-to-json',
+        'microdata-to-object',
+        'object-graph-bfs-iterator',
+        'object-graph-bottom-up-iterator',
+        'object-graph-dfs-iterator',
+        'object-recipes',
+        'object-to-microdata',
+        'settings-store',
+        'storage-base',
+        'storage-reverse-maps',
+        'util-clone-object',
+        'util-function',
+        'util-lru-map',
+        'util-object-find-links',
+        'util-object',
+        'util-promise',
+        'util-queue',
+        'util-sorted-stringify',
+        'version-map-query',
+        'websocket-promisifier'
+    ];
+
+    import('../../lib/system/load-browser.js').then(() =>
+        Promise.all(
+                mochaTestScripts.map(testScript =>
+                    import('./' + testScript + '-test.js').catch(err => {
+                        const div = document.getElementById('errors');
+                        const pre = document.createElement('pre');
+                        pre.appendChild(
+                            document.createTextNode('Test: ' + testScript + '\n\n' + err)
+                        );
+                        div.appendChild(pre);
+                    })
+                )
+            )
+            .then((res) => {
+                mocha.checkLeaks();
+                mocha.globals([]);
+                mocha.run();
+            })
+            .catch(err => {
+                const div = document.getElementById('errors');
+                const pre = document.createElement('pre');
+                pre.appendChild(document.createTextNode('GLOBAL ERROR\n' + err));
+                div.appendChild(pre);
+            })
+    );
+</script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+{
+    "compilerOptions": {
+        "noEmit": true,
+        "alwaysStrict": true,
+        "outDir": "lib",
+        "isolatedModules": false,
+        "moduleResolution": "node",
+        "sourceMap": false,
+        "emitDeclarationOnly": false,
+        "declaration": false,
+        "declarationMap": false,
+        "downlevelIteration": false,
+        "esModuleInterop": true,
+        "importHelpers": false,
+        "importsNotUsedAsValues": "error",
+        "lib": ["esnext", "dom"],
+        "module": "esnext",
+        "target": "esnext",
+        "strict": true,
+        "newLine": "LF",
+        "allowJs": true,
+        "checkJs": false,
+        "noUnusedLocals": true,
+        "removeComments": true,
+        "preserveConstEnums": true,
+        "forceConsistentCasingInFileNames": true,
+        "noImplicitReturns": true,
+        "types": ["@OneCoreTypes", "@types/mocha", "node"]
+    },
+    "include": [
+        "node_modules/one.core/@OneCoreTypes.d.ts",
+        "node_modules/one.models/src/recipes/*.ts",
+        "src/*.ts",
+        "src/*/*.ts",
+        "src/types/*.d.ts",
+        "test/*/*.ts",
+        "test/*.ts"
+    ],
+    "exclude": [
+        "src/clients",
+        "node_modules/one.core/src/",
+        "node_modules/one.core/src/**",
+        "node_modules/one.models/src/",
+        "node_modules/one.models/src/**",
+        ".*.js"
+    ]
+}

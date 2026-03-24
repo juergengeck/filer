@@ -1,0 +1,139 @@
+name: OneFiler
+options:
+  bundleIdPrefix: one.filer
+  deploymentTarget:
+    macOS: "13.0"
+  developmentLanguage: en
+
+settings:
+  SWIFT_VERSION: "5.9"
+  MACOSX_DEPLOYMENT_TARGET: "13.0"
+  DEVELOPMENT_TEAM: "26W8AC52QS"
+  CODE_SIGN_STYLE: Automatic
+  CODE_SIGN_IDENTITY: "Apple Development"
+
+targets:
+  # CLI tool for domain management
+  OneFilerCLI:
+    type: tool
+    platform: macOS
+    deploymentTarget: "13.0"
+    sources:
+      - path: Sources/OneFilerCLI
+    settings:
+      PRODUCT_NAME: onefiler
+
+  # Main app target (minimal, just embeds the extension and CLI)
+  OneFilerHost:
+    type: application
+    platform: macOS
+    deploymentTarget: "13.0"
+    sources:
+      - path: Sources/OneFilerHost
+      - path: Resources/Assets.xcassets
+        type: folder
+        buildPhase: resources
+      - path: Resources/MenuBarIcon.png
+        buildPhase: resources
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: one.filer
+      INFOPLIST_FILE: Resources/Info.plist
+      COMBINE_HIDPI_IMAGES: YES
+      CODE_SIGN_ENTITLEMENTS: Resources/OneFiler.entitlements
+    entitlements:
+      path: Resources/OneFiler.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.application-groups:
+          - group.one.filer
+        com.apple.security.network.client: true
+    dependencies:
+      - target: OneFilerExtension
+        embed: true
+      - target: OneFilerCLI
+    postBuildScripts:
+      - script: |
+          # Copy CLI tool into app bundle
+          mkdir -p "${BUILT_PRODUCTS_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}"
+          cp "${BUILT_PRODUCTS_DIR}/onefiler" "${BUILT_PRODUCTS_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/onefiler"
+          # Also copy to MacOS folder for direct execution
+          cp "${BUILT_PRODUCTS_DIR}/onefiler" "${BUILT_PRODUCTS_DIR}/${EXECUTABLE_FOLDER_PATH}/onefiler"
+        name: Copy CLI Tool to App Bundle
+        inputFiles:
+          - ${BUILT_PRODUCTS_DIR}/onefiler
+        outputFiles:
+          - ${BUILT_PRODUCTS_DIR}/${EXECUTABLE_FOLDER_PATH}/onefiler
+
+  # File Provider Extension target
+  OneFilerExtension:
+    type: app-extension
+    platform: macOS
+    deploymentTarget: "13.0"
+    sources:
+      - path: Sources/OneFiler
+        excludes:
+          - "**/*.md"
+      - path: lib
+        type: folder
+        buildPhase: resources
+      # node_modules copied by post-compile script using rsync to preserve nested dependencies
+      - path: Resources/bin
+        type: folder
+        buildPhase: resources
+      - path: Resources/dylibs
+        type: folder
+        buildPhase: resources
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: one.filer.extension
+      INFOPLIST_FILE: Resources/ExtensionInfo.plist
+      COMBINE_HIDPI_IMAGES: YES
+      SKIP_INSTALL: NO
+      CODE_SIGN_ENTITLEMENTS: Resources/Extension.entitlements
+    entitlements:
+      path: Resources/Extension.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.application-groups:
+          - group.one.filer
+        com.apple.security.files.user-selected.read-write: true
+        com.apple.security.network.client: true
+    dependencies: []
+    postCompileScripts:
+      - script: |
+          # Copy node_modules to extension resources
+          RESOURCES="${BUILT_PRODUCTS_DIR}/OneFilerExtension.appex/Contents/Resources"
+          SRC="${PROJECT_DIR}/node-runtime/node_modules"
+
+          # Remove and copy fresh
+          rm -rf "$RESOURCES/node_modules"
+          cp -R "$SRC" "$RESOURCES/node_modules"
+
+          # Verify both packages are present
+          PACKAGES=$(find "$RESOURCES/node_modules/@refinio" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')
+          if [ "$PACKAGES" -ne 2 ]; then
+            echo "   ❌ ERROR: Expected 2 packages, found $PACKAGES"
+            ls -la "$RESOURCES/node_modules/@refinio"
+            exit 1
+          fi
+
+          echo "   ✅ node_modules copied ($PACKAGES packages)"
+        name: Copy node_modules
+    preBuildScripts:
+      - script: |
+          # Build the node-runtime TypeScript code and bundle Node.js with dylibs
+          cd "${PROJECT_DIR}"
+
+          # Build TypeScript
+          npm run build
+
+          # Bundle Node.js with all dependencies for sandbox
+          ./scripts/bundle-node.sh
+
+          # No symlink needed - Node.js will be run from Resources/ dir, not lib/
+          echo "   ✅ Build complete"
+        name: Build Node.js IPC Runtime
+        outputFiles:
+          - ${PROJECT_DIR}/node-runtime/lib/index.js
+          - ${PROJECT_DIR}/node-runtime/node_modules
+          - ${PROJECT_DIR}/Resources/bin/node
+          - ${PROJECT_DIR}/Resources/dylibs

@@ -1,0 +1,20 @@
+{
+  "arrowParens": "avoid",
+  "bracketSpacing": false,
+  "endOfLine": "lf",
+  "overrides": [
+    {
+      "files": ["tsconfig.json", "jsconfig.json"],
+      "options": {
+        "parser": "jsonc"
+      }
+    }
+  ],
+  "printWidth": 100,
+  "quoteProps": "as-needed",
+  "semi": true,
+  "singleQuote": true,
+  "tabWidth": 4,
+  "trailingComma": "none",
+  "useTabs": false
+}

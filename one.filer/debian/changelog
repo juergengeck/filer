@@ -1,0 +1,12 @@
+one-leute-replicant (4.0.0-beta-1) unstable; urgency=medium
+
+  * Initial Debian package release
+  * Federated file system for Windows Explorer integration
+  * WSL2-optimized configuration and deployment
+  * Windows file attributes and extended attributes support
+  * Automatic service management and startup
+  * Integration with ONE Core and Models libraries
+  * FUSE-based file system implementation
+  * REST API service for management and monitoring
+
+ -- REFINIO GmbH <support@refinio.net>  Mon, 01 Jan 2024 12:00:00 +0000 

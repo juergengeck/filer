@@ -1,0 +1,70 @@
+{
+    "name": "one.filer",
+    "version": "1.0.1",
+    "main": "index.js",
+    "repository": "https://github.com/refinio/one.filer",
+    "license": "SEE LICENSE IN LICENSE.md",
+    "bin": "./lib/index.js",
+    "private": true,
+    "scripts": {
+        "install": "node ./build.js",
+        "build": "node ./build.js",
+        "test": "nyc mocha test/**-test.js",
+        "start": "node --enable-source-maps lib/index.js -c configs/filer.json --secret dummy",
+        "start-filer": "node --enable-source-maps lib/index.js -c configs/filer.json --secret dummy",
+        "start-glue": "node --enable-source-maps lib/index.js -c configs/glue.json --secret dummy",
+        "start-replicant": "node --enable-source-maps lib/index.js -c configs/replicant.json --secret dummy",
+        "delete": "node --enable-source-maps lib/index.js delete",
+        "write-default-config": "node --enable-source-maps lib/index.js write-default-config config.json"
+    },
+    "mocha": {
+        "require": [
+            "source-map-support/register"
+        ],
+        "enable-source-maps": true
+    },
+    "dependencies": {
+        "@commander-js/extra-typings": "^10.0.3",
+        "@refinio/one.core": "https://github.com/refinio/one.core.git",
+        "@refinio/one.models": "https://github.com/refinio/one.models.git",
+        "commander": "^10.0.0",
+        "fuse-native": "^2.2.6",
+        "rimraf": "^4.1.2"
+    },
+    "devDependencies": {
+        "@babel/core": "^7.20.2",
+        "@babel/plugin-proposal-class-properties": "*",
+        "@babel/plugin-proposal-nullish-coalescing-operator": "*",
+        "@babel/plugin-proposal-object-rest-spread": "^7.20.2",
+        "@babel/plugin-proposal-optional-chaining": "*",
+        "@babel/plugin-transform-modules-commonjs": "^7.19.6",
+        "@babel/plugin-transform-modules-systemjs": "^7.19.6",
+        "@babel/plugin-transform-modules-umd": "*",
+        "@babel/plugin-transform-runtime": "^7.19.6",
+        "@babel/plugin-transform-typescript": "^7.20.2",
+        "@babel/preset-typescript": "*",
+        "@babel/runtime": "^7.20.1",
+        "@babel/types": "*",
+        "@istanbuljs/nyc-config-typescript": "^1.0.1",
+        "@types/chai": "^4.3.4",
+        "@types/mocha": "^10.0.0",
+        "@types/node": "^18.14.0",
+        "@types/qrcode": "^1.3.4",
+        "@types/ws": "*",
+        "@typescript-eslint/eslint-plugin": "^5.51.0",
+        "@typescript-eslint/parser": "^5.51.0",
+        "@babel/eslint-parser": "*",
+        "chai": "^4.3.7",
+        "eslint": "^8.34.0",
+        "eslint-config-prettier": "*",
+        "eslint-plugin-jsdoc": "^40.0.0",
+        "eslint-plugin-prettier": "*",
+        "jsdoc": "^4.0.0",
+        "jsdoc-babel": "*",
+        "mocha": "^10.1.0",
+        "nyc": "^15.0.1",
+        "prettier": "^3.0.0",
+        "source-map-support": "*",
+        "typescript": "^4.9.5"
+    }
+}

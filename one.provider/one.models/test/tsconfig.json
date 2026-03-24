@@ -1,0 +1,52 @@
+{
+    "compilerOptions": {
+        "allowJs": false,
+        "alwaysStrict": true,
+        "allowUnreachableCode": false,
+        "checkJs": false,
+        "composite": true,
+        "declaration": true,
+        "declarationDir": "./",
+        "declarationMap": true,
+        "downlevelIteration": false,
+        "emitDeclarationOnly": false,
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "importHelpers": false,
+        "incremental": true,
+        "isolatedModules": true,
+        "lib": ["esnext", "dom"],
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+        "newLine": "LF",
+        "noEmit": false,
+        "noImplicitAny": true,
+        "noImplicitReturns": true,
+        "noImplicitThis": true,
+        "outDir": ".",
+        "removeComments": true,
+        "sourceMap": true,
+        "strict": true,
+        "stripInternal": true,
+        "target": "ESNext",
+        "tsBuildInfoFile": "../tsconfig.test.tsbuildinfo",
+        "useUnknownInCatchVariables": false,
+        "verbatimModuleSyntax": true,
+        "types": ["node", "mocha"],
+        "typeRoots": ["../node_modules/@types", "../../one.core/node_modules/@types"]
+    },
+    "exclude": [
+        "../src/*",
+        "../src/**/*",
+        "../src/**/**/*",
+        "../../node_modules/@types/jest"
+    ],
+    "include": [
+        "../@OneObjectInterfaces.d.ts",
+        "./*.ts",
+        "./**/*.ts",
+        "../lib/*.ts",
+        "../lib/**/*.ts",
+        "../lib/**/**/*.ts"
+    ]
+}

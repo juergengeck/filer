@@ -1,0 +1,43 @@
+{
+    "compilerOptions": {
+        "noEmit": false,
+        "alwaysStrict": true,
+        "outDir": "lib",
+        "isolatedModules": false,
+        "moduleResolution": "node",
+        "sourceMap": true,
+        "emitDeclarationOnly": true,
+        "declaration":true,
+        "declarationMap": true,
+        "downlevelIteration": true,
+        "esModuleInterop": true,
+        "lib": ["esnext", "dom"],
+        "module": "es2015",
+        "target": "esnext",
+        "strict": true,
+        "newLine": "LF",
+        "allowJs": false,
+        "checkJs": false,
+        "noUnusedLocals": true,
+        "removeComments": false,
+        "preserveConstEnums": true,
+        "forceConsistentCasingInFileNames": true,
+        "noImplicitReturns": true
+    },
+    "include": [
+        "node-fhir-server-core.d.ts",
+        "node-fhir.d.ts",
+        "node_modules/one.core/@OneCoreTypes.d.ts",
+        "node_modules/one.models/src/recipes/*.ts",
+        "src"
+    ],
+    "exclude": [
+        "node_modules/one.core/src/",
+        "node_modules/one.core/src/**",
+        "node_modules/one.models/src/",
+        "node_modules/one.models/src/**",
+        ".*.js",
+        "builds",
+        "doc"
+    ]
+}

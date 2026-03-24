@@ -1,0 +1,210 @@
+import {expect} from 'chai';
+import tweetnacl from 'tweetnacl';
+
+import type {CryptoApi} from '../../lib/crypto/CryptoApi.js';
+import type {SymmetricKey} from '../../lib/crypto/encryption.js';
+import {
+    createSymmetricKey,
+    ensureSymmetricKey,
+    symmetricDecryptWithEmbeddedNonce,
+    symmetricEncryptAndEmbedNonce
+} from '../../lib/crypto/encryption.js';
+import {
+    closeAndDeleteCurrentInstance,
+    closeInstance,
+    getInstanceIdHash,
+    getInstanceOwnerIdHash,
+    initInstance
+} from '../../lib/instance.js';
+import {createCryptoApiFromDefaultKeys} from '../../lib/keychain/keychain.js';
+import {startLogger, stopLogger} from '../../lib/logger.js';
+
+/**
+ * Converts a UTF-8 JavaScript string to a binary view Uint8Array
+ * @static
+ * @param {string} s
+ * @returns {Uint8Array}
+ */
+export function stringToUint8Array(s: string): Uint8Array {
+    const encoder = new TextEncoder();
+    return encoder.encode(s);
+}
+
+/**
+ * Converts a binary view Uint8Array to a UTF-8 JavaScript string
+ * @static
+ * @param {ArrayBuffer|Uint8Array} buf
+ * @returns {string}
+ */
+export function Uint8ArrayToString(buf: ArrayBuffer | Uint8Array): string {
+    const decoder = new TextDecoder();
+    return decoder.decode(buf);
+}
+
+describe('Send encrypted message and decrypt it at destination', function cryptoTests() {
+    let symmetricKeyA: SymmetricKey;
+    let symmetricKeyB: SymmetricKey;
+
+    let instanceACrypto: CryptoApi;
+    let personACrypto: CryptoApi;
+    let instanceBCrypto: CryptoApi;
+    let personBCrypto: CryptoApi;
+
+    const instanceAOptions = {
+        name: 'personA',
+        email: 'personA',
+        secret: 'personA',
+        directory: 'test/testDb'
+    };
+    const instanceBOptions = {
+        name: 'personB',
+        email: 'personB',
+        secret: 'personB',
+        directory: 'test/testDb'
+    };
+
+    before(async () => {
+        startLogger({includeInstanceName: true, types: ['error']});
+
+        // initialise PersonA instance
+        await initInstance(instanceAOptions);
+
+        const instanceAIdHash = getInstanceIdHash();
+
+        if (instanceAIdHash === undefined) {
+            return;
+        }
+
+        const personAIdHash = getInstanceOwnerIdHash();
+
+        if (personAIdHash === undefined) {
+            return;
+        }
+
+        instanceACrypto = await createCryptoApiFromDefaultKeys(instanceAIdHash);
+        personACrypto = await createCryptoApiFromDefaultKeys(personAIdHash);
+        closeInstance();
+
+        // initialise PersonB instance
+        await initInstance(instanceBOptions);
+
+        const instanceBIdHash = getInstanceIdHash();
+
+        if (instanceBIdHash === undefined) {
+            return;
+        }
+
+        const personBIdHash = getInstanceOwnerIdHash();
+
+        if (personBIdHash === undefined) {
+            return;
+        }
+
+        instanceBCrypto = await createCryptoApiFromDefaultKeys(instanceBIdHash);
+        personBCrypto = await createCryptoApiFromDefaultKeys(personBIdHash);
+        closeInstance();
+    });
+
+    after(async () => {
+        await initInstance(instanceAOptions);
+        await closeAndDeleteCurrentInstance();
+        await initInstance(instanceBOptions);
+        await closeAndDeleteCurrentInstance();
+        stopLogger();
+    });
+
+    it('should transfer symmetric keys using public key encryption', async function test25() {
+        // The symmetric key will be sent from PersonA to PersonB, so first we need to reopen
+        // PersonA's instance. Then the message will be encrypted and the instance of
+        // PersonA will be closed.
+        await initInstance(instanceAOptions);
+
+        symmetricKeyA = createSymmetricKey();
+
+        const encryptedSymmetricKey = personACrypto.encryptAndEmbedNonce(
+            symmetricKeyA,
+            personBCrypto.publicEncryptionKey
+        );
+
+        closeInstance();
+        // The message will be received by the PersonB. First we reopen PersonB's instance,
+        // decrypt the message and close PersonB's instance.
+        await initInstance(instanceBOptions);
+
+        symmetricKeyB = ensureSymmetricKey(
+            personBCrypto.decryptWithEmbeddedNonce(
+                encryptedSymmetricKey,
+                personACrypto.publicEncryptionKey
+            )
+        );
+
+        closeInstance();
+
+        expect(symmetricKeyA).to.deep.equal(symmetricKeyB);
+    });
+
+    it('should transfer message using symmetric key encription', function test26() {
+        // message that will be sent encrypted
+        const obj = {hello: 'world'};
+        const objAsUint8Array = stringToUint8Array(JSON.stringify(obj));
+        // The message will be sent from PersonB to PersonA, so for encryption we are going to
+        // use the symmetric key received by PersonB.
+        const encrypted = symmetricEncryptAndEmbedNonce(objAsUint8Array, symmetricKeyB);
+        // The message will be received by the PersonA. For decryption, we use the symmetric key
+        // generated by PersonA.
+        const decrypted = symmetricDecryptWithEmbeddedNonce(encrypted, symmetricKeyA);
+        // Verify if the decrypted message is the same as the one sent
+        expect(decrypted).to.deep.equal(objAsUint8Array);
+    });
+
+    it('should create signature and verify it', async function test27() {
+        const message = {hello: 'world'};
+        const messageUint8 = stringToUint8Array(JSON.stringify(message));
+
+        await initInstance(instanceAOptions);
+
+        const signature = personACrypto.sign(messageUint8);
+
+        closeInstance();
+
+        const verifiedTrue = tweetnacl.sign.detached.verify(
+            messageUint8,
+            signature,
+            personACrypto.publicSignKey
+        );
+        expect(verifiedTrue).to.be.true;
+        messageUint8[messageUint8.length - 1] = 41; // Replace "}" by ")"
+
+        const verifiedFalse = tweetnacl.sign.detached.verify(
+            messageUint8,
+            signature,
+            personACrypto.publicSignKey
+        );
+        expect(verifiedFalse).to.be.false;
+    });
+
+    it('should send an encrypted message with instance key and decrypt it at destination', async function test29() {
+        const message = {hello: 'world'};
+        const messageUint8 = stringToUint8Array(JSON.stringify(message));
+
+        await initInstance(instanceAOptions);
+
+        const encrypted = instanceACrypto.encryptAndEmbedNonce(
+            messageUint8,
+            instanceBCrypto.publicEncryptionKey
+        );
+
+        closeInstance();
+        await initInstance(instanceBOptions);
+
+        const decrypted = instanceBCrypto.decryptWithEmbeddedNonce(
+            encrypted,
+            instanceACrypto.publicEncryptionKey
+        );
+
+        closeInstance();
+
+        expect(decrypted).to.be.not.null;
+        expect(decrypted).to.deep.equal(messageUint8);
+    });
+});

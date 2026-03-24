@@ -1,0 +1,41 @@
+{
+    "tags": {
+        "allowUnknownTags": true,
+        "dictionaries": ["jsdoc","closure"]
+    },
+    "source": {
+        "include": ["src/"],
+        "includePattern": ".+\\.[tj]s(doc|x)?$",
+        "excludePattern": "(^|\\/|\\\\)_"
+    },
+    "plugins": [
+        "plugins/markdown",
+        "plugins/underscore",
+        "node_modules/jsdoc-babel"
+    ],
+    "babel": {
+        "extensions": ["js","ts","jsx","tsx"],
+        "presets": ["@babel/preset-typescript"],
+        "plugins": [],
+        "babelrc": false
+    },
+    "templates": {
+        "default": {
+            "includeDate": false,
+            "useLongnameInNav": true
+        },
+        "cleverLinks": false,
+        "monospaceLinks": false
+    },
+    "markdown" : {
+        "idInHeadings" : true
+    },
+    "opts": {
+        "template": "./doc/JSDoc.template",
+        "encoding": "utf8",
+        "destination": "doc/API/",
+        "recurse": true,
+        "readme": "doc/README.md"
+    }
+}
+

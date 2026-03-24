@@ -1,0 +1,123 @@
+MultiUser Class Documentation
+=======================
+
+The MultiUser class extends Authenticator and provides functionality for managing multiple user instances with authentication workflows.
+
+Constructor
+----------
+```typescript
+const multiUser = new MultiUser({
+    directory?: string,           // Storage location identifier (defaults to 'one.storage')
+    recipes?: Recipe[],           // One recipes (uses all recipes if not specified)
+    reverseMaps?: Map<OneObjectTypeNames, Set<string>>,  // Reverse Maps
+    reverseMapsForIdObjects?: Map<OneVersionedObjectTypeNames, Set<string>>,  // Id Reverse Maps
+    storageInitTimeout?: number   // Timeout for init storage
+});
+```
+
+Storage Directory Usage
+--------------------
+The `directory` parameter in the constructor is used to set the base storage location:
+
+1. Default Behavior:
+   - If not specified, uses 'one.storage' as the default location
+   - Can be explicitly set to undefined/null to use default
+
+2. Custom Storage:
+   - Can specify a custom storage identifier (e.g., 'my.custom.storage')
+   - Used by the Instance system to manage storage locations
+   - In Expo environment, while setBaseDirOrName is a no-op, the directory value is still used by the Instance system
+
+3. Examples:
+```typescript
+// Use default storage
+const multiUser = new MultiUser({});
+
+// Use custom storage
+const multiUser = new MultiUser({
+    directory: 'my.custom.storage'
+});
+
+// Explicitly use default
+const multiUser = new MultiUser({
+    directory: undefined
+});
+```
+
+Instance Creation Methods
+-----------------------
+
+1. Register a New Instance:
+```typescript
+await multiUser.register(
+    email: string,              // user's email
+    secret: string,            // password/secret
+    instanceName: string,      // name for the instance
+    secretEncryptionKey?: Uint8Array | string,  // optional encryption key
+    secretSignKey?: Uint8Array | string         // optional signing key
+);
+```
+
+2. Login to Existing Instance:
+```typescript
+await multiUser.login(
+    email: string,         // user's email
+    secret: string,       // password/secret
+    instanceName: string  // name of the instance
+);
+```
+
+3. Login or Register (handles both cases):
+```typescript
+await multiUser.loginOrRegister(
+    email: string,         // user's email
+    secret: string,       // password/secret
+    instanceName: string  // name for the instance
+);
+```
+
+Utility Methods
+-------------
+
+Check if Instance Exists:
+```typescript
+const exists = await multiUser.isRegistered(email, instanceName);
+```
+
+Delete/Cleanup Methods
+--------------------
+
+1. Erase a specific instance:
+```typescript
+await multiUser.erase(instanceName, email);
+```
+
+2. Logout and erase current instance:
+```typescript
+await multiUser.logoutAndErase();
+```
+
+State Management
+--------------
+The class includes a state machine that manages authentication states:
+- logged_out
+- logging_in
+- logged_in
+- logging_out
+
+Events are triggered during state transitions and operations:
+- login
+- login_success
+- login_failure
+- logout
+- logout_done
+
+Error Handling
+------------
+- The class includes comprehensive error handling for instance operations
+- Failed operations will clean up any partially created instances
+- Appropriate error messages are thrown for common scenarios:
+  - User already exists
+  - User does not exist
+  - Wrong secret/password
+  - Instance initialization failures 

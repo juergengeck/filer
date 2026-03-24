@@ -1,0 +1,19 @@
+{
+    "files": [],
+    "references": [
+        {
+            "path": "./scripts"
+        },
+        {
+            "path": "./src"
+        },
+        {
+            "path": "./test"
+        }
+    ],
+    "typedocOptions": {
+        "entryPoints": ["src/"],
+        "entryPointStrategy": "expand",
+        "out": "doc/typedoc"
+    }
+}

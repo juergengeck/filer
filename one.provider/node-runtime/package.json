@@ -1,0 +1,26 @@
+{
+  "name": "@refinio/one-provider-runtime",
+  "version": "0.1.0",
+  "description": "Node.js IPC runtime for Apple File Provider",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "prepare:deps": "node ../scripts/prepare-one-runtime-deps.mjs",
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf lib",
+    "vendor:install": "rm -rf node_modules/@refinio && mkdir -p node_modules/@refinio && cd node_modules/@refinio && tar -xzf ../../../vendor/refinio-one.core-*.tgz && mv package one.core && tar -xzf ../../../vendor/refinio-one.models-*.tgz && mv package one.models"
+  },
+  "dependencies": {
+    "@refinio/one.core": "0.6.1-beta-3",
+    "@refinio/one.models": "14.1.0-beta-5"
+  },
+  "comments": {
+    "dependencies": "Installed from vendor/ tarballs via npm run vendor:install"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}

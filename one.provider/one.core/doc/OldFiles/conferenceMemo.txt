@@ -1,0 +1,22 @@
+2017/07/17
+State machine
+
+registerd logged inpending
+
+states in both sides querys from com partner and from one store
+
+
+2017/07/14
+connection code in chum sync
+
+write whole words res = response, req = request
+
+nodejs next expect: after processing response send the next request
+
+run chum client, chum server functions in lexical scope to allow multiple ws connections.
+
+- can't assign on.message to both client and server because they overwrite each other.
+- can use initialize methods to set state information in client and server.
+- if i call clientMessageProcessing each time i get a message what should it return?
+  same for the server.
+the sync would need to know when it doesn't need to call the onmessage function anymore.

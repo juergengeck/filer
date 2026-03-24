@@ -1,0 +1,116 @@
+// noinspection JSMethodCanBeStatic
+
+import {createMessageBus} from '@refinio/one.core/lib/message-bus';
+import ConnectionPlugin, {
+    ConnectionClosedEvent,
+    ConnectionIncomingEvent,
+    ConnectionOutgoingEvent,
+    EventCreationFunctions
+} from '../ConnectionPlugin';
+const MessageBus = createMessageBus('WebSocketPromiseBased');
+
+/**
+ */
+export default class ConnectionSimulatorPlugin extends ConnectionPlugin {
+    private otherConnection: ConnectionSimulatorPlugin | null = null;
+
+    /**
+     * Construct a new connection - at the moment based on WebSockets
+     */
+    constructor() {
+        super('websocket');
+    }
+
+    public transformIncomingEvent(event: ConnectionIncomingEvent): ConnectionIncomingEvent | null {
+        return null;
+    }
+
+    public transformOutgoingEvent(event: ConnectionOutgoingEvent): ConnectionOutgoingEvent | null {
+        if (event.type === 'close') {
+            if (event.terminate) {
+                this.terminate(event.reason);
+            } else {
+                this.close(event.reason);
+            }
+        }
+        if (event.type === 'message') {
+            let arr: ArrayBuffer | string;
+            if (typeof event.data === 'string') {
+                arr = event.data;
+            } else {
+                arr = event.data.buffer.slice(
+                    event.data.byteOffset,
+                    event.data.byteOffset + event.data.byteLength
+                );
+            }
+
+            this.assertOpen().send(arr);
+        }
+        return null;
+    }
+
+    // ######## Private API ########
+
+    /**
+     * Closes the underlying websocket.
+     *
+     * This function waits for the other side to also close the Tcp connection
+     * by responding with a FIN package. This might lead to a delay if the
+     * connection was interrupted because e.g. the wireless adapter was switched
+     * off.
+     *
+     * @param reason - Reason for timeout
+     */
+    private close(reason?: string): void {
+        const webSocket = this.assertNotDetached();
+        if (webSocket.readyState !== webSocket.OPEN) {
+            return;
+        }
+
+        const wholeReason = 'Close called' + (reason === undefined ? '.' : `: ${reason}`);
+
+        // Shorten the reason string to maximum 123 bytes, because the standard mandates it:
+        // https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/close
+        webSocket.close(1000, shortenStringUTF8(wholeReason, 123));
+        this.setClosedReasonOnce(wholeReason, 'local');
+    }
+
+    /**
+     * Terminates the connection immediately without waiting for the Tcp FIN handshake.
+     *
+     * This function terminates the readers immediately instead of waiting for the
+     * other side to also close the websocket by sending the Tcp FIN package. This
+     * function should only be used when a connection loss is detected (PING / PONG
+     * timeout)
+     *
+     * This also releases the websocket, because the state might still be open, but
+     * we don't want anyone to do any operation on the websocket anymore.
+     *
+     * @param reason - Reason for timeout
+     */
+    private terminate(reason?: string): void {
+        const webSocket = this.assertNotDetached();
+        if (webSocket.readyState !== webSocket.OPEN) {
+            return;
+        }
+
+        const wholeReason = 'Terminate called' + (reason === undefined ? '.' : `: ${reason}`);
+
+        // Shorten the reason string to maximum 123 bytes, because the standard mandates it:
+        // https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/close
+        webSocket.close(1000, shortenStringUTF8(wholeReason, 123));
+        this.setClosedReasonOnce(wholeReason, 'local');
+        this.sendClosedEvent();
+    }
+
+    /**
+     * Function asserts that the connection is open.
+     */
+    private assertOpen(): ConnectionSimulatorPlugin {
+        if (!this.otherConnection) {
+            throw new Error(`The connection was not opened.`);
+        }
+
+        return this.otherConnection;
+    }
+}

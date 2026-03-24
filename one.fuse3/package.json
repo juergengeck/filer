@@ -1,0 +1,45 @@
+{
+  "name": "@refinio/one.fuse3",
+  "version": "1.0.0",
+  "description": "FUSE3 native addon for Node.js - Linux filesystem in userspace",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "configure": "node-gyp configure",
+    "build": "test -f build/Makefile && node-gyp build || node-gyp rebuild",
+    "rebuild": "node-gyp rebuild",
+    "clean": "node-gyp clean",
+    "test": "node test-read-operations.js",
+    "test:read": "node test-read-operations.js",
+    "test:write": "node test-write-operations.js",
+    "test:integration": "node test/integration/connection-test.js",
+    "postinstall": "test -f build/Release/fuse3_napi.node || node-gyp rebuild"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/juergengeck/one.fuse3.git"
+  },
+  "keywords": [
+    "fuse",
+    "fuse3",
+    "filesystem",
+    "linux",
+    "node-addon",
+    "native-module"
+  ],
+  "author": "REFINIO GmbH",
+  "license": "MIT",
+  "dependencies": {
+    "bindings": "^1.5.0",
+    "node-addon-api": "^5.0.0"
+  },
+  "devDependencies": {
+    "node-gyp": "^9.0.0"
+  },
+  "os": [
+    "linux"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

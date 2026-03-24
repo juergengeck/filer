@@ -1,0 +1,77 @@
+name: Create the one.filer-dev artifact and upload to S3
+
+on:
+    push:
+        branches:
+            - master
+jobs:
+    generate-artifact:
+        runs-on: ubuntu-20.04
+
+        steps:
+            # Setup env
+            - uses: actions/checkout@v3
+            - uses: webfactory/ssh-agent@v0.7.0
+              with:
+                  ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+            - uses: aws-actions/configure-aws-credentials@v1-node16
+              with:
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  aws-region: eu-central-1
+
+            - name: Setup Node
+              uses: actions/setup-node@v3
+              with:
+                  node-version: 18
+
+            - name: Cache Node Modules
+              id: cache-node-modules
+              uses: actions/cache@v3
+              with:
+                  path: node_modules
+                  key: node-modules-${{ hashFiles('package-lock.json') }}
+
+            - name: Install if cache-miss
+              env:
+                  GITHUB_ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN_FOR_PACKAGE_REGISTRY }}
+              if: steps.cache-node-modules.outputs.cache-hit != 'true'
+              run: npm install
+
+            - name: Export commit hash
+              run: echo "export const COMMIT_HASH = '${{ github.sha }}';" > src/commit-hash.ts && cat src/commit-hash.ts
+
+            - name: Build
+              run: npm run build
+              env:
+                  # We have two webpack warnings left
+                  CI: false
+
+            - name: Set filename
+              id: release_info
+              run: echo ::set-output name=filename::${{ github.event.repository.name }}-dev.tar.gz
+
+            - name: Package zip
+              run: |
+                  cd ..
+                  tar -czvf ${{steps.release_info.outputs.filename}} ${{ github.event.repository.name }}/lib ${{github.event.repository.name}}/node_modules
+                  mv ${{steps.release_info.outputs.filename}} ${{ github.event.repository.name }}/
+
+            - name: Upload to s3
+              run: >
+                  aws s3 cp ${{steps.release_info.outputs.filename}} s3://refinio-artefacts --metadata
+                  '{
+                  "github-repository":"${{ github.repository }}",
+                  "github-ref":"${{ github.ref }}",
+                  "github-sha":"${{ github.sha }}"
+                  }'
+
+            # AWS CodeDeploy
+            - id: deploy
+              uses: webfactory/create-aws-codedeploy-deployment@v0.4.0
+            - uses: peter-evans/commit-comment@v2
+              with:
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  body: |
+                      @${{ github.actor }} this was deployed as [${{ steps.deploy.outputs.deploymentId }}](https://console.aws.amazon.com/codesuite/codedeploy/deployments/${{ steps.deploy.outputs.deploymentId }}?region=eu-central-1) to group `${{ steps.deploy.outputs.deploymentGroupName }}`.

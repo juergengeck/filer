@@ -1,0 +1,19 @@
+#!/bin/bash
+set -e
+
+# Pre-removal script for one-leute-replicant
+echo "🛑 Stopping ONE Leute Replicant..."
+
+# Stop the service if it's running
+if systemctl is-active --quiet one-leute-replicant.service; then
+    systemctl stop one-leute-replicant.service
+    echo "✅ Stopped ONE Leute Replicant service"
+fi
+
+# Disable the service
+if systemctl is-enabled --quiet one-leute-replicant.service; then
+    systemctl disable one-leute-replicant.service
+    echo "✅ Disabled ONE Leute Replicant service"
+fi
+
+echo "🔧 ONE Leute Replicant service stopped and disabled" 

@@ -1,0 +1,20 @@
+version: 0.0
+os: linux
+permissions:
+    - object: /
+      owner: ubuntu
+hooks:
+    ApplicationStart:
+        - location: aws/codedeploy.sh
+          timeout: 120
+          runas: ubuntu
+
+# This section controls the deployments:
+# For a more in depth description see: https://github.com/webfactory/create-aws-codedeploy-deployment/blob/master/README.md#example-use-case
+branch_config:
+    master:
+        deploymentGroupName: dev
+        deploymentGroupConfig:
+            serviceRoleArn: arn:aws:iam::099453893499:role/CodeDeployServiceRole
+            ec2TagFilters:
+                - {Type: KEY_ONLY, Key: dev}

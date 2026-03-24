@@ -1,0 +1,44 @@
+// black is for objects
+// red is for index, context objects
+// green is for story objects
+// blue is for access objects
+
+// todo: legende schreiben...
+
+digraph one {
+
+    node [
+        shape=plaintext
+    ]
+
+    // lookup person access grants for some object
+    someEmailObject [shape=ellipse]
+
+    createPersonList [label="create list of Person objects in TO, FROM, CC", shape=box]
+    someEmailObject -> createPersonList
+
+    forEach [label="for each Person object in personList and in (Instance) userIdIndex",shape=box]
+    personList [shape=parallelogram, color=black, style=filled, fillcolor=black, fontcolor=white]
+    createPersonList -> personList
+    personList -> forEach
+
+    "create Grant object with accessIsGrantedTo Person object" [shape=box]
+    forEach -> "create Grant object with accessIsGrantedTo Person object"
+
+    grantObject [shape=parallelogram, color=blue, style=filled, fillcolor=blue, fontcolor=white]
+     "create Grant object with accessIsGrantedTo Person object" -> grantObject
+
+
+    "create Access object with grant grantObject" [shape=box]
+    grantObject -> "create Access object with grant grantObject"
+
+    accessObject [shape=parallelogram, color=blue, style=filled, fillcolor=blue, fontcolor=white]
+    "create Access object with grant grantObject" -> accessObject
+
+    accessObject ->  updateIndex
+    updateIndex [label="add accessObject to someEmailObject Context accessIndex",shape=box]
+
+    updateIndex -> forEach
+    updateIndex -> accessObjectsForSomeEmailObject
+    accessObjectsForSomeEmailObject [shape=ellipse]
+}

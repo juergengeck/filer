@@ -1,0 +1,59 @@
+@startuml
+autonumber
+title Connect new Instance to personal Cloud with nonce and email
+
+participant Old_Instance
+participant New_Instance
+
+legend
+|= Abbreviation |= Description |
+| PI | pairing information |
+| authTag | authentication tag: random generated string |
+| pubKeyLocal | current instance public key |
+| pubKeyRemote | random string since the other instance key is not yet known |
+| takeOver | true for personal cloud |
+| randomPersonEmail | Old_Instance owner email |
+| KDF | key derivation function |
+| KDF_nonce | random generated string |
+| secret | password used when user has registerd |
+| randomInstanceName | renadom generated instance name |
+endlegend
+
+== Connection establishment ==
+Old_Instance -> Old_Instance: generates PI {authTag, pubKeyLocal, pubKeyRemote, takeOver}
+Old_Instance -> Old_Instance: generate KDF using secret and KDF_nonce
+Old_Instance -> Old_Instance: generates QR code {PI, randomPersonEmail, KDF_nonce}
+Old_Instance -> New_Instance: QR code
+
+New_Instance -> New_Instance: ask for secret
+New_Instance -> New_Instance: extracts KDF_nonce from QR code
+New_Instance -> New_Instance: generate KDF using secret and KDF_nonce
+
+== Authentication ==
+New_Instance -> New_Instance: extract PI from QR code
+New_Instance -> New_Instance: encryptSymmetric(KDF, PI.authTag)
+New_Instance -> Old_Instance: send encryptedAuthTag
+Old_Instance -> Old_Instance: decryptSymmetric(KDF, encryptedAuthTag)
+Old_Instance -> Old_Instance: compare decryptedAuthTag with PI.authTag \n -> New_Instance authenticated
+Old_Instance -> Old_Instance: encryptSymmetric(KDF, PI.authTag)
+Old_Instance -> New_Instance: send encryptedAuthTag
+New_Instance -> New_Instance: decryptSymmetric(KDF, encryptedAuthTag)
+New_Instance -> New_Instance: compare decryptedAuthTag with PI.authTag \n -> Old_Instance authenticated
+note over New_Instance
+initInstance(randomPersonEmail, randomInstanceName, secret)
+end note
+
+== Instance take over ==
+New_Instance -> Old_Instance: encryptSymmetric(KDF, instacePubKeys)
+Old_Instance -> Old_Instance: decryptSymmetric(KDF, other instacePubKeys)
+Old_Instance -> Old_Instance: store other instacePubKeys
+Old_Instance -> New_Instance: encryptSymmetric(KDF, instacePubKeys)
+New_Instance -> New_Instance: decryptSymmetric(KDF, other instacePubKeys)
+New_Instance -> New_Instance: store other instacePubKeys
+Old_Instance -> New_Instance: encrypt(otherInstacePubKey, thisInstancePrivKey, instanceOwnerKeys)
+New_Instance -> New_Instance: decrypt(otherInstancePubKey, thisInstancePrivKey, ownerKeys)
+New_Instance -> New_Instance: overwrite instance owner keys
+
+== Start connection ==
+Old_Instance <-> New_Instance: start chum
+@enduml
