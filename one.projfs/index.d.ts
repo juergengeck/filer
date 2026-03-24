@@ -4,22 +4,22 @@
 
 import { EventEmitter } from 'events';
 
-export interface IFSProjFSProviderOptions {
+export type IFSProjFSProviderOptions = {
     instancePath: string;
     virtualRoot: string;
     fileSystem: any; // IFileSystem interface from one.models
     cacheTTL?: number;
     debug?: boolean;
-}
+};
 
-export interface ProviderStats {
+export type ProviderStats = {
     placeholderRequests: number;
     fileDataRequests: number;
     directoryEnumerations: number;
     bytesRead: bigint;
     cacheHits: number;
     cacheMisses: number;
-}
+};
 
 export declare class IFSProjFSProvider extends EventEmitter {
     /**
@@ -41,11 +41,13 @@ export declare class IFSProjFSProvider extends EventEmitter {
      * Mount the ProjFS virtual filesystem
      */
     mount(): Promise<void>;
+    start(virtualRoot?: string): Promise<void>;
 
     /**
      * Unmount the ProjFS virtual filesystem
      */
     unmount(): Promise<void>;
+    stop(): Promise<void>;
 
     /**
      * Check if the provider is currently running
@@ -61,4 +63,8 @@ export declare class IFSProjFSProvider extends EventEmitter {
      * Enable/disable debug mode
      */
     setDebug(enabled: boolean): void;
+
+    getCacheStats(): Record<string, unknown>;
+
+    completePendingFileRequests(path: string): void;
 }

@@ -39,5 +39,11 @@
   },
   "devDependencies": {
     "node-gyp": "^10.0.0"
+  },
+  "os": [
+    "win32"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
   }
 }
