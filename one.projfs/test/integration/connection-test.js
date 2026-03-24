@@ -42,13 +42,51 @@ const INVITES_PATH = path.join(MOUNT_POINT, 'invites');
 const IOP_INVITE_FILE = path.join(INVITES_PATH, 'iop_invite.txt');
 const IOM_INVITE_FILE = path.join(INVITES_PATH, 'iom_invite.txt');
 
-// Path to refinio.api (relative to one.projfs/test/integration/)
-const REFINIO_API_DIR = path.resolve(__dirname, '../../../refinio.api');
 const SERVER_STORAGE_DIR = path.join(TEST_DIR, 'server-instance');
 const CLIENT_STORAGE_DIR = path.join(TEST_DIR, 'client-instance');
 const COMM_SERVER_PORT = 8000;
 const SERVER_PORT = 50123;
 const CLIENT_PORT = 50125;
+
+function getExistingPath(candidates, description) {
+    for (const candidate of candidates) {
+        if (fs.existsSync(candidate)) {
+            return candidate;
+        }
+    }
+
+    throw new Error(
+        `${description} not found. Checked:\n` +
+        candidates.map(candidate => `- ${candidate}`).join('\n')
+    );
+}
+
+function getFileUrl(filePath) {
+    return filePath.startsWith('/')
+        ? `file://${filePath}`
+        : `file:///${filePath.replace(/\\/g, '/')}`;
+}
+
+function getRefinioApiDir() {
+    return getExistingPath(
+        [
+            path.resolve(__dirname, '../../../refinio.api'),
+            path.resolve(__dirname, '../../../one.provider/refinio.api')
+        ],
+        'refinio.api directory'
+    );
+}
+
+function getCommunicationServerModulePath() {
+    return getExistingPath(
+        [
+            path.resolve(__dirname, '../../../packages/one.models/lib/misc/ConnectionEstablishment/communicationServer/CommunicationServer.js'),
+            path.resolve(__dirname, '../../../one.models/lib/misc/ConnectionEstablishment/communicationServer/CommunicationServer.js'),
+            path.resolve(__dirname, '../../../one.provider/one.models/lib/misc/ConnectionEstablishment/communicationServer/CommunicationServer.js')
+        ],
+        'built CommunicationServer module'
+    );
+}
 
 // Process handles
 let serverProcess = null;
@@ -62,10 +100,8 @@ async function startCommServer() {
     console.log('Starting local CommunicationServer...');
 
     try {
-        // Import CommunicationServer from one.models
-        const modelsPath = path.resolve(__dirname, '../../../packages/one.models/lib/misc/ConnectionEstablishment/communicationServer/CommunicationServer.js');
-        // Convert to file:// URL - handle both Windows and Unix paths
-        const fileUrl = modelsPath.startsWith('/') ? `file://${modelsPath}` : `file:///${modelsPath.replace(/\\/g, '/')}`;
+        const modelsPath = getCommunicationServerModulePath();
+        const fileUrl = getFileUrl(modelsPath);
         const CommunicationServerModule = await import(fileUrl);
         const CommunicationServer = CommunicationServerModule.default;
 
@@ -165,15 +201,11 @@ async function cleanupTestEnvironment() {
 async function startRefinioApiServer() {
     console.log('🚀 Starting refinio.api server with ProjFS...\n');
 
-    // Verify refinio.api exists
-    if (!fs.existsSync(REFINIO_API_DIR)) {
-        throw new Error(`refinio.api not found at ${REFINIO_API_DIR}`);
-    }
-
-    const distIndexPath = path.join(REFINIO_API_DIR, 'dist', 'index.js');
+    const refinioApiDir = getRefinioApiDir();
+    const distIndexPath = path.join(refinioApiDir, 'dist', 'index.js');
     if (!fs.existsSync(distIndexPath)) {
         throw new Error(`refinio.api not built - missing ${distIndexPath}\n` +
-                       `   Run: cd ${REFINIO_API_DIR} && npm run build`);
+                       `   Run: cd ${refinioApiDir} && npm run build`);
     }
 
     // Create mount point directory
@@ -189,7 +221,7 @@ async function startRefinioApiServer() {
     // Spawn server process with configuration via environment variables
     return new Promise((resolve, reject) => {
         serverProcess = spawn('node', [distIndexPath], {
-            cwd: REFINIO_API_DIR,
+            cwd: refinioApiDir,
             env: {
                 ...process.env,
                 // Server config
@@ -261,16 +293,17 @@ async function startRefinioApiServer() {
  * Start refinio.api CLIENT instance (without ProjFS mount)
  */
 async function startClientInstance() {
+    const refinioApiDir = getRefinioApiDir();
     console.log('🚀 Starting refinio.api CLIENT instance (no mount)...\n');
 
-    const distIndexPath = path.join(REFINIO_API_DIR, 'dist', 'index.js');
+    const distIndexPath = path.join(refinioApiDir, 'dist', 'index.js');
 
     console.log(`   Client port: ${CLIENT_PORT}`);
     console.log(`   CommServer: ws://localhost:${COMM_SERVER_PORT}\n`);
 
     return new Promise((resolve, reject) => {
         clientProcess = spawn('node', [distIndexPath], {
-            cwd: REFINIO_API_DIR,
+            cwd: refinioApiDir,
             env: {
                 ...process.env,
                 // Client config
@@ -465,9 +498,10 @@ async function runConnectionTest() {
     } catch (setupError) {
         console.error('\n❌ Setup Failed:', setupError.message);
         console.error('\n🔧 Troubleshooting:');
-        console.error('   1. Ensure refinio.api is built: cd refinio.api && npm run build');
-        console.error('   2. Check that ProjFS is available on Windows 10 1809+');
-        console.error('   3. Verify you have permissions to mount ProjFS filesystems');
+        console.error('   1. Ensure this workspace includes refinio.api and a built one.models CommunicationServer module');
+        console.error('   2. Build the dependency tree before testing');
+        console.error('   3. Check that ProjFS is available on Windows 10 1809+');
+        console.error('   4. Verify you have permissions to mount ProjFS filesystems');
         throw setupError;
     }
 
