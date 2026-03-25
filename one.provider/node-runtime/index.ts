@@ -13,6 +13,7 @@ import {setBaseDirOrName} from '@refinio/one.core/lib/system/storage-base.js';
 import {createInterface} from 'readline';
 import type {IFileSystem} from '@refinio/one.models/lib/fileSystems/IFileSystem.js';
 import {ConnectionHandler} from './connection-handler.js';
+import {createLegacyRootFileSystem} from './createLegacyRootFileSystem.js';
 import {HttpRestServer} from './http-server.js';
 import {DebugLogger} from './debug-logger.js';
 
@@ -321,40 +322,25 @@ class IPCBridge {
         this.leuteModel = leuteModel;
         this.connectionsModel = connectionsModel;
 
-        // Create complete filesystem (copied from refinio.api/src/filer/createFilerWithPairing.ts)
+        // Create the current filer projection behind a dedicated compatibility boundary.
         this.debugLogger.info('Creating filesystems...');
-        const {default: TemporaryFileSystem} = await import('@refinio/one.models/lib/fileSystems/TemporaryFileSystem.js');
-        const {default: ChatFileSystem} = await import('@refinio/one.models/lib/fileSystems/ChatFileSystem.js');
-        const {default: DebugFileSystem} = await import('@refinio/one.models/lib/fileSystems/DebugFileSystem.js');
-        const {default: PairingFileSystem} = await import('@refinio/one.models/lib/fileSystems/PairingFileSystem.js');
-        const {default: ObjectsFileSystem} = await import('@refinio/one.models/lib/fileSystems/ObjectsFileSystem.js');
-        const {default: TypesFileSystem} = await import('@refinio/one.models/lib/fileSystems/TypesFileSystem.js');
-        const {default: ProfilesFileSystem} = await import('@refinio/one.models/lib/fileSystems/ProfilesFileSystem.js');
-        const {default: QuestionnairesFileSystem} = await import('@refinio/one.models/lib/fileSystems/QuestionnairesFileSystem.js');
-
-        const chatFileSystem = new ChatFileSystem(leuteModel, topicModel, channelManager, notifications, '/objects');
-        const debugFileSystem = new DebugFileSystem(leuteModel, topicModel, connectionsModel, channelManager);
         const inviteUrlPrefix = process.env.ONE_PROVIDER_INVITE_URL_PREFIX || 'https://lama.one/invite';
-        const pairingFileSystem = new PairingFileSystem(connectionsModel, iomManager, inviteUrlPrefix, 'full');
-        const objectsFileSystem = new ObjectsFileSystem();
-        const typesFileSystem = new TypesFileSystem();
-        const profilesFileSystem = new ProfilesFileSystem(leuteModel);
-        const questionnairesFileSystem = questionnaireModel
-            ? new QuestionnairesFileSystem(questionnaireModel)
-            : new TemporaryFileSystem();
-
-        const rootFileSystem = new TemporaryFileSystem();
+        const {mountPoints, rootFileSystem} = await createLegacyRootFileSystem(
+            {
+                channelManager,
+                connectionsModel,
+                iomManager,
+                leuteModel,
+                notifications,
+                questionnaireModel,
+                topicModel
+            },
+            inviteUrlPrefix
+        );
         console.error('[IPC] Mounting filesystems...');
         this.debugLogger.info('Mounting filesystems...');
-        await rootFileSystem.mountFileSystem('/chats', chatFileSystem);
-        await rootFileSystem.mountFileSystem('/debug', debugFileSystem);
-        await rootFileSystem.mountFileSystem('/invites', pairingFileSystem);
-        await rootFileSystem.mountFileSystem('/objects', objectsFileSystem);
-        await rootFileSystem.mountFileSystem('/types', typesFileSystem);
-        await rootFileSystem.mountFileSystem('/profiles', profilesFileSystem);
-        await rootFileSystem.mountFileSystem('/questionnaires', questionnairesFileSystem);
-        console.error('[IPC] All filesystems mounted: /chats, /debug, /invites, /objects, /types, /profiles, /questionnaires');
-        this.debugLogger.info('All filesystems mounted: /chats, /debug, /invites, /objects, /types, /profiles, /questionnaires');
+        console.error(`[IPC] All filesystems mounted: ${mountPoints.join(', ')}`);
+        this.debugLogger.info(`All filesystems mounted: ${mountPoints.join(', ')}`);
 
         this.fileSystem = rootFileSystem;
 

@@ -1,31 +1,15 @@
 import type {IFileSystem} from '@refinio/one.models/lib/fileSystems/IFileSystem';
-import type {ConnectionsModel} from '@refinio/one.models/lib/models';
-import type {ChannelManager, LeuteModel, TopicModel} from '@refinio/one.models/lib/models';
-import type IoMManager from '@refinio/one.models/lib/models/IoM/IoMManager';
-import type Notifications from '@refinio/one.models/lib/models/Notifications';
-
-import TemporaryFileSystem from '@refinio/one.models/lib/fileSystems/TemporaryFileSystem';
-import ObjectsFileSystem from '@refinio/one.models/lib/fileSystems/ObjectsFileSystem';
-import DebugFileSystem from '@refinio/one.models/lib/fileSystems/DebugFileSystem';
-import TypesFileSystem from '@refinio/one.models/lib/fileSystems/TypesFileSystem';
-import PairingFileSystem from '@refinio/one.models/lib/fileSystems/PairingFileSystem';
-import ChatFileSystem from '@refinio/one.models/lib/fileSystems/ChatFileSystem';
 
 import {COMMIT_HASH} from '../commit-hash';
 import {DefaultFilerConfig} from './FilerConfig';
 import type {FilerConfig} from './FilerConfig';
 
 import {FuseFrontend} from './FuseFrontend';
+import {createLegacyRootFileSystem} from './createLegacyRootFileSystem';
+import type {LegacyFilerModels} from './createLegacyRootFileSystem';
 import {fillMissingWithDefaults} from '../misc/configHelper';
 
-export interface FilerModels {
-    channelManager: ChannelManager;
-    connections: ConnectionsModel;
-    leuteModel: LeuteModel;
-    notifications: Notifications;
-    topicModel: TopicModel;
-    iomManager: IoMManager;
-}
+export type FilerModels = LegacyFilerModels;
 
 /**
  * This class represents the main starting point for `one.filer`
@@ -80,37 +64,10 @@ export class Filer {
      * Set up the root filesystem by mounting all wanted filesystems.
      */
     private async setupRootFileSystem(): Promise<IFileSystem> {
-        const chatFileSystem = new ChatFileSystem(
-            this.models.leuteModel,
-            this.models.topicModel,
-            this.models.channelManager,
-            this.models.notifications,
-            '/objects'
-        );
-        const debugFileSystem = new DebugFileSystem(
-            this.models.leuteModel,
-            this.models.topicModel,
-            this.models.connections,
-            this.models.channelManager
-        );
-        const pairingFileSystem = new PairingFileSystem(
-            this.models.connections,
-            this.models.iomManager,
-            this.config.pairingUrl,
-            this.config.iomMode
-        );
-        const objectsFileSystem = new ObjectsFileSystem();
-        const typesFileSystem = new TypesFileSystem();
-
-        debugFileSystem.commitHash = COMMIT_HASH;
-
-        const rootFileSystem = new TemporaryFileSystem();
-        await rootFileSystem.mountFileSystem('/chats', chatFileSystem);
-        await rootFileSystem.mountFileSystem('/debug', debugFileSystem);
-        await rootFileSystem.mountFileSystem('/invites', pairingFileSystem);
-        await rootFileSystem.mountFileSystem('/objects', objectsFileSystem);
-        await rootFileSystem.mountFileSystem('/types', typesFileSystem);
-
-        return rootFileSystem;
+        return createLegacyRootFileSystem(this.models, {
+            commitHash: COMMIT_HASH,
+            iomMode: this.config.iomMode,
+            pairingUrl: this.config.pairingUrl
+        });
     }
 }

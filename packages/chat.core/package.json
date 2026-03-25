@@ -1,0 +1,59 @@
+{
+  "name": "@refinio/chat.core",
+  "version": "1.0.0",
+  "description": "Chat/messaging business logic (platform-agnostic)",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "test": "vitest run",
+    "clean": "find . -name '*.js' -not -path './node_modules/*' -not -path './packages/*' -delete"
+  },
+  "exports": {
+    "./plans/*.js": "./dist/plans/*.js",
+    "./plans/*": "./dist/plans/*.js",
+    "./services/*.js": "./dist/services/*.js",
+    "./services/*": "./dist/services/*.js",
+    "./models/*.js": "./dist/models/*.js",
+    "./models/*": "./dist/models/*.js",
+    "./recipes/*.js": "./dist/recipes/*.js",
+    "./recipes/*": "./dist/recipes/*.js",
+    "./types/*.js": "./dist/types/*.js",
+    "./types/*": "./dist/types/*.js",
+    "./api/*.js": "./dist/api/*.js",
+    "./api/*": "./dist/api/*.js",
+    "./dimensions/*.js": "./dist/dimensions/*.js",
+    "./dimensions/*": "./dist/dimensions/*.js",
+    "./indexing/*.js": "./dist/indexing/*.js",
+    "./indexing/*": "./dist/indexing/*.js",
+    "./queries/*.js": "./dist/queries/*.js",
+    "./queries/*": "./dist/queries/*.js",
+    "./trie/*.js": "./dist/trie/*.js",
+    "./trie/*": "./dist/trie/*.js"
+  },
+  "peerDependencies": {
+    "@refinio/api": "workspace:*",
+    "@refinio/assembly.core": "workspace:*",
+    "@refinio/one.core": "workspace:*",
+    "@refinio/one.models": "workspace:*"
+  },
+  "author": "vger.one Team",
+  "license": "MIT",
+  "private": true,
+  "devDependencies": {
+    "@refinio/api": "workspace:*",
+    "@refinio/assembly.core": "workspace:*",
+    "@refinio/one.core": "workspace:*",
+    "@refinio/one.models": "workspace:*",
+    "@refinio/trie.core": "workspace:^",
+    "@types/chai": "catalog:",
+    "@types/chai-as-promised": "catalog:",
+    "@types/mocha": "catalog:",
+    "@types/ms": "^2.1.0",
+    "@types/passport-http": "^0.3.11",
+    "@types/qrcode": "catalog:",
+    "@types/ws": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

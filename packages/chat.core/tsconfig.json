@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022"],
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "baseUrl": "."
+  },
+  "include": [
+    "node_modules/@refinio/one.models/@OneObjectInterfaces.d.ts",
+    "node_modules/@refinio/one.core/@OneObjectInterfaces.d.ts",
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "packages",
+    "**/*.test.ts",
+    "src/plans/AnalyzeTopicPlan.ts",
+    "src/plans/SendMessagePlan.ts",
+    "src/api/**/*",
+    "src/dimensions/**/*",
+    "src/indexing/**/*",
+    "src/queries/**/*"
+  ]
+}
