@@ -3,6 +3,7 @@
         "noEmit": true,
         "alwaysStrict": true,
         "outDir": "lib",
+        "baseUrl": ".",
         "isolatedModules": false,
         "moduleResolution": "node",
         "sourceMap": false,
@@ -25,11 +26,17 @@
         "preserveConstEnums": true,
         "forceConsistentCasingInFileNames": true,
         "noImplicitReturns": true,
-        "types": ["@OneCoreTypes", "@types/mocha", "node"]
+        "types": ["@types/mocha", "node"],
+        "paths": {
+            "@refinio/one.core/*": ["../one/packages/one.core/lib/*"],
+            "@refinio/one.models/*": ["../one/packages/one.models/lib/*"]
+        }
     },
     "include": [
-        "node_modules/one.core/@OneCoreTypes.d.ts",
-        "node_modules/one.models/src/recipes/*.ts",
+        "../one/packages/one.core/@OneObjectInterfaces.d.ts",
+        "../one/packages/one.models/@OneObjectInterfaces.d.ts",
+        "src/@OneObjectInterfaces.d.ts",
+        "test/@OneObjectInterfaces.d.ts",
         "src/*.ts",
         "src/*/*.ts",
         "src/types/*.d.ts",
@@ -38,10 +45,6 @@
     ],
     "exclude": [
         "src/clients",
-        "node_modules/one.core/src/",
-        "node_modules/one.core/src/**",
-        "node_modules/one.models/src/",
-        "node_modules/one.models/src/**",
         ".*.js"
     ]
 }

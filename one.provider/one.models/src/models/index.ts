@@ -15,6 +15,7 @@ import ConnectionsModel from './ConnectionsModel.js';
 import LeuteModel from './Leute/LeuteModel.js';
 import TopicModel from './Chat/TopicModel.js';
 import ConsentModel from './ConsentModel.js';
+import SyncMatchingModel from './syncMatching/SyncMatchingModel.js';
 
 /** for one line imports **/
 export {
@@ -35,5 +36,6 @@ export {
     ConnectionsModel,
     LeuteModel,
     TopicModel,
-    ConsentModel
+    ConsentModel,
+    SyncMatchingModel
 };

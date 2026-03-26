@@ -2,6 +2,7 @@ import type {Recipe} from '@refinio/one.core/lib/recipes.js';
 import BodyTemperatureRecipes from './BodyTemperatureRecipe.js';
 import BlobRecipes from './BlobRecipes.js';
 import MatchingRecipes from './MatchingRecipes.js';
+import SyncMatchingRecipes from './SyncMatchingRecipes.js';
 import WbcRecipes from './WbcDiffRecipes.js';
 import ECGRecipes from './ECGRecipes.js';
 import BloodGlucoseRecipes from './BloodGlucoseRecipes.js';
@@ -20,6 +21,7 @@ const RecipesExperimental: Recipe[] = [
     ...BodyTemperatureRecipes,
     ...BlobRecipes,
     ...MatchingRecipes,
+    ...SyncMatchingRecipes,
     ...WbcRecipes,
     ...ECGRecipes,
     ...BloodGlucoseRecipes,

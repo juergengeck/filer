@@ -27,6 +27,11 @@ import os from 'os';
 import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import {
+    getBuiltOneWorkspacePackagePath,
+    getExistingPath,
+    getFileUrl
+} from '../../../test-support/one-workspace-paths.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -48,25 +53,6 @@ const COMM_SERVER_PORT = 8000;
 const SERVER_PORT = 50123;
 const CLIENT_PORT = 50125;
 
-function getExistingPath(candidates, description) {
-    for (const candidate of candidates) {
-        if (fs.existsSync(candidate)) {
-            return candidate;
-        }
-    }
-
-    throw new Error(
-        `${description} not found. Checked:\n` +
-        candidates.map(candidate => `- ${candidate}`).join('\n')
-    );
-}
-
-function getFileUrl(filePath) {
-    return filePath.startsWith('/')
-        ? `file://${filePath}`
-        : `file:///${filePath.replace(/\\/g, '/')}`;
-}
-
 function getRefinioApiDir() {
     return getExistingPath(
         [
@@ -78,13 +64,10 @@ function getRefinioApiDir() {
 }
 
 function getCommunicationServerModulePath() {
-    return getExistingPath(
-        [
-            path.resolve(__dirname, '../../../packages/one.models/lib/misc/ConnectionEstablishment/communicationServer/CommunicationServer.js'),
-            path.resolve(__dirname, '../../../one.models/lib/misc/ConnectionEstablishment/communicationServer/CommunicationServer.js'),
-            path.resolve(__dirname, '../../../one.provider/one.models/lib/misc/ConnectionEstablishment/communicationServer/CommunicationServer.js')
-        ],
-        'built CommunicationServer module'
+    return getBuiltOneWorkspacePackagePath(
+        __dirname,
+        'one.models',
+        'misc/ConnectionEstablishment/communicationServer/CommunicationServer.js'
     );
 }
 
@@ -498,8 +481,8 @@ async function runConnectionTest() {
     } catch (setupError) {
         console.error('\n❌ Setup Failed:', setupError.message);
         console.error('\n🔧 Troubleshooting:');
-        console.error('   1. Ensure this workspace includes refinio.api and a built one.models CommunicationServer module');
-        console.error('   2. Build the dependency tree before testing');
+        console.error('   1. Ensure this workspace includes refinio.api and the shared ../one workspace');
+        console.error('   2. Build ../one/packages/one.models before testing');
         console.error('   3. Check that ProjFS is available on Windows 10 1809+');
         console.error('   4. Verify you have permissions to mount ProjFS filesystems');
         throw setupError;

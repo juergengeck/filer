@@ -3,6 +3,7 @@
         "noEmit": false,
         "alwaysStrict": true,
         "outDir": "lib",
+        "baseUrl": ".",
         "isolatedModules": false,
         "moduleResolution": "node",
         "sourceMap": true,
@@ -22,20 +23,21 @@
         "removeComments": false,
         "preserveConstEnums": true,
         "forceConsistentCasingInFileNames": true,
-        "noImplicitReturns": true
+        "noImplicitReturns": true,
+        "paths": {
+            "@refinio/one.core/*": ["../one/packages/one.core/lib/*"],
+            "@refinio/one.models/*": ["../one/packages/one.models/lib/*"]
+        }
     },
     "include": [
         "node-fhir-server-core.d.ts",
         "node-fhir.d.ts",
-        "node_modules/one.core/@OneCoreTypes.d.ts",
-        "node_modules/one.models/src/recipes/*.ts",
+        "../one/packages/one.core/@OneObjectInterfaces.d.ts",
+        "../one/packages/one.models/@OneObjectInterfaces.d.ts",
+        "src/@OneObjectInterfaces.d.ts",
         "src"
     ],
     "exclude": [
-        "node_modules/one.core/src/",
-        "node_modules/one.core/src/**",
-        "node_modules/one.models/src/",
-        "node_modules/one.models/src/**",
         ".*.js",
         "builds",
         "doc"

@@ -23,6 +23,10 @@ import { execSync, spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import os from 'os';
+import {
+    getBuiltOneWorkspacePackagePath,
+    getFileUrl
+} from '../../test-support/one-workspace-paths.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -51,8 +55,12 @@ async function startCommServer() {
     console.log('Starting local CommunicationServer...');
 
     try {
-        const modelsPath = path.resolve(__dirname, '../../one.models/lib/misc/ConnectionEstablishment/communicationServer/CommunicationServer.js');
-        const fileUrl = modelsPath.startsWith('/') ? `file://${modelsPath}` : `file:///${modelsPath.replace(/\\/g, '/')}`;
+        const modelsPath = getBuiltOneWorkspacePackagePath(
+            __dirname,
+            'one.models',
+            'misc/ConnectionEstablishment/communicationServer/CommunicationServer.js'
+        );
+        const fileUrl = getFileUrl(modelsPath);
         const CommunicationServerModule = await import(fileUrl);
         const CommunicationServer = CommunicationServerModule.default;
 

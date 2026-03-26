@@ -23,6 +23,10 @@ import os from 'os';
 import { execSync, spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import {
+    getBuiltOneWorkspacePackagePath,
+    getFileUrl
+} from '../../../test-support/one-workspace-paths.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -53,10 +57,12 @@ async function startCommServer() {
     console.log('Starting local CommunicationServer...');
 
     try {
-        // Import CommunicationServer from one.models
-        const modelsPath = path.resolve(__dirname, '../../../packages/one.models/lib/misc/ConnectionEstablishment/communicationServer/CommunicationServer.js');
-        // Convert to file:// URL - handle both Windows and Unix paths
-        const fileUrl = modelsPath.startsWith('/') ? `file://${modelsPath}` : `file:///${modelsPath.replace(/\\/g, '/')}`;
+        const modelsPath = getBuiltOneWorkspacePackagePath(
+            __dirname,
+            'one.models',
+            'misc/ConnectionEstablishment/communicationServer/CommunicationServer.js'
+        );
+        const fileUrl = getFileUrl(modelsPath);
         const CommunicationServerModule = await import(fileUrl);
         const CommunicationServer = CommunicationServerModule.default;
 
@@ -576,10 +582,11 @@ async function runConnectionTest() {
         console.error('\n❌ Setup Failed:', setupError.message);
         console.error('\n🔧 Troubleshooting:');
         console.error('   1. Ensure refinio.api is built: cd ../refinio.api && npm run build');
-        console.error('   2. Check that FUSE3 is installed: which fusermount3');
-        console.error('   3. Verify you have permissions to mount FUSE filesystems');
+        console.error('   2. Build ../one/packages/one.models before testing');
+        console.error('   3. Check that FUSE3 is installed: which fusermount3');
+        console.error('   4. Verify you have permissions to mount FUSE filesystems');
         if (isWSL()) {
-            console.error('   4. WSL2 required (not WSL1): wsl --list --verbose');
+            console.error('   5. WSL2 required (not WSL1): wsl --list --verbose');
         }
         throw setupError;
     }
