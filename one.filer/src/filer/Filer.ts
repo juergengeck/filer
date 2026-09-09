@@ -17,6 +17,8 @@ import type {FilerConfig} from './FilerConfig';
 
 import {FuseFrontend} from './FuseFrontend';
 import {fillMissingWithDefaults} from '../misc/configHelper';
+import FlexibelHealthFileSystem from '../fileSystems/FlexibelHealthFileSystem';
+import type {FlexibelHealthDataSource} from '../fileSystems/FlexibelHealthFileSystem';
 
 export interface FilerModels {
     channelManager: ChannelManager;
@@ -25,6 +27,7 @@ export interface FilerModels {
     notifications: Notifications;
     topicModel: TopicModel;
     iomManager: IoMManager;
+    flexibelHealthDataSource?: FlexibelHealthDataSource;
 }
 
 /**
@@ -36,6 +39,7 @@ export class Filer {
     private readonly models: FilerModels;
     private readonly config: FilerConfig;
     private shutdownFunctions: Array<() => Promise<void>> = [];
+    private initializedHealthDataSource?: FlexibelHealthDataSource;
 
     constructor(models: FilerModels, config: Partial<FilerConfig>) {
         this.config = fillMissingWithDefaults(config, DefaultFilerConfig);
@@ -54,8 +58,19 @@ export class Filer {
         const rootFileSystem = await this.setupRootFileSystem();
 
         const fuseFrontend = new FuseFrontend();
-        await fuseFrontend.start(rootFileSystem, this.config.mountPoint, this.config.logCalls);
+        try {
+            await fuseFrontend.start(rootFileSystem, this.config.mountPoint, this.config.logCalls);
+        } catch (error) {
+            await this.initializedHealthDataSource?.shutdown?.();
+            this.initializedHealthDataSource = undefined;
+            throw error;
+        }
         this.shutdownFunctions.push(fuseFrontend.stop.bind(fuseFrontend));
+        if (this.initializedHealthDataSource?.shutdown) {
+            this.shutdownFunctions.push(
+                this.initializedHealthDataSource.shutdown.bind(this.initializedHealthDataSource)
+            );
+        }
 
         console.log(
             `[info]: Filer file system was mounted at ${this.config.mountPoint}`
@@ -74,6 +89,7 @@ export class Filer {
             }
         }
         this.shutdownFunctions = [];
+        this.initializedHealthDataSource = undefined;
     }
 
     /**
@@ -110,6 +126,20 @@ export class Filer {
         await rootFileSystem.mountFileSystem('/invites', pairingFileSystem);
         await rootFileSystem.mountFileSystem('/objects', objectsFileSystem);
         await rootFileSystem.mountFileSystem('/types', typesFileSystem);
+        if (this.models.flexibelHealthDataSource) {
+            await this.models.flexibelHealthDataSource.init?.();
+            this.initializedHealthDataSource = this.models.flexibelHealthDataSource;
+            try {
+                await rootFileSystem.mountFileSystem(
+                    '/Gesundheit',
+                    new FlexibelHealthFileSystem(this.models.flexibelHealthDataSource)
+                );
+            } catch (error) {
+                await this.initializedHealthDataSource.shutdown?.();
+                this.initializedHealthDataSource = undefined;
+                throw error;
+            }
+        }
 
         return rootFileSystem;
     }
