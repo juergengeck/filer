@@ -2,6 +2,14 @@
 
 This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
+## Canonical Shared Platform
+
+- Consume and evolve shared platform packages in `../one/packages/*`.
+- `../one` is Filer's active platform base, not a deprecated tree.
+- `../one-experimental` remains the base for Flexibel only. Do not route Filer dependencies, builds, tests, or shared-platform changes there.
+- Use `../vger` as an architectural reference; shared Filer implementation belongs in `../one`.
+- These paths supersede the historical in-repository and vendored package layouts described below.
+
 ## Project Overview
 
 **Filer** is a multi-platform virtual filesystem for the ONE platform - a content-addressable storage and synchronization system. It exposes ONE database content as native filesystems on Windows (ProjFS), Linux/WSL (FUSE3), and macOS (File Provider).

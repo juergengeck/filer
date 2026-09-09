@@ -1,8 +1,7 @@
 import type ChannelManager from '@refinio/one.models/lib/models/ChannelManager';
-import {calculateIdHashOfObj} from '@refinio/one.core/lib/util/object';
 import type {LeuteModel} from '@refinio/one.models/lib/models';
-import type {SHA256IdHash} from '@refinio/one.core/lib/util/type-checks';
-import type {Group, Instance, Person} from '@refinio/one.core/lib/recipes';
+import type {SHA256Hash, SHA256IdHash} from '@refinio/one.core/lib/util/type-checks';
+import type {Group, HashGroup, Instance, Person} from '@refinio/one.core/lib/recipes';
 import {serializeWithType} from '@refinio/one.core/lib/util/promise';
 import {isObject} from '@refinio/one.core/lib/util/type-checks-basic';
 import type {ConnectionsModel} from '@refinio/one.models/lib/models';
@@ -19,7 +18,7 @@ import {createAccess} from '@refinio/one.core/lib/access';
 interface ChannelAccessRights {
     owner: SHA256IdHash<Person>; // The owner of the channels
     persons: Array<SHA256IdHash<Person>>; // The persons who should gain access
-    groups: Array<SHA256IdHash<Group>>; // The persons who should gain access
+    groups: Array<SHA256Hash<HashGroup<Person>>>; // The groups who should gain access
     channels: string[]; // The channels that should gain access
 }
 
@@ -71,7 +70,8 @@ export default class AccessRightsManager {
             this.groupConfig = groups;
         }
 
-        await this.channelManager.createChannel('contacts');
+        const mainId = await (await this.leuteModel.me()).mainIdentity();
+        await this.channelManager.createChannel([], mainId, undefined, 'contacts');
 
         // const mainContactObjects = await this.leuteModel.getContactObjectHashes(this.mainId);
         // await this.channelManager.postToChannelIfNotExist(
@@ -107,7 +107,7 @@ export default class AccessRightsManager {
                 const setAccessParam = {
                     id: result.idHash,
                     person: [],
-                    group: this.groups('everyone'),
+                    hashGroup: await this.groups('everyone'),
                     mode: SET_ACCESS_MODE.ADD
                 };
                 await createAccess([setAccessParam]);
@@ -151,14 +151,17 @@ export default class AccessRightsManager {
         }
     }
 
-    private groups(...groupNames: Array<keyof GroupConfig>): Array<SHA256IdHash<Group>> {
-        const groups: Array<SHA256IdHash<Group>> = [];
+    private async groups(
+        ...groupNames: Array<keyof GroupConfig>
+    ): Promise<Array<SHA256Hash<HashGroup<Person>>>> {
+        const groups: Array<SHA256Hash<HashGroup<Person>>> = [];
 
         for (const groupName of groupNames) {
             const groupConfigEntry = this.groupConfig[groupName];
 
             if (groupConfigEntry !== undefined) {
-                groups.push(groupConfigEntry);
+                const group = await getObjectByIdHash<Group>(groupConfigEntry);
+                groups.push(group.obj.hashGroup);
             }
         }
 
@@ -180,7 +183,7 @@ export default class AccessRightsManager {
             {
                 owner: mainId,
                 persons: [],
-                groups: this.groups('iom'),
+                groups: await this.groups('iom'),
                 channels: [
                     'contacts',
                     'mainFileSystemChannelId',
@@ -196,7 +199,7 @@ export default class AccessRightsManager {
             {
                 owner: mainId,
                 persons: [],
-                groups: this.groups('iom'),
+                groups: await this.groups('iom'),
                 channels: [
                     'bodyTemperature',
                     'diary',
@@ -225,14 +228,16 @@ export default class AccessRightsManager {
                     await Promise.all(
                         accessInfo.channels.map(async channelId => {
                             try {
+                                const {channelInfoIdHash} = await this.channelManager.createChannel(
+                                    [],
+                                    accessInfo.owner,
+                                    undefined,
+                                    channelId
+                                );
                                 const setAccessParam = {
-                                    id: await calculateIdHashOfObj({
-                                        $type$: 'ChannelInfo',
-                                        id: channelId,
-                                        owner: accessInfo.owner
-                                    }),
+                                    id: channelInfoIdHash,
                                     person: accessInfo.persons,
-                                    group: accessInfo.groups,
+                                    hashGroup: accessInfo.groups,
                                     mode: SET_ACCESS_MODE.REPLACE
                                 };
                                 await getObjectByIdHash(setAccessParam.id); // To check whether a channel with this id exists

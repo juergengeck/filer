@@ -11,8 +11,13 @@ export const DefaultConnectionsModelConfig: ConnectionsModelConfiguration = {
     acceptUnknownInstances: false,
     acceptUnknownPersons: false,
     allowPairing: true,
+    allowDebugRequests: false,
     pairingTokenExpirationDuration: 2147483647,
-    establishOutgoingConnections: true
+    establishOutgoingConnections: true,
+    noImport: false,
+    noExport: false,
+    deferIncomingRouteStart: false,
+    restoreDurableRouteAfterPrimedChumClose: false
 };
 
 export function checkConnectionsModelConfig(
@@ -37,9 +42,14 @@ export function checkConnectionsModelConfig(
         'acceptUnknownInstances',
         'acceptUnknownPersons',
         'allowPairing',
-        'establishOutgoingConnections'
+        'allowDebugRequests',
+        'establishOutgoingConnections',
+        'noImport',
+        'noExport',
+        'deferIncomingRouteStart',
+        'restoreDurableRouteAfterPrimedChumClose'
     ]) {
-        if (Object.hasOwn(config, param) && typeof config[param] !== 'string') {
+        if (Object.hasOwn(config, param) && typeof config[param] !== 'boolean') {
             throw new Error(`"${param}" of connections configuration needs to be boolean.`);
         }
     }

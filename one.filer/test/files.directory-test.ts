@@ -5,7 +5,7 @@ import * as fs from 'fs';
 import {getInstanceIdHash} from '@refinio/one.core/lib/instance';
 import {deleteStorage, setBaseDirOrName} from '@refinio/one.core/lib/system/storage-base';
 
-import {Filer} from '../lib/Filer';
+import {Filer} from '../lib/filer/Filer';
 
 const testConfig = {
     directory: 'test/data',

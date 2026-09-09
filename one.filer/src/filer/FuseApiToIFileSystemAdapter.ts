@@ -9,12 +9,10 @@
  */
 
 import {join} from 'path';
-import os from 'os';
 import type {Stats as FuseStats} from '../fuse/native-fuse3.js';
 import {Fuse} from '../fuse/native-fuse3.js';
 import type {IFileSystem} from '@refinio/one.models/lib/fileSystems/IFileSystem';
 import {OEvent} from '@refinio/one.models/lib/misc/OEvent';
-import {isFunction} from '@refinio/one.core/lib/util/type-checks-basic';
 import {FS_ERRORS} from '@refinio/one.models/lib/fileSystems/FileSystemErrors';
 import {createError} from '@refinio/one.core/lib/errors';
 import {handleError} from '../misc/fuseHelper';
@@ -109,7 +107,7 @@ export default class FuseApiToIFileSystemAdapter {
                     const handler = (state: {path: string}) => {
                         // if the path matches, resolve the promise
                         if (state.path === path) {
-                            this.onFilePersisted.off(handler);
+                            disconnect();
                             this.fs
                                 .stat(path)
                                 .then((res: {size: number; mode: number}) => {
@@ -126,10 +124,10 @@ export default class FuseApiToIFileSystemAdapter {
                                 .catch((err: Error) => reject(err));
                         }
                     };
-                    this.onFilePersisted.on(handler);
+                    const disconnect = this.onFilePersisted.listen(handler);
                     // don't let a floating promise, reject it if it doesn't arrive in 20 seconds
                     setTimeout(() => {
-                        this.onFilePersisted.off(handler);
+                        disconnect();
                         reject(createError('FSE-ENOENT', {
                             message: FS_ERRORS['FSE-ENOENT'].message,
                             path
@@ -243,7 +241,7 @@ export default class FuseApiToIFileSystemAdapter {
         if (this.fs.supportsChunkedReading(givenPath)) {
             this.fs
                 .readFileInChunks(givenPath, length, position)
-                .then((res: {content: Buffer}) => {
+                .then(res => {
                     const bufferR = Buffer.from(res.content);
                     bufferR.copy(buffer);
                     cb(0, bufferR.length);
@@ -261,7 +259,7 @@ export default class FuseApiToIFileSystemAdapter {
     public fuseMkdir(dirPath: string, _mode: number, cb: (err: number) => void): void {
         this.fs
             .createDir(dirPath, 0o0040777)
-            .then((_: void) => cb(0))
+            .then(() => cb(0))
             .catch((err: Error) => cb(handleError(err, this.logCalls)));
     }
 
@@ -347,7 +345,7 @@ export default class FuseApiToIFileSystemAdapter {
     public fuseUnlink(path: string, cb: (err: number) => void): void {
         this.fs
             .unlink(path)
-            .then((_: void) => cb(0))
+            .then(() => cb(0))
             .catch((err: Error) => cb(handleError(err, this.logCalls)));
     }
 
@@ -355,7 +353,7 @@ export default class FuseApiToIFileSystemAdapter {
     public fuseRename(src: string, dest: string, cb: (err: number) => void): void {
         this.fs
             .rename(src, dest)
-            .then((_: void) => cb(0))
+            .then(() => cb(0))
             .catch((err: Error) => cb(handleError(err, this.logCalls)));
     }
 
@@ -363,7 +361,7 @@ export default class FuseApiToIFileSystemAdapter {
     public fuseRmdir(path: string, cb: (err: number) => void): void {
         this.fs
             .rmdir(path)
-            .then((_: void) => cb(0))
+            .then(() => cb(0))
             .catch((err: Error) => cb(handleError(err, this.logCalls)));
     }
 
@@ -371,7 +369,7 @@ export default class FuseApiToIFileSystemAdapter {
     public fuseChmod(path: string, mode: number, cb: (err: number) => void): void {
         this.fs
             .chmod(path, mode)
-            .then((_: void) => cb(0))
+            .then(() => cb(0))
             .catch((err: Error) => cb(handleError(err, this.logCalls)));
     }
 
@@ -554,7 +552,7 @@ export default class FuseApiToIFileSystemAdapter {
     public fuseReadlink(path: string, cb: (err: number, linkName?: string) => void): void {
         this.fs
             .readlink(path)
-            .then((res: {content: Buffer}) => cb(0, Buffer.from(res.content).toString()))
+            .then(res => cb(0, Buffer.from(res.content).toString()))
             .catch((err: Error) => cb(handleError(err, this.logCalls)));
     }
 

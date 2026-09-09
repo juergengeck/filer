@@ -5,7 +5,6 @@ import FuseApiToIFileSystemAdapter from './FuseApiToIFileSystemAdapter';
 import {splitRoutePath} from '../misc/fuseHelper';
 
 import { Fuse, OPERATIONS } from '../fuse/native-fuse3.js';
-import type { Stats as FuseStats } from '../fuse/native-fuse3.js';
 
 import {isFunction} from '@refinio/one.core/lib/util/type-checks-basic';
 

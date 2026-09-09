@@ -1,0 +1,38 @@
+{
+  "name": "filer-workspace",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Workspace orchestration for the ONE Filer platform providers",
+  "scripts": {
+    "build": "node ./scripts/run-workspace-script.mjs build",
+    "test": "pnpm test:provider:ipc",
+    "test:filer": "pnpm --dir one.filer test",
+    "clean": "node ./scripts/run-workspace-script.mjs clean",
+    "dev:provider": "pnpm --dir one.provider dev",
+    "build:provider": "pnpm --dir one.provider build",
+    "build:provider:swift": "pnpm --dir one.provider build:swift",
+    "test:provider:ipc": "pnpm --dir one.provider test:ipc",
+    "test:provider:connection": "pnpm --dir one.provider test:connection",
+    "dev:fotos": "node scripts/fotos-api.mjs",
+    "test:fotos": "pnpm build:fotos && node scripts/test-fotos-integration.mjs",
+    "build:fotos": "pnpm --dir ../one/packages/one.models build:src && pnpm --dir ../one/packages/refinio.api build && pnpm --dir ../fotos/fotos.core build"
+  },
+  "keywords": [
+    "one",
+    "filesystem",
+    "file-provider",
+    "fuse",
+    "projfs"
+  ],
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.15.4",
+  "devDependencies": {
+    "@refinio/api": "link:../one/packages/refinio.api",
+    "@refinio/fotos.core": "link:../fotos/fotos.core",
+    "@refinio/one.core": "workspace:*"
+  }
+}

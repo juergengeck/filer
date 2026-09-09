@@ -13,7 +13,6 @@
 import type {IFileSystem} from '@refinio/one.models/lib/fileSystems/IFileSystem.js';
 import fs from 'fs';
 import WindowsFuseAdapter from './WindowsFuseAdapter.js';
-import {splitRoutePath} from '../misc/fuseHelper.js';
 
 import { Fuse } from '../fuse/native-fuse3.js';
 import {isFunction} from '@refinio/one.core/lib/util/type-checks-basic.js';
@@ -237,4 +236,4 @@ export class WindowsFuseFrontend {
             (cbArg as (...args: unknown[]) => void)(...argscb);
         });
     }
-} 
+}

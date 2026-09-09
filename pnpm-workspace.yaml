@@ -1,0 +1,41 @@
+packages:
+  - '../one/packages/one.core'
+  - '../one/packages/one.models'
+  - 'one.filer'
+  - 'one.provider'
+  - 'one.fuse3'
+  - 'one.projfs'
+
+catalog:
+  # TypeScript & Build Tools
+  typescript: ^5.7.2
+  esbuild: ^0.25.10
+
+  # Node.js Types
+  "@types/node": ^22.0.0
+  "@types/ws": ^8.18.1
+  "@types/chai": ^4.3.0
+  "@types/mocha": ^10.0.0
+  "@types/qrcode": ^1.5.6
+
+  # Testing
+  mocha: ^10.2.0
+  chai: ^4.3.0
+
+  # Linting & Formatting
+  eslint: ^8.57.0
+  "@typescript-eslint/eslint-plugin": ^8.0.0
+  "@typescript-eslint/parser": ^8.0.0
+  eslint-config-prettier: ^10.0.0
+  prettier: ^3.4.0
+
+  # Network & WebSocket
+  ws: ^8.18.3
+  node-fetch: ^2.7.0
+
+  # Crypto
+  tweetnacl: ^1.0.3
+
+  # Utilities
+  qrcode: ^1.5.4
+  source-map-support: ^0.5.21

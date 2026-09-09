@@ -12,9 +12,7 @@ import {
     FS_INTERNAL_ERROR_CODE
 } from '@refinio/one.models/lib/fileSystems/FileSystemErrors';
 import {createError} from '@refinio/one.core/lib/errors';
-import type {FuseError} from '../fuse/native-fuse3.js';
 import { 
-    Fuse, 
     EPERM, 
     ENOENT, 
     EIO, 

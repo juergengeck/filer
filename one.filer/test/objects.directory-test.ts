@@ -4,7 +4,7 @@ import {exec} from 'child_process';
 import {getInstanceIdHash} from '@refinio/one.core/lib/instance';
 import {deleteStorage, listAllObjectHashes} from '@refinio/one.core/lib/system/storage-base';
 
-import {Filer} from '../lib/Filer';
+import {Filer} from '../lib/filer/Filer';
 
 const filer = new Filer({
     directory: 'test/data',

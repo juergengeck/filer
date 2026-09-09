@@ -69,14 +69,14 @@ export default class Replicant {
             this.leuteModel,
             fillMissingWithDefaults(this.config.connectionsConfig, DefaultConnectionsModelConfig)
         );
-        this.consentFile = new ConsentModel();
+        this.consentFile = new ConsentModel(this.channelManager, this.leuteModel);
         this.filerAccessRightsManager = new AccessRightsManager(
             this.connections,
             this.channelManager,
             this.leuteModel
         );
-        this.questionnaires = new QuestionnaireModel(this.channelManager);
-        this.documents = new DocumentModel(this.channelManager);
+        this.questionnaires = new QuestionnaireModel(this.channelManager, this.leuteModel);
+        this.documents = new DocumentModel(this.channelManager, this.leuteModel);
         this.topicModel = new TopicModel(this.channelManager, this.leuteModel);
         this.notifications = new Notifications(this.channelManager);
 
@@ -111,7 +111,7 @@ export default class Replicant {
         await this.iomManager.init();
 
         await this.channelManager.init();
-        await this.consentFile.init(this.channelManager);
+        await this.consentFile.init();
         await this.questionnaires.init();
         await this.filerAccessRightsManager.init({
             iom: (await this.iomManager.iomGroup()).groupIdHash,

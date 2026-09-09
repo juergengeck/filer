@@ -16,11 +16,11 @@ import {getInstanceIdHash} from '@refinio/one.core/lib/instance';
 import {createHash} from 'crypto';
 import type {IFileSystem} from '@refinio/one.models/lib/fileSystems/IFileSystem';
 import {FS_ERRORS} from '@refinio/one.models/lib/fileSystems/FileSystemErrors';
-import type {SHA256Hash} from '@refinio/one.core/lib/util/type-checks';
+import {ensureHash, type SHA256Hash} from '@refinio/one.core/lib/util/type-checks.js';
 import type {BLOB} from '@refinio/one.core/lib/recipes';
 import type {FileCreationStatus} from '@refinio/one.core/lib/storage-base-common';
 import {createTempFileName, CREATION_STATUS} from '@refinio/one.core/lib/storage-base-common';
-import {handleError, logFuseError} from '../misc/fuseHelper';
+import {logFuseError} from '../misc/fuseHelper';
 
 type FileName = string;
 
@@ -35,8 +35,6 @@ export default class FuseTemporaryFilesManager {
      */
     private readonly platform = process.platform;
 
-    private readonly vfs: IFileSystem;
-
     /**
      * Maps the final file name to the temporary file name and his file descriptor
      * @private
@@ -46,9 +44,8 @@ export default class FuseTemporaryFilesManager {
         {temporaryFilePath: string; temporaryFileDescriptor: number}
     > = new Map<FileName, {temporaryFilePath: string; temporaryFileDescriptor: number}>();
 
-    constructor(storageName: string = 'data', vfs: IFileSystem) {
+    constructor(storageName: string = 'data', _vfs: IFileSystem) {
         this.oneStoragePath = path.join(storageName);
-        this.vfs = vfs;
     }
 
     /**
@@ -122,7 +119,7 @@ export default class FuseTemporaryFilesManager {
             });
 
             readStream.once('end', () => {
-                const hash = cryptoHashObj.digest('hex') as SHA256Hash<BLOB>;
+                const hash = ensureHash<BLOB>(cryptoHashObj.digest('hex'));
                 this.persistTemporaryFileAsBlob(fileName, hash)
                     .then(_ => resolve(hash))
                     .catch(err => {

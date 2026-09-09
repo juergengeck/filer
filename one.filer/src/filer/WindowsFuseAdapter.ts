@@ -11,10 +11,9 @@
 
 import type {Stats as FuseStats} from '../fuse/native-fuse3.js';
 import FuseApiToIFileSystemAdapter from './FuseApiToIFileSystemAdapter.js';
-import WindowsFileSystemAdapter, {WindowsFileAttributes, type WindowsFileMetadata} from '../fileSystems/WindowsFileSystemAdapter.js';
+import WindowsFileSystemAdapter, {WindowsFileAttributes} from '../fileSystems/WindowsFileSystemAdapter.js';
 import type {IFileSystem} from '@refinio/one.models/lib/fileSystems/IFileSystem.js';
 import {createError} from '@refinio/one.core/lib/errors.js';
-import {FS_ERRORS} from '@refinio/one.models/lib/fileSystems/FileSystemErrors.js';
 import {handleError} from '../misc/fuseHelper.js';
 
 /**
@@ -391,4 +390,4 @@ export default class WindowsFuseAdapter extends FuseApiToIFileSystemAdapter {
         
         return combinedMode;
     }
-} 
+}

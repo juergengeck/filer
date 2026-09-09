@@ -255,8 +255,6 @@ async function createDeclarationFiles(targetDir) {
 
     try {
         execSync('tsc -p tsconfig.declarations.json --outDir ' + targetDir, {stdio: 'inherit'});
-    } catch (err) {
-        console.error('tsc failed with ' + err.message);
     } finally {
         // Remove extraneous system folders, the target platform's code has been written to system/
         for (const p of Object.keys(PLATFORMS)) {
