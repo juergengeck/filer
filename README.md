@@ -19,7 +19,7 @@ pnpm clean
 
 `pnpm test` runs the macOS provider IPC smoke test. The legacy FUSE tests are available as `pnpm test:filer`, but they require a working `fuse-native` build for the current Node/platform combination.
 
-The API CLI is built as `../one/packages/refinio.api/dist/src/cli.js` and exposed as `refinio-api`. It implements the authenticated `/filer/rpc` endpoint when `--filer-token` is supplied. The full provider connection test runs against that owning runtime in `../one`.
+The macOS app bundles Node.js and the canonical `refinio.api` runtime. Swift talks to the host through authenticated private IPC, and the host uses refinio.api's existing stdio operation interface. The native path has no HTTP listener. See [provider build and runtime instructions](one.provider/README.md).
 
 `pnpm test:fotos` builds and tests Fotos browsing, importing, pairing, and sync through the Swift bridge. See [Fotos integration](docs/fotos-integration.md) for coverage, the runtime command, and the remaining native Finder installation blocker.
 
