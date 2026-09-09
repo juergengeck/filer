@@ -4,7 +4,7 @@
  * Connection Integration Test for one.projfs (Windows ProjFS)
  *
  * This test verifies that:
- * 1. Starts refinio.api with ProjFS mount
+ * 1. Starts a refinio.api instance with ProjFS mount
  * 2. ProjFS mount exposes invite files correctly
  * 3. Invite files contain valid invitation URLs
  * 4. Invites can be used to establish connections
@@ -17,7 +17,7 @@
  *
  * Prerequisites:
  * - Windows 10 1809 or later with ProjFS enabled
- * - refinio.api built and available (../refinio.api)
+ * - refinio.api built and available in `../one/packages/refinio.api`
  * - Node.js installed on Windows
  */
 
@@ -48,45 +48,35 @@ const COMM_SERVER_PORT = 8000;
 const SERVER_PORT = 50123;
 const CLIENT_PORT = 50125;
 
-function getExistingPath(candidates, description) {
-    for (const candidate of candidates) {
-        if (fs.existsSync(candidate)) {
-            return candidate;
-        }
-    }
-
-    throw new Error(
-        `${description} not found. Checked:\n` +
-        candidates.map(candidate => `- ${candidate}`).join('\n')
-    );
-}
-
 function getFileUrl(filePath) {
     return filePath.startsWith('/')
         ? `file://${filePath}`
         : `file:///${filePath.replace(/\\/g, '/')}`;
 }
 
-function getRefinioApiDir() {
-    return getExistingPath(
-        [
-            path.resolve(__dirname, '../../../refinio.api'),
-            path.resolve(__dirname, '../../../one.provider/refinio.api')
-        ],
-        'refinio.api directory'
-    );
+function getRefinioApiRuntime() {
+    const dir = path.resolve(__dirname, '../../../../one/packages/refinio.api');
+    const entryPoint = path.join(dir, 'dist/src/cli.js');
+    if (!fs.existsSync(entryPoint)) {
+        throw new Error(`refinio.api CLI not found: ${entryPoint}. Run its build first.`);
+    }
+    return {dir, entryPoint};
 }
 
+/** Resolve the communication server from Filer's canonical ONE workspace. */
 function getCommunicationServerModulePath() {
-    return getExistingPath(
-        [
-            path.resolve(__dirname, '../../../packages/one.models/lib/misc/ConnectionEstablishment/communicationServer/CommunicationServer.js'),
-            path.resolve(__dirname, '../../../one.models/lib/misc/ConnectionEstablishment/communicationServer/CommunicationServer.js'),
-            path.resolve(__dirname, '../../../one.provider/one.models/lib/misc/ConnectionEstablishment/communicationServer/CommunicationServer.js')
-        ],
-        'built CommunicationServer module'
-    );
+    const modulePath = path.resolve(__dirname, '../../../../one/packages/one.models/lib/misc/ConnectionEstablishment/communicationServer/CommunicationServer.js');
+    if (!fs.existsSync(modulePath)) {
+        throw new Error(`CommunicationServer module not found: ${modulePath}. Build ../one/packages/one.models first.`);
+    }
+    return modulePath;
 }
+
+function isApiServerReady(output) {
+    return output.includes('REST Server listening on') || output.includes('HTTP REST API listening');
+}
+
+const REFINIO_API_RUNTIME = getRefinioApiRuntime();
 
 // Process handles
 let serverProcess = null;
@@ -196,17 +186,22 @@ async function cleanupTestEnvironment() {
 }
 
 /**
- * Start refinio.api server with ProjFS mount
+ * Start a refinio.api server instance with ProjFS mount
  */
 async function startRefinioApiServer() {
-    console.log('🚀 Starting refinio.api server with ProjFS...\n');
+    console.log('🚀 Starting refinio.api instance with ProjFS...\n');
 
-    const refinioApiDir = getRefinioApiDir();
-    const distIndexPath = path.join(refinioApiDir, 'dist', 'index.js');
-    if (!fs.existsSync(distIndexPath)) {
-        throw new Error(`refinio.api not built - missing ${distIndexPath}\n` +
-                       `   Run: cd ${refinioApiDir} && npm run build`);
-    }
+    const refinioApiDir = REFINIO_API_RUNTIME.dir;
+    const entryPoint = REFINIO_API_RUNTIME.entryPoint;
+    const args = [
+        entryPoint,
+        '--secret', 'server-secret-projfs-integration-12345678',
+        '--directory', SERVER_STORAGE_DIR,
+        '--port', SERVER_PORT.toString(),
+        '--comm-server-url', `ws://localhost:${COMM_SERVER_PORT}`,
+        '--filer',
+        '--filer-projfs-root', MOUNT_POINT
+    ];
 
     // Create mount point directory
     if (!fs.existsSync(MOUNT_POINT)) {
@@ -220,7 +215,7 @@ async function startRefinioApiServer() {
 
     // Spawn server process with configuration via environment variables
     return new Promise((resolve, reject) => {
-        serverProcess = spawn('node', [distIndexPath], {
+        serverProcess = spawn('node', args, {
             cwd: refinioApiDir,
             env: {
                 ...process.env,
@@ -256,7 +251,7 @@ async function startRefinioApiServer() {
 
             // Check for HTTP server ready
             // ProjFS mount may be synchronous or async, we'll poll the filesystem after HTTP is ready
-            if (output.includes('HTTP REST API listening')) {
+            if (isApiServerReady(output)) {
                 clearTimeout(startupTimeout);
                 console.log('\n✅ Server HTTP API ready, checking if ProjFS mount succeeded...\n');
                 // Give ProjFS a moment to initialize, then we'll poll the filesystem
@@ -290,19 +285,25 @@ async function startRefinioApiServer() {
 }
 
 /**
- * Start refinio.api CLIENT instance (without ProjFS mount)
+ * Start a refinio.api CLIENT instance (without ProjFS mount)
  */
 async function startClientInstance() {
-    const refinioApiDir = getRefinioApiDir();
+    const refinioApiDir = REFINIO_API_RUNTIME.dir;
+    const entryPoint = REFINIO_API_RUNTIME.entryPoint;
+    const args = [
+        entryPoint,
+        '--secret', 'client-secret-projfs-integration-12345678',
+        '--directory', CLIENT_STORAGE_DIR,
+        '--port', CLIENT_PORT.toString(),
+        '--comm-server-url', `ws://localhost:${COMM_SERVER_PORT}`
+    ];
     console.log('🚀 Starting refinio.api CLIENT instance (no mount)...\n');
-
-    const distIndexPath = path.join(refinioApiDir, 'dist', 'index.js');
 
     console.log(`   Client port: ${CLIENT_PORT}`);
     console.log(`   CommServer: ws://localhost:${COMM_SERVER_PORT}\n`);
 
     return new Promise((resolve, reject) => {
-        clientProcess = spawn('node', [distIndexPath], {
+        clientProcess = spawn('node', args, {
             cwd: refinioApiDir,
             env: {
                 ...process.env,
@@ -331,7 +332,7 @@ async function startClientInstance() {
             clientOutput += output;
             process.stdout.write(`[CLIENT] ${output}`);
 
-            if (output.includes('HTTP REST API listening')) {
+            if (isApiServerReady(output)) {
                 clearTimeout(startupTimeout);
                 console.log('\n✅ Client HTTP API ready\n');
                 setTimeout(() => resolve(), 1000);
@@ -363,19 +364,17 @@ async function startClientInstance() {
 }
 
 /**
- * Connect CLIENT to SERVER using invite (via HTTP REST API)
+ * Invoke a canonical ONE operation via the refinio HTTP surface
  */
-async function connectUsingInvite(inviteUrl) {
-    console.log('🔗 CLIENT accepting invitation from SERVER...');
-
+async function postOperation(port, handler, method, payload = {}) {
     const http = await import('http');
 
     return new Promise((resolve, reject) => {
-        const postData = JSON.stringify({ inviteUrl });
+        const postData = JSON.stringify(payload);
         const postOptions = {
             hostname: '127.0.0.1',
-            port: CLIENT_PORT + 1,  // HTTP REST API runs on QUIC port + 1
-            path: '/api/connections/invite',
+            port,
+            path: `/api/${handler}/${method}`,
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -387,12 +386,13 @@ async function connectUsingInvite(inviteUrl) {
             let data = '';
             res.on('data', (chunk) => data += chunk);
             res.on('end', () => {
-                if (res.statusCode === 200 || res.statusCode === 201) {
-                    console.log('   ✅ Invitation accepted successfully');
-                    resolve(JSON.parse(data));
-                } else {
-                    reject(new Error(`HTTP ${res.statusCode}: ${data}`));
+                const parsed = data ? JSON.parse(data) : {};
+                if ((res.statusCode === 200 || res.statusCode === 201) && parsed.success) {
+                    resolve(parsed.data);
+                    return;
                 }
+
+                reject(new Error(parsed.error?.message || `HTTP ${res.statusCode}: ${data}`));
             });
         });
 
@@ -400,49 +400,60 @@ async function connectUsingInvite(inviteUrl) {
             reject(new Error(`Connection error: ${error.message}`));
         });
 
-        req.setTimeout(120000); // 2 minute timeout
+        req.setTimeout(120000);
         req.write(postData);
         req.end();
     });
 }
 
 /**
- * Query contacts from a refinio.api instance
+ * Connect CLIENT to SERVER using invite (via canonical HTTP API)
+ */
+async function connectUsingInvite(inviteUrl) {
+    console.log('🔗 CLIENT accepting invitation from SERVER...');
+
+    const invitation = parseInviteUrl(inviteUrl);
+    const result = await postOperation(CLIENT_PORT, 'connection', 'connectWithInvite', invitation);
+    console.log('   ✅ Invitation accepted successfully');
+    return result;
+}
+
+/**
+ * Wait for SERVER to be online (connected to CommServer)
+ */
+async function waitForServerOnline(port, maxWaitMs = 30000) {
+    console.log(`   Waiting for SERVER to connect to CommServer (polling status endpoint)...`);
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < maxWaitMs) {
+        try {
+            const status = await postOperation(port, 'connection', 'getStatus', {});
+            if (status.online === true) {
+                console.log(`   ✅ SERVER is online (connected to CommServer)`);
+                return;
+            }
+        } catch {
+            // Retry until timeout
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    throw new Error(`SERVER did not connect to CommServer within ${maxWaitMs}ms`);
+}
+
+/**
+ * Query contacts from a refinio instance
  */
 async function queryContacts(port, instanceName) {
-    const http = await import('http');
-
-    return new Promise((resolve, reject) => {
-        const options = {
-            hostname: '127.0.0.1',
-            port: port,
-            path: '/api/contacts',
-            method: 'GET'
-        };
-
-        const req = http.default.request(options, (res) => {
-            let data = '';
-            res.on('data', (chunk) => data += chunk);
-            res.on('end', () => {
-                if (res.statusCode === 200) {
-                    const contacts = JSON.parse(data);
-                    console.log(`   ${instanceName} contacts: ${contacts.length} found`);
-                    resolve(contacts);
-                } else {
-                    console.error(`   ❌ Failed to query ${instanceName} contacts: HTTP ${res.statusCode}`);
-                    resolve([]);
-                }
-            });
-        });
-
-        req.on('error', (error) => {
-            console.error(`   ❌ Failed to query ${instanceName} contacts:`, error.message);
-            resolve([]);
-        });
-
-        req.setTimeout(5000);
-        req.end();
-    });
+    try {
+        const contacts = await postOperation(port, 'connection', 'listContacts', {});
+        console.log(`   ${instanceName} contacts: ${contacts.length} found`);
+        return contacts;
+    } catch (error) {
+        console.error(`   ❌ Failed to query ${instanceName} contacts:`, error.message);
+        return [];
+    }
 }
 
 /**
@@ -498,7 +509,7 @@ async function runConnectionTest() {
     } catch (setupError) {
         console.error('\n❌ Setup Failed:', setupError.message);
         console.error('\n🔧 Troubleshooting:');
-        console.error('   1. Ensure this workspace includes refinio.api and a built one.models CommunicationServer module');
+        console.error('   1. Ensure refinio.api and the one.models CommunicationServer module are built');
         console.error('   2. Build the dependency tree before testing');
         console.error('   3. Check that ProjFS is available on Windows 10 1809+');
         console.error('   4. Verify you have permissions to mount ProjFS filesystems');
@@ -666,8 +677,8 @@ async function runConnectionTest() {
         console.log('   ✅ Invite content is valid and ready for connection');
 
         // Wait for server to fully register with CommServer
-        console.log('\n   Waiting for server to register with CommServer...');
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        console.log('\n   Ensuring SERVER is fully connected to CommServer...');
+        await waitForServerOnline(SERVER_PORT);
 
         // Test 8: Start CLIENT instance
         console.log('\n🔟 Starting CLIENT refinio.api instance...');
@@ -684,8 +695,8 @@ async function runConnectionTest() {
         // Test 10: Verify bidirectional contact creation
         console.log('\n1️⃣2️⃣ Verifying bidirectional contact creation...');
 
-        const serverContacts = await queryContacts(SERVER_PORT + 1, 'SERVER');  // HTTP REST API port
-        const clientContacts = await queryContacts(CLIENT_PORT + 1, 'CLIENT');  // HTTP REST API port
+        const serverContacts = await queryContacts(SERVER_PORT, 'SERVER');
+        const clientContacts = await queryContacts(CLIENT_PORT, 'CLIENT');
 
         let connectionSuccess = false;
         if (clientContacts.length > 0 && serverContacts.length > 0) {

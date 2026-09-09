@@ -4,7 +4,7 @@
  * Connection Integration Test for one.fuse3 (Linux/WSL FUSE3)
  *
  * This test verifies that:
- * 1. Starts refinio.api with FUSE3 mount
+ * 1. Starts a refinio.api instance with FUSE3 mount
  * 2. FUSE3 mount exposes invite files correctly
  * 3. Invite files contain valid invitation URLs
  * 4. Invites can be used to establish connections
@@ -13,7 +13,7 @@
  *
  * Prerequisites:
  * - Linux or WSL2 with FUSE3 support
- * - refinio.api built and available (../refinio.api)
+ * - refinio.api built and available in `../one/packages/refinio.api`
  * - FUSE3 installed: sudo apt-get install fuse3 libfuse3-dev
  */
 
@@ -33,8 +33,7 @@ const INVITES_PATH = path.join(MOUNT_POINT, 'invites');
 const IOP_INVITE_FILE = path.join(INVITES_PATH, 'iop_invite.txt');
 const IOM_INVITE_FILE = path.join(INVITES_PATH, 'iom_invite.txt');
 
-// Path to refinio.api (relative to one.fuse3/test/integration/)
-const REFINIO_API_DIR = path.resolve(__dirname, '../../../refinio.api');
+const REFINIO_API_RUNTIME = getRefinioApiRuntime();
 const SERVER_STORAGE_DIR = '/tmp/refinio-api-server-instance';
 const CLIENT_STORAGE_DIR = '/tmp/refinio-api-client-instance';
 const COMM_SERVER_PORT = 8000;
@@ -46,6 +45,34 @@ let serverProcess = null;
 let clientProcess = null;
 let commServer = null;
 
+function getFileUrl(filePath) {
+    return filePath.startsWith('/')
+        ? `file://${filePath}`
+        : `file:///${filePath.replace(/\\/g, '/')}`;
+}
+
+function getRefinioApiRuntime() {
+    const dir = path.resolve(__dirname, '../../../../one/packages/refinio.api');
+    const entryPoint = path.join(dir, 'dist/src/cli.js');
+    if (!fs.existsSync(entryPoint)) {
+        throw new Error(`refinio.api CLI not found: ${entryPoint}. Run its build first.`);
+    }
+    return {dir, entryPoint};
+}
+
+/** Resolve the communication server from Filer's canonical ONE workspace. */
+function getCommunicationServerModulePath() {
+    const modulePath = path.resolve(__dirname, '../../../../one/packages/one.models/lib/misc/ConnectionEstablishment/communicationServer/CommunicationServer.js');
+    if (!fs.existsSync(modulePath)) {
+        throw new Error(`CommunicationServer module not found: ${modulePath}. Build ../one/packages/one.models first.`);
+    }
+    return modulePath;
+}
+
+function isApiServerReady(output) {
+    return output.includes('REST Server listening on') || output.includes('HTTP REST API listening');
+}
+
 /**
  * Start local CommunicationServer
  */
@@ -53,10 +80,8 @@ async function startCommServer() {
     console.log('Starting local CommunicationServer...');
 
     try {
-        // Import CommunicationServer from one.models
-        const modelsPath = path.resolve(__dirname, '../../../packages/one.models/lib/misc/ConnectionEstablishment/communicationServer/CommunicationServer.js');
-        // Convert to file:// URL - handle both Windows and Unix paths
-        const fileUrl = modelsPath.startsWith('/') ? `file://${modelsPath}` : `file:///${modelsPath.replace(/\\/g, '/')}`;
+        const modelsPath = getCommunicationServerModulePath();
+        const fileUrl = getFileUrl(modelsPath);
         const CommunicationServerModule = await import(fileUrl);
         const CommunicationServer = CommunicationServerModule.default;
 
@@ -163,21 +188,22 @@ async function cleanupTestEnvironment() {
 }
 
 /**
- * Start refinio.api server with FUSE3 mount
+ * Start a refinio.api server instance with FUSE3 mount
  */
 async function startRefinioApiServer() {
-    console.log('🚀 Starting refinio.api server with FUSE3...\n');
+    console.log('🚀 Starting refinio.api instance with FUSE3...\n');
 
-    // Verify refinio.api exists
-    if (!fs.existsSync(REFINIO_API_DIR)) {
-        throw new Error(`refinio.api not found at ${REFINIO_API_DIR}`);
-    }
-
-    const distIndexPath = path.join(REFINIO_API_DIR, 'dist', 'index.js');
-    if (!fs.existsSync(distIndexPath)) {
-        throw new Error(`refinio.api not built - missing ${distIndexPath}\n` +
-                       `   Run: cd ${REFINIO_API_DIR} && npm run build`);
-    }
+    const refinioApiDir = REFINIO_API_RUNTIME.dir;
+    const entryPoint = REFINIO_API_RUNTIME.entryPoint;
+    const args = [
+        entryPoint,
+        '--secret', 'server-secret-fuse3-integration-12345678',
+        '--directory', SERVER_STORAGE_DIR,
+        '--port', SERVER_PORT.toString(),
+        '--comm-server-url', `ws://localhost:${COMM_SERVER_PORT}`,
+        '--filer',
+        '--filer-mount-point', MOUNT_POINT
+    ];
 
     // Create mount point directory
     if (!fs.existsSync(MOUNT_POINT)) {
@@ -185,14 +211,15 @@ async function startRefinioApiServer() {
         console.log(`   Created mount point: ${MOUNT_POINT}`);
     }
 
+    console.log(`   API runtime: ${refinioApiDir}`);
     console.log(`   Server port: ${SERVER_PORT}`);
     console.log(`   Mount point: ${MOUNT_POINT}`);
     console.log(`   CommServer: ws://localhost:${COMM_SERVER_PORT}\n`);
 
     // Spawn server process with configuration via environment variables
     return new Promise((resolve, reject) => {
-        serverProcess = spawn('node', [distIndexPath], {
-            cwd: REFINIO_API_DIR,
+        serverProcess = spawn('node', args, {
+            cwd: refinioApiDir,
             env: {
                 ...process.env,
                 // Server config
@@ -228,7 +255,7 @@ async function startRefinioApiServer() {
             // Check for HTTP server ready (happens BEFORE mount attempt)
             // FUSE mount() blocks forever, so we can't wait for "Filesystem mounted"
             // Instead, we'll poll the filesystem directly after HTTP is ready
-            if (output.includes('HTTP REST API listening')) {
+            if (isApiServerReady(output)) {
                 clearTimeout(startupTimeout);
                 console.log('\n✅ Server HTTP API ready, checking if FUSE mount succeeded...\n');
                 // Give FUSE a moment to initialize, then we'll poll the filesystem
@@ -262,19 +289,28 @@ async function startRefinioApiServer() {
 }
 
 /**
- * Start refinio.api CLIENT instance (without FUSE mount)
+ * Start a refinio.api CLIENT instance (without FUSE mount)
  */
 async function startClientInstance() {
     console.log('🚀 Starting refinio.api CLIENT instance (no mount)...\n');
 
-    const distIndexPath = path.join(REFINIO_API_DIR, 'dist', 'index.js');
+    const refinioApiDir = REFINIO_API_RUNTIME.dir;
+    const entryPoint = REFINIO_API_RUNTIME.entryPoint;
+    const args = [
+        entryPoint,
+        '--secret', 'client-secret-fuse3-integration-12345678',
+        '--directory', CLIENT_STORAGE_DIR,
+        '--port', CLIENT_PORT.toString(),
+        '--comm-server-url', `ws://localhost:${COMM_SERVER_PORT}`
+    ];
 
+    console.log(`   API runtime: ${refinioApiDir}`);
     console.log(`   Client port: ${CLIENT_PORT}`);
     console.log(`   CommServer: ws://localhost:${COMM_SERVER_PORT}\n`);
 
     return new Promise((resolve, reject) => {
-        clientProcess = spawn('node', [distIndexPath], {
-            cwd: REFINIO_API_DIR,
+        clientProcess = spawn('node', args, {
+            cwd: refinioApiDir,
             env: {
                 ...process.env,
                 // Client config
@@ -302,7 +338,7 @@ async function startClientInstance() {
             clientOutput += output;
             process.stdout.write(`[CLIENT] ${output}`);
 
-            if (output.includes('HTTP REST API listening')) {
+            if (isApiServerReady(output)) {
                 clearTimeout(startupTimeout);
                 console.log('\n✅ Client HTTP API ready\n');
                 setTimeout(() => resolve(), 1000);
@@ -334,19 +370,17 @@ async function startClientInstance() {
 }
 
 /**
- * Connect CLIENT to SERVER using invite (via HTTP REST API)
+ * Invoke a canonical ONE operation via the refinio HTTP surface
  */
-async function connectUsingInvite(inviteUrl) {
-    console.log('🔗 CLIENT accepting invitation from SERVER...');
-
+async function postOperation(port, handler, method, payload = {}) {
     const http = await import('http');
 
     return new Promise((resolve, reject) => {
-        const postData = JSON.stringify({ inviteUrl });
+        const postData = JSON.stringify(payload);
         const postOptions = {
             hostname: '127.0.0.1',
-            port: CLIENT_PORT + 1,  // HTTP REST API runs on QUIC port + 1
-            path: '/api/connections/invite',
+            port,
+            path: `/api/${handler}/${method}`,
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -358,12 +392,13 @@ async function connectUsingInvite(inviteUrl) {
             let data = '';
             res.on('data', (chunk) => data += chunk);
             res.on('end', () => {
-                if (res.statusCode === 200 || res.statusCode === 201) {
-                    console.log('   ✅ Invitation accepted successfully');
-                    resolve(JSON.parse(data));
-                } else {
-                    reject(new Error(`HTTP ${res.statusCode}: ${data}`));
+                const parsed = data ? JSON.parse(data) : {};
+                if ((res.statusCode === 200 || res.statusCode === 201) && parsed.success) {
+                    resolve(parsed.data);
+                    return;
                 }
+
+                reject(new Error(parsed.error?.message || `HTTP ${res.statusCode}: ${data}`));
             });
         });
 
@@ -371,10 +406,28 @@ async function connectUsingInvite(inviteUrl) {
             reject(new Error(`Connection error: ${error.message}`));
         });
 
-        req.setTimeout(120000); // 2 minute timeout
+        req.setTimeout(120000);
         req.write(postData);
         req.end();
     });
+}
+
+/**
+ * Connect CLIENT to SERVER using invite (via HTTP REST API)
+ */
+async function connectUsingInvite(inviteUrl) {
+    console.log('🔗 CLIENT accepting invitation from SERVER...');
+
+    const invitation = parseInviteUrl(inviteUrl);
+    const result = await postOperation(
+        CLIENT_PORT,
+        'connection',
+        'connectWithInvite',
+        invitation
+    );
+
+    console.log('   ✅ Invitation accepted successfully');
+    return result;
 }
 
 /**
@@ -382,41 +435,12 @@ async function connectUsingInvite(inviteUrl) {
  */
 async function waitForServerOnline(port, maxWaitMs = 30000) {
     console.log(`   Waiting for SERVER to connect to CommServer (polling status endpoint)...`);
-
-    const http = await import('http');
     const startTime = Date.now();
 
     while (Date.now() - startTime < maxWaitMs) {
         try {
-            const isOnline = await new Promise((resolve, reject) => {
-                const options = {
-                    hostname: '127.0.0.1',
-                    port: port,
-                    path: '/api/connections/status',
-                    method: 'GET',
-                    timeout: 2000
-                };
-
-                const req = http.default.request(options, (res) => {
-                    let data = '';
-                    res.on('data', (chunk) => data += chunk);
-                    res.on('end', () => {
-                        if (res.statusCode === 200) {
-                            const status = JSON.parse(data);
-                            resolve(status.online === true);
-                        } else {
-                            resolve(false);
-                        }
-                    });
-                });
-
-                req.on('error', () => resolve(false));
-                req.on('timeout', () => {
-                    req.destroy();
-                    resolve(false);
-                });
-                req.end();
-            });
+            const status = await postOperation(port, 'connection', 'getStatus', {});
+            const isOnline = status.online === true;
 
             if (isOnline) {
                 console.log(`   ✅ SERVER is online (connected to CommServer)`);
@@ -433,42 +457,17 @@ async function waitForServerOnline(port, maxWaitMs = 30000) {
 }
 
 /**
- * Query contacts from a refinio.api instance
+ * Query contacts from a refinio instance
  */
 async function queryContacts(port, instanceName) {
-    const http = await import('http');
-
-    return new Promise((resolve, reject) => {
-        const options = {
-            hostname: '127.0.0.1',
-            port: port,
-            path: '/api/contacts',
-            method: 'GET'
-        };
-
-        const req = http.default.request(options, (res) => {
-            let data = '';
-            res.on('data', (chunk) => data += chunk);
-            res.on('end', () => {
-                if (res.statusCode === 200) {
-                    const contacts = JSON.parse(data);
-                    console.log(`   ${instanceName} contacts: ${contacts.length} found`);
-                    resolve(contacts);
-                } else {
-                    console.error(`   ❌ Failed to query ${instanceName} contacts: HTTP ${res.statusCode}`);
-                    resolve([]);
-                }
-            });
-        });
-
-        req.on('error', (error) => {
-            console.error(`   ❌ Failed to query ${instanceName} contacts:`, error.message);
-            resolve([]);
-        });
-
-        req.setTimeout(5000);
-        req.end();
-    });
+    try {
+        const contacts = await postOperation(port, 'connection', 'listContacts', {});
+        console.log(`   ${instanceName} contacts: ${contacts.length} found`);
+        return contacts;
+    } catch (error) {
+        console.error(`   ❌ Failed to query ${instanceName} contacts:`, error.message);
+        return [];
+    }
 }
 
 /**
@@ -575,7 +574,7 @@ async function runConnectionTest() {
     } catch (setupError) {
         console.error('\n❌ Setup Failed:', setupError.message);
         console.error('\n🔧 Troubleshooting:');
-        console.error('   1. Ensure refinio.api is built: cd ../refinio.api && npm run build');
+        console.error('   1. Ensure refinio.api is built: cd ../one/packages/refinio.api && npm run build');
         console.error('   2. Check that FUSE3 is installed: which fusermount3');
         console.error('   3. Verify you have permissions to mount FUSE filesystems');
         if (isWSL()) {
@@ -748,7 +747,7 @@ async function runConnectionTest() {
 
         // Wait for SERVER to be fully connected to CommServer before starting CLIENT
         console.log('\n   Ensuring SERVER is fully connected to CommServer...');
-        await waitForServerOnline(SERVER_PORT + 1);  // HTTP API port
+        await waitForServerOnline(SERVER_PORT);
 
         // Test 8: Start CLIENT instance
         console.log('\n1️⃣1️⃣ Starting CLIENT refinio.api instance...');
@@ -765,8 +764,8 @@ async function runConnectionTest() {
         // Test 10: Verify bidirectional contact creation
         console.log('\n1️⃣3️⃣ Verifying bidirectional contact creation...');
 
-        const serverContacts = await queryContacts(SERVER_PORT + 1, 'SERVER');  // HTTP REST API port
-        const clientContacts = await queryContacts(CLIENT_PORT + 1, 'CLIENT');  // HTTP REST API port
+        const serverContacts = await queryContacts(SERVER_PORT, 'SERVER');
+        const clientContacts = await queryContacts(CLIENT_PORT, 'CLIENT');
 
         let connectionSuccess = false;
         if (clientContacts.length > 0 && serverContacts.length > 0) {
@@ -834,14 +833,14 @@ runConnectionTest()
         console.log(`   FUSE mount point: ${MOUNT_POINT}`);
         console.log(`   Server storage: ${SERVER_STORAGE_DIR}`);
         console.log(`   Client storage: ${CLIENT_STORAGE_DIR}`);
-        console.log(`   Server HTTP API: http://127.0.0.1:${SERVER_PORT + 1}`);
-        console.log(`   Client HTTP API: http://127.0.0.1:${CLIENT_PORT + 1}`);
+        console.log(`   Server HTTP API: http://127.0.0.1:${SERVER_PORT}`);
+        console.log(`   Client HTTP API: http://127.0.0.1:${CLIENT_PORT}`);
         console.log('\n🔍 You can now inspect:');
         console.log(`   ls -la ${MOUNT_POINT}`);
         console.log(`   ls -la ${MOUNT_POINT}/invites`);
         console.log(`   cat ${MOUNT_POINT}/invites/iop_invite.txt`);
-        console.log(`   curl http://127.0.0.1:${SERVER_PORT + 1}/api/connections/status`);
-        console.log(`   curl http://127.0.0.1:${SERVER_PORT + 1}/api/contacts`);
+        console.log(`   curl -X POST http://127.0.0.1:${SERVER_PORT}/api/connection/getStatus -H 'Content-Type: application/json' -d '{}'`);
+        console.log(`   curl -X POST http://127.0.0.1:${SERVER_PORT}/api/connection/listContacts -H 'Content-Type: application/json' -d '{}'`);
         console.log('\n⚠️  Press Ctrl+C when done to clean up and exit');
         console.log('=' .repeat(70));
 

@@ -26,14 +26,26 @@ const MOUNT_POINT = path.join(TEST_DIR, 'mount');
 const INVITES_PATH = path.join(MOUNT_POINT, 'invites');
 const IOM_INVITE_FILE = path.join(INVITES_PATH, 'iom_invite.txt');
 
-// Path to refinio.api (relative to one.projfs/test/integration/)
-const REFINIO_API_DIR = path.resolve(__dirname, '../../refinio.api');
+const REFINIO_API_RUNTIME = getRefinioApiRuntime();
 const SERVER_STORAGE_DIR = path.join(TEST_DIR, 'server-instance');
 const COMM_SERVER = "wss://comm10.dev.refinio.one";
 
 const SERVER_PORT = 3434
 
 let serverProcess;
+
+function getRefinioApiRuntime() {
+    const dir = path.resolve(__dirname, '../../../one/packages/refinio.api');
+    const entryPoint = path.join(dir, 'dist/src/cli.js');
+    if (!fs.existsSync(entryPoint)) {
+        throw new Error(`refinio.api CLI not found: ${entryPoint}. Run its build first.`);
+    }
+    return {dir, entryPoint};
+}
+
+function isApiServerReady(output) {
+    return output.includes('REST Server listening on') || output.includes('HTTP REST API listening');
+}
 
 /**
  * Cleanup test environment
@@ -91,21 +103,22 @@ async function cleanupTestEnvironment() {
 }
 
 /**
- * Start refinio.api server with ProjFS mount
+ * Start a refinio.api instance with ProjFS mount
  */
 async function startRefinioApiServer() {
-    console.log('🚀 Starting refinio.api server with ProjFS...\n');
+    console.log('🚀 Starting refinio.api instance with ProjFS...\n');
 
-    // Verify refinio.api exists
-    if (!fs.existsSync(REFINIO_API_DIR)) {
-        throw new Error(`refinio.api not found at ${REFINIO_API_DIR}`);
-    }
-
-    const distIndexPath = path.join(REFINIO_API_DIR, 'dist', 'index.js');
-    if (!fs.existsSync(distIndexPath)) {
-        throw new Error(`refinio.api not built - missing ${distIndexPath}\n` +
-                       `   Run: cd ${REFINIO_API_DIR} && npm run build`);
-    }
+    const refinioApiDir = REFINIO_API_RUNTIME.dir;
+    const entryPoint = REFINIO_API_RUNTIME.entryPoint;
+    const args = [
+        entryPoint,
+        '--secret', 'server-secret-projfs-integration-12345678',
+        '--directory', SERVER_STORAGE_DIR,
+        '--port', SERVER_PORT.toString(),
+        '--comm-server-url', COMM_SERVER,
+        '--filer',
+        '--filer-projfs-root', MOUNT_POINT
+    ];
 
     // Create mount point directory
     if (!fs.existsSync(MOUNT_POINT)) {
@@ -118,8 +131,8 @@ async function startRefinioApiServer() {
 
     // Spawn server process with configuration via environment variables
     return new Promise((resolve, reject) => {
-        serverProcess = spawn('node', [distIndexPath], {
-            cwd: REFINIO_API_DIR,
+        serverProcess = spawn('node', args, {
+            cwd: refinioApiDir,
             env: {
                 ...process.env,
                 // Server config
@@ -154,7 +167,7 @@ async function startRefinioApiServer() {
 
             // Check for HTTP server ready
             // ProjFS mount may be synchronous or async, we'll poll the filesystem after HTTP is ready
-            if (output.includes('HTTP REST API listening')) {
+            if (isApiServerReady(output)) {
                 clearTimeout(startupTimeout);
                 console.log('\n✅ Server HTTP API ready, checking if ProjFS mount succeeded...\n');
                 // Give ProjFS a moment to initialize, then we'll poll the filesystem
@@ -206,7 +219,7 @@ async function runConnectionTest() {
     } catch (setupError) {
         console.error('\n❌ Setup Failed:', setupError.message);
         console.error('\n🔧 Troubleshooting:');
-        console.error('   1. Ensure refinio.api is built: cd refinio.api && npm run build');
+        console.error('   1. Ensure refinio.api is built: cd ../one/packages/refinio.api && npm run build');
         console.error('   2. Check that ProjFS is available on Windows 10 1809+');
         console.error('   3. Verify you have permissions to mount ProjFS filesystems');
         throw setupError;
