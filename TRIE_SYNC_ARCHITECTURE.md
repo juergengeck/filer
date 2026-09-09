@@ -2,6 +2,12 @@
 
 Status: proposed common architecture for `one.provider`, `one.fuse3`, `one.projfs`, and browser-facing sync.
 
+Implementation target:
+
+- evolve packages in `../one`
+- treat `../vger` as architectural reference only
+- leave `../one-experimental` untouched; it remains the base for Flexibel only
+
 ## Decision
 
 Filer should use `trie.core` as the canonical sync and indexing substrate across all platforms.
@@ -50,20 +56,27 @@ This is a better fit for:
 
 ## Canonical Building Blocks
 
-These are the standard primitives we should use:
+These are the standard primitives we should use and evolve in `../one`:
 
-- `../vger/packages/trie.core/src/trie.ts`
-- `../vger/packages/trie.core/src/multi-trie.ts`
-- `../vger/packages/trie.core/src/diff.ts`
-- `../vger/packages/trie.core/src/persisted-store.ts`
+- `../one/packages/trie.core`
+- `../one/packages/chat.core`
+- for filesystem-backed trie storage, evolve the existing `../one/packages/trie.fs`
 
-These are the existing examples to follow:
+These are the reference implementations to learn from:
 
-- `../vger/packages/chat.core/src/recipes/ChatTrieRecipes.ts`
-- `../vger/packages/chat.core/src/services/ChatTrieManager.ts`
-- `../vger/packages/chat.core/src/services/ChatTrieOneCoreStore.ts`
-- `../vger/packages/one.models/src/recipes/ChatRecipes.ts`
-- `../vger/packages/connection.core/src/plans/ConnectionPlan.ts`
+- `../one/packages/trie.core/src/trie.ts`
+- `../one/packages/trie.core/src/multi-trie.ts`
+- `../one/packages/trie.core/src/diff.ts`
+- `../one/packages/trie.core/src/persisted-store.ts`
+- `../one/packages/chat.core/src/recipes/ChatTrieRecipes.ts`
+- `../one/packages/chat.core/src/services/ChatTrieManager.ts`
+- `../one/packages/chat.core/src/services/ChatTrieOneCoreStore.ts`
+- `../one/packages/one.models/src/recipes/ChatRecipes.ts`
+
+VGER's current docs (`../vger/docs/CHAT-TRIE-AND-CHUM.md` and
+`../vger/docs/TOPIC-MANAGEMENT.md`) remain the behavioral reference: chat
+history is `ChatTrieEntry -> Message -> ChatMessage`, and the share/sync handle
+is the topic's trie root plus `ChatTrieShareManifest`, not a channel head.
 
 ## Core Model
 
@@ -290,4 +303,3 @@ Not:
 - heads
 - linked lists
 - per-platform sync logic
-
