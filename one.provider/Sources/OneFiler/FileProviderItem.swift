@@ -22,7 +22,7 @@ class FileProviderItem: NSObject, NSFileProviderItem {
         return FileProviderItem(oneObject: rootObject)
     }
     
-    // Create standard folder items (must match Node.js mounted filesystems)
+    // Create standard folder items (must match refinio.api mounted filesystems)
     static func standardFolders() -> [FileProviderItem] {
         return [
             FileProviderItem(oneObject: ONEObject(
@@ -134,11 +134,14 @@ class FileProviderItem: NSObject, NSFileProviderItem {
     var itemVersion: NSFileProviderItemVersion {
         // Generate version data from item properties
         // For content version, use combination of id + size + modification date
-        let contentString = "\(oneObject.id):\(oneObject.size):\(oneObject.modified.timeIntervalSince1970)"
+        let contentString = oneObject.contentHash.isEmpty
+            ? "\(oneObject.id):\(oneObject.size):\(oneObject.modified.timeIntervalSince1970)"
+            : oneObject.contentHash
         let contentData = contentString.data(using: .utf8) ?? Data()
 
         // For metadata version, use id + name
-        let metadataString = "\(oneObject.id):\(oneObject.name)"
+        let metadataString = oneObject.metadataHash.isEmpty
+            ? "\(oneObject.id):\(oneObject.name)" : oneObject.metadataHash
         let metadataData = metadataString.data(using: .utf8) ?? Data()
 
         return NSFileProviderItemVersion(
@@ -169,7 +172,10 @@ class FileProviderItem: NSObject, NSFileProviderItem {
         }
         
         if oneObject.type == .folder {
-            caps.insert([.allowsAddingSubItems, .allowsContentEnumerating])
+            caps.insert(.allowsContentEnumerating)
+            if oneObject.permissions.contains(.write) {
+                caps.insert(.allowsAddingSubItems)
+            }
         }
         
         // Allow evicting for space management (deprecated, but needed for compatibility)

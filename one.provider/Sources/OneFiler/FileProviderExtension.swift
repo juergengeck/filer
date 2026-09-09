@@ -111,70 +111,9 @@ class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension {
         NSLog("OneFiler Extension: init() completed - bridge will initialize on first use")
     }
 
-    struct DomainConfig: Codable {
-        let path: String
-        let email: String?
-        let secret: String?
-        let name: String?
-    }
-
     private static func setupBridge(using context: BridgeSetupContext) async throws -> ONEBridge {
-        await context.debugLogger.info("=== Setup Bridge Started ===")
-
-        guard let containerURL = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: context.appGroupIdentifier
-        ) else {
-            NSLog("OneFiler: Failed to get App Group container URL")
-            await context.debugLogger.critical("Failed to get App Group container URL")
-            throw NSFileProviderError(.serverUnreachable)
-        }
-
-        await context.debugLogger.debug("App Group container: \(containerURL.path)")
-
-        let configURL = containerURL.appendingPathComponent("domains.json")
-
-        guard FileManager.default.fileExists(atPath: configURL.path) else {
-            NSLog("OneFiler: domains.json not found at \(configURL.path)")
-            await context.debugLogger.error("domains.json not found at \(configURL.path)")
-            throw NSFileProviderError(.serverUnreachable)
-        }
-
-        let data = try Data(contentsOf: configURL)
-        let allConfigs = try JSONDecoder().decode([String: DomainConfig].self, from: data)
-
-        await context.debugLogger.debug("Found \(allConfigs.count) domain configs")
-
-        guard let domainConfig = allConfigs[context.domainIdentifier] else {
-            NSLog("OneFiler: Domain \(context.domainIdentifier) not found in domains.json")
-            await context.debugLogger.error(
-                "Domain \(context.domainIdentifier) not found in domains.json"
-            )
-            throw NSFileProviderError(.serverUnreachable)
-        }
-
-        NSLog("OneFiler: Found registered instance path: \(domainConfig.path)")
-        await context.debugLogger.info("Found registered instance path: \(domainConfig.path)")
-        if domainConfig.email != nil {
-            NSLog("OneFiler: Found credentials in config")
-            await context.debugLogger.debug("Found credentials in config")
-        }
-
-        let config = ONEInstanceConfig(
-            name: context.domainDisplayName,
-            directory: domainConfig.path,
-            email: domainConfig.email,
-            secret: domainConfig.secret,
-            instanceName: domainConfig.name
-        )
-
-        await context.debugLogger.info("Creating ONEBridge...")
-        let bridge = try ONEBridge(config: config)
-        await context.debugLogger.info("Connecting ONEBridge...")
+        let bridge = try ONEBridge(config: ONEInstanceConfig(name: context.domainIdentifier))
         try await bridge.connect()
-        NSLog("OneFiler: Connected to ONE instance at \(domainConfig.path)")
-        await context.debugLogger.info("Connected to ONE instance at \(domainConfig.path)")
-        await context.debugLogger.info("=== Setup Bridge Completed ===")
-
         // Update status to connected
         await context.statusWriter.updateStatus(
             domain: context.domainIdentifier,
@@ -260,15 +199,6 @@ class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension {
             throw NSFileProviderError(.noSuchItem)
         }
 
-        // Handle synthetic top-level folders (don't go to Node.js for these)
-        let syntheticFolders = ["chats", "debug", "invites", "objects", "profiles", "questionnaires", "types"]
-        if syntheticFolders.contains(identifier.rawValue) {
-            if let folder = FileProviderItem.standardFolders().first(where: { $0.itemIdentifier == identifier }) {
-                return folder
-            }
-            throw NSFileProviderError(.noSuchItem)
-        }
-
         // Fetch from ONE database
         let oneObject = try await bridge.getObject(id: identifier.rawValue)
         return FileProviderItem(oneObject: oneObject)
@@ -351,37 +281,8 @@ class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension {
             // Return empty enumerator for working set - we don't track recently accessed files yet
             return RootEnumerator(extension: self)  // Temporarily use RootEnumerator
 
-        case let id where id.rawValue == "objects" || id.rawValue.hasPrefix("objects/"):
-            NSLog("🔥🔥🔥 ENUMERATOR TYPE: ObjectsEnumerator for \(id.rawValue)")
-            return ObjectsEnumerator(extension: self, containerIdentifier: containerItemIdentifier)
-
-        case let id where id.rawValue == "chats" || id.rawValue.hasPrefix("chats/"):
-            NSLog("🔥🔥🔥 ENUMERATOR TYPE: GenericEnumerator(chats) for \(id.rawValue)")
-            return GenericEnumerator(extension: self, containerIdentifier: containerItemIdentifier)
-
-        case let id where id.rawValue == "types" || id.rawValue.hasPrefix("types/"):
-            NSLog("🔥🔥🔥 ENUMERATOR TYPE: GenericEnumerator(types) for \(id.rawValue)")
-            return GenericEnumerator(extension: self, containerIdentifier: containerItemIdentifier)
-
-        case let id where id.rawValue == "invites" || id.rawValue.hasPrefix("invites/"):
-            NSLog("🔥🔥🔥 ENUMERATOR TYPE: GenericEnumerator(invites) for \(id.rawValue)")
-            return GenericEnumerator(extension: self, containerIdentifier: containerItemIdentifier)
-
-        case let id where id.rawValue == "debug" || id.rawValue.hasPrefix("debug/"):
-            NSLog("🔥🔥🔥 ENUMERATOR TYPE: GenericEnumerator(debug) for \(id.rawValue)")
-            return GenericEnumerator(extension: self, containerIdentifier: containerItemIdentifier)
-
-        case let id where id.rawValue == "profiles" || id.rawValue.hasPrefix("profiles/"):
-            NSLog("🔥🔥🔥 ENUMERATOR TYPE: GenericEnumerator(profiles) for \(id.rawValue)")
-            return GenericEnumerator(extension: self, containerIdentifier: containerItemIdentifier)
-
-        case let id where id.rawValue == "questionnaires" || id.rawValue.hasPrefix("questionnaires/"):
-            NSLog("🔥🔥🔥 ENUMERATOR TYPE: GenericEnumerator(questionnaires) for \(id.rawValue)")
-            return GenericEnumerator(extension: self, containerIdentifier: containerItemIdentifier)
-
         default:
-            NSLog("🔥🔥🔥 ENUMERATOR ERROR: No match for \(containerItemIdentifier.rawValue)")
-            throw NSFileProviderError(.noSuchItem)
+            return GenericEnumerator(extension: self, containerIdentifier: containerItemIdentifier)
         }
     }
     
@@ -397,8 +298,22 @@ class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension {
     ) -> Progress {
         let progress = Progress(totalUnitCount: 1)
 
-        // TODO: Implement item creation
-        completionHandler(nil, NSFileProviderItemFields(), false, NSFileProviderError(.notAuthenticated))
+        Task {
+            do {
+                let bridge = try await getBridge()
+                let parent = itemTemplate.parentItemIdentifier == .rootContainer
+                    ? "/" : itemTemplate.parentItemIdentifier.rawValue
+                let data = try url.map { try Data(contentsOf: $0) }
+                let object = try await bridge.createItem(
+                    parentId: parent, name: itemTemplate.filename, data: data,
+                    isDirectory: itemTemplate.contentType == .folder
+                )
+                completionHandler(FileProviderItem(oneObject: object), [], false, nil)
+                progress.completedUnitCount = 1
+            } catch {
+                completionHandler(nil, fields, false, error)
+            }
+        }
 
         return progress
     }
@@ -421,11 +336,16 @@ class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension {
                 let bridge = try await getBridge()
 
                 let stillPendingFields = NSFileProviderItemFields()
+                var acceptedContentVersion: String?
 
                 // Handle content changes
                 if changedFields.contains(.contents), let url = contentsURL {
                     let data = try Data(contentsOf: url)
-                    try await bridge.writeContent(id: item.itemIdentifier.rawValue, data: data)
+                    acceptedContentVersion = try await bridge.writeContent(
+                        id: item.itemIdentifier.rawValue,
+                        data: data,
+                        baseVersion: baseVersion.contentVersion
+                    )
                     progress.completedUnitCount = 80
                 }
 
@@ -437,6 +357,9 @@ class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension {
 
                 // Get updated item
                 let updatedObject = try await bridge.getObject(id: item.itemIdentifier.rawValue)
+                if let acceptedContentVersion, updatedObject.contentHash != acceptedContentVersion {
+                    throw ONEBridgeError.invalidResponse
+                }
                 let updatedItem = FileProviderItem(oneObject: updatedObject)
 
                 completionHandler(updatedItem, stillPendingFields, false, nil)

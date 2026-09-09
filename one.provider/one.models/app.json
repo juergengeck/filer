@@ -1,8 +1,0 @@
-{
-  "ios": {
-    "bundleIdentifier": "com.geckothesane.-refinioone.models"
-  },
-  "android": {
-    "package": "com.geckothesane.refinioone.models"
-  }
-}

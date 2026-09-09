@@ -105,7 +105,7 @@ class StatusMonitor {
             }
 
             // Check for domains that are no longer in status file
-            let currentDomains = Set(domainManager.listDomains().keys)
+            let currentDomains = Set(try domainManager.listDomains().keys)
             let statusDomains = Set(statuses.keys)
             for domain in currentDomains.subtracting(statusDomains) {
                 if statusCache[domain]?.connectionState != .disconnected {
@@ -127,7 +127,13 @@ class StatusMonitor {
     }
 
     private func updateAllDomainsDisconnected() {
-        let domains = domainManager.listDomains()
+        let domains: [String: DomainManager.DomainConfig]
+        do {
+            domains = try domainManager.listDomains()
+        } catch {
+            NSLog("StatusMonitor cannot read domain configuration: \(error)")
+            return
+        }
         for (identifier, _) in domains {
             if statusCache[identifier]?.connectionState != .disconnected {
                 statusCache[identifier] = DomainStatus(

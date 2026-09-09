@@ -1,330 +1,238 @@
-#!/bin/bash
-#
-# Build distribution package for OneFiler
-# Requires: Apple Developer ID Application certificate and notarization credentials
-#
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_DIR"
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
-
-# Configuration
-DEVELOPER_ID="${DEVELOPER_ID:-Developer ID Application}"
 TEAM_ID="${TEAM_ID:-26W8AC52QS}"
-BUNDLE_ID="one.filer"
-APP_NAME="OneFilerHost"
-FINAL_APP_NAME="OneFiler"
-VERSION="${VERSION:-1.0.0}"
-BUILD_DIR="$PROJECT_DIR/build"
+DEVELOPER_ID="${DEVELOPER_ID:-Developer ID Application: Refinio GmbH (26W8AC52QS)}"
+NOTARY_PROFILE="${NOTARY_PROFILE:-OneFiler Notarization}"
+if [[ -z "${NOTARYTOOL:-}" ]]; then
+  if [[ -x /Library/Developer/CommandLineTools/usr/bin/notarytool ]]; then
+    NOTARYTOOL=/Library/Developer/CommandLineTools/usr/bin/notarytool
+  else
+    NOTARYTOOL="$(xcrun -f notarytool)"
+  fi
+fi
+VERSION="${VERSION:-$(node -p "require('./package.json').version")}"
+BUILD_NUMBER="${BUILD_NUMBER:-1}"
+BUILD_DIR="$PROJECT_DIR/build/distribution"
+ARCHIVE_PATH="$BUILD_DIR/OneFiler.xcarchive"
+EXPORT_DIR="$BUILD_DIR/export"
 DIST_DIR="$PROJECT_DIR/dist"
+APP_PATH=""
+DMG_PATH="$DIST_DIR/OneFiler-${VERSION}.dmg"
 
-echo "🚀 Building OneFiler for Distribution"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Version: $VERSION"
-echo "Team ID: $TEAM_ID"
-echo "Developer ID: $DEVELOPER_ID"
-echo ""
+require_command() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    echo "Missing required command: $1" >&2
+    exit 1
+  fi
+}
 
-# Function to check prerequisites
 check_prerequisites() {
-    echo "🔍 Checking prerequisites..."
+  for command in codesign hdiutil npm security spctl xcodebuild xcodegen xcrun; do
+    require_command "$command"
+  done
 
-    # Check for Developer ID certificate
-    if ! security find-identity -v -p codesigning | grep -q "Developer ID Application"; then
-        echo -e "${RED}❌ Error: Developer ID Application certificate not found${NC}"
-        echo ""
-        echo "You need a Developer ID Application certificate for distribution."
-        echo ""
-        echo "Steps to get it:"
-        echo "  1. Open Keychain Access"
-        echo "  2. Menu: Keychain Access → Certificate Assistant → Request a Certificate from a Certificate Authority"
-        echo "  3. Save the CSR to disk"
-        echo "  4. Go to: https://developer.apple.com/account/resources/certificates/add"
-        echo "  5. Select 'Developer ID Application'"
-        echo "  6. Upload your CSR and download the certificate"
-        echo "  7. Double-click the downloaded certificate to install"
-        echo ""
-        exit 1
-    fi
+  local identities
+  identities="$(security find-identity -v -p codesigning)"
+  if [[ "$identities" != *"$DEVELOPER_ID"* ]]; then
+    echo "Developer ID Application identity is unavailable: $DEVELOPER_ID" >&2
+    exit 1
+  fi
 
-    # Check for notarization credentials (keychain or env vars)
-    CREDS_FOUND=false
-    # Check if keychain profile exists
-    if security find-generic-password -s "altool-app-password-OneFiler Notarization" 2>/dev/null >/dev/null; then
-        CREDS_FOUND=true
-        echo -e "${GREEN}✅ Notarization credentials found in keychain${NC}"
-    elif [ -n "$NOTARIZATION_APPLE_ID" ] && [ -n "$NOTARIZATION_PASSWORD" ]; then
-        CREDS_FOUND=true
-        echo -e "${GREEN}✅ Notarization credentials found in environment${NC}"
-    else
-        echo -e "${YELLOW}⚠️  Notarization credentials not configured${NC}"
-        echo "Notarization will be skipped. To enable:"
-        echo "  xcrun notarytool store-credentials \"OneFiler Notarization\" \\"
-        echo "    --apple-id \"your@apple.id\" \\"
-        echo "    --team-id \"$TEAM_ID\" \\"
-        echo "    --password \"app-specific-password\""
-    fi
-
-    # Check for required tools
-    command -v xcodebuild >/dev/null 2>&1 || { echo "❌ xcodebuild required"; exit 1; }
-    command -v xcodegen >/dev/null 2>&1 || { echo "❌ xcodegen required"; exit 1; }
-    command -v npm >/dev/null 2>&1 || { echo "❌ npm required"; exit 1; }
-
-    echo -e "${GREEN}✅ Prerequisites OK${NC}"
-    echo ""
+  "$NOTARYTOOL" history --keychain-profile "$NOTARY_PROFILE" >/dev/null
 }
 
-# Function to build TypeScript
-build_typescript() {
-    echo "📦 Building TypeScript IPC server..."
-    npm install
-    npm run build
+build_archive() {
+  npm ci
+  npm run prepare:runtime
+  xcodegen generate
 
-    echo -e "${GREEN}✅ TypeScript built${NC}"
-    echo ""
+  rm -rf "$BUILD_DIR"
+  mkdir -p "$BUILD_DIR" "$DIST_DIR"
+
+  xcodebuild \
+    -project OneFiler.xcodeproj \
+    -scheme OneFilerHost \
+    -configuration Release \
+    -archivePath "$ARCHIVE_PATH" \
+    -allowProvisioningUpdates \
+    MARKETING_VERSION="$VERSION" \
+    CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+    ENABLE_HARDENED_RUNTIME=YES \
+    REGISTER_APP_GROUPS=YES \
+    clean archive
+
+  xcodebuild \
+    -exportArchive \
+    -archivePath "$ARCHIVE_PATH" \
+    -exportPath "$EXPORT_DIR" \
+    -exportOptionsPlist Resources/DeveloperIDExportOptions.plist \
+    -allowProvisioningUpdates
+
+  APP_PATH="$(find "$EXPORT_DIR" -maxdepth 2 -type d -name 'OneFilerHost.app' -print -quit)"
+  if [[ -z "$APP_PATH" ]]; then
+    echo "Xcode did not export OneFilerHost.app" >&2
+    exit 1
+  fi
 }
 
-# Function to bundle Node.js
-bundle_nodejs() {
-    echo "📦 Bundling Node.js runtime..."
-    ./scripts/bundle-node.sh
-    echo -e "${GREEN}✅ Node.js bundled${NC}"
-    echo ""
-}
+sign_exported_app() {
+  local host_executable="$APP_PATH/Contents/MacOS/OneFilerHost"
+  local extension_path="$APP_PATH/Contents/PlugIns/OneFilerExtension.appex"
+  local extension_executable="$extension_path/Contents/MacOS/OneFilerExtension"
 
-# Function to build Xcode project
-build_xcode() {
-    echo "🔨 Building Xcode project..."
-
-    # Regenerate project
-    xcodegen generate
-
-    # Clean build directory
-    rm -rf "$BUILD_DIR"
-    mkdir -p "$BUILD_DIR"
-
-    # Build for Release with Automatic signing first
-    xcodebuild \
-        -project OneFiler.xcodeproj \
-        -scheme OneFilerHost \
-        -configuration Release \
-        -derivedDataPath "$BUILD_DIR" \
-        clean build
-
-    # Find the built app
-    APP_PATH=$(find "$BUILD_DIR" -name "${APP_NAME}.app" -type d | head -1)
-
-    if [ -z "$APP_PATH" ]; then
-        echo -e "${RED}❌ Error: Built app not found${NC}"
-        exit 1
+  while IFS= read -r -d '' file_path; do
+    # The bundle signatures live on their primary executables. Signing these
+    # as bare Mach-O files would discard Xcode's provisioned entitlements.
+    if [[ "$file_path" == "$host_executable" || "$file_path" == "$extension_executable" ]]; then
+      continue
     fi
-
-    echo "App built at: $APP_PATH"
-    echo ""
-
-    # Re-sign with Developer ID for distribution
-    echo "🔏 Re-signing with Developer ID..."
-
-    # Sign all executables and libraries first (inside-out)
-    find "$APP_PATH" -type f \( -name "*.dylib" -o -perm +111 \) -print0 | while IFS= read -r -d '' file; do
-        if file "$file" | grep -q "Mach-O"; then
-            echo "  Signing: $(basename "$file")"
-            codesign --force --sign "Developer ID Application: Refinio GmbH (26W8AC52QS)" \
-                --timestamp \
-                --options runtime \
-                "$file" 2>/dev/null || true
-        fi
-    done
-
-    # Sign the extension
-    EXTENSION_PATH="$APP_PATH/Contents/PlugIns/OneFilerExtension.appex"
-    if [ -d "$EXTENSION_PATH" ]; then
-        echo "  Signing extension..."
-        codesign --force --sign "Developer ID Application: Refinio GmbH (26W8AC52QS)" \
-            --timestamp \
-            --options runtime \
-            --entitlements Resources/Extension.entitlements \
-            "$EXTENSION_PATH"
-    fi
-
-    # Sign the main app
-    echo "  Signing main app..."
-    codesign --force --sign "Developer ID Application: Refinio GmbH (26W8AC52QS)" \
+    if file "$file_path" | grep -q 'Mach-O'; then
+      codesign \
+        --force \
+        --sign "$DEVELOPER_ID" \
         --timestamp \
         --options runtime \
-        --entitlements Resources/OneFiler.entitlements \
-        "$APP_PATH"
+        --preserve-metadata=entitlements \
+        "$file_path"
+    fi
+  done < <(find "$APP_PATH" -type f \( -name '*.dylib' -o -perm -111 \) -print0)
 
-    echo -e "${GREEN}✅ Xcode build and re-signing complete${NC}"
-    echo ""
+  codesign \
+    --force \
+    --sign "$DEVELOPER_ID" \
+    --timestamp \
+    --options runtime \
+    --preserve-metadata=identifier,entitlements,requirements \
+    "$extension_path"
+
+  codesign \
+    --force \
+    --sign "$DEVELOPER_ID" \
+    --timestamp \
+    --options runtime \
+    --preserve-metadata=identifier,entitlements,requirements \
+    "$APP_PATH"
 }
 
-# Function to verify code signing
-verify_signing() {
-    echo "🔍 Verifying code signature..."
+verify_app_group_profile() {
+  local bundle_path="$1"
+  local profile_path="$bundle_path/Contents/embedded.provisionprofile"
+  local decoded_profile
+  local signature_entitlements
+  local profile_details
+  local signature_details
+  decoded_profile="$(mktemp)"
+  signature_entitlements="$(mktemp)"
 
-    # Check signature details
-    codesign -dvv "$APP_PATH" 2>&1 | grep -E "(Authority|TeamIdentifier|Identifier|Signed Time)" || true
+  if [[ ! -f "$profile_path" ]]; then
+    echo "Missing Developer ID provisioning profile in $bundle_path" >&2
+    rm -f "$decoded_profile" "$signature_entitlements"
+    exit 1
+  fi
 
-    echo -e "${GREEN}✅ Code signature verification complete${NC}"
-    echo ""
+  security cms -D -i "$profile_path" >"$decoded_profile"
+  codesign -d --entitlements "$signature_entitlements" --xml "$bundle_path" 2>/dev/null
+  profile_details="$(plutil -p "$decoded_profile")"
+  signature_details="$(plutil -p "$signature_entitlements")"
+
+  if [[ "$profile_details" != *'group.one.filer'* ]]; then
+    echo "The provisioning profile for $bundle_path does not authorize group.one.filer" >&2
+    rm -f "$decoded_profile" "$signature_entitlements"
+    exit 1
+  fi
+  if [[ "$signature_details" != *'com.apple.application-identifier'* ]]; then
+    echo "The signature for $bundle_path has no com.apple.application-identifier" >&2
+    rm -f "$decoded_profile" "$signature_entitlements"
+    exit 1
+  fi
+
+  rm -f "$decoded_profile" "$signature_entitlements"
 }
 
-# Function to create DMG
+verify_exported_app() {
+  local extension_path="$APP_PATH/Contents/PlugIns/OneFilerExtension.appex"
+  local signing_details
+  codesign --verify --deep --strict --verbose=4 "$APP_PATH"
+  signing_details="$(codesign -dvv "$APP_PATH" 2>&1)"
+
+  if [[ "$signing_details" != *"Authority=$DEVELOPER_ID"* ]]; then
+    echo "The host app is not signed with $DEVELOPER_ID" >&2
+    exit 1
+  fi
+  if [[ "$signing_details" != *'flags=0x10000(runtime)'* ]]; then
+    echo "The host app does not have hardened runtime enabled" >&2
+    exit 1
+  fi
+
+  verify_app_group_profile "$APP_PATH"
+  verify_app_group_profile "$extension_path"
+}
+
+notarize_app() {
+  local zip_path="$BUILD_DIR/OneFiler-${VERSION}.zip"
+  local zip_root="$BUILD_DIR/notary-app"
+  rm -rf "$zip_root" "$zip_path"
+  mkdir -p "$zip_root"
+  ditto "$APP_PATH" "$zip_root/OneFiler.app"
+  ditto -c -k --keepParent "$zip_root/OneFiler.app" "$zip_path"
+
+  "$NOTARYTOOL" submit "$zip_path" \
+    --keychain-profile "$NOTARY_PROFILE" \
+    --wait
+  xcrun stapler staple "$APP_PATH"
+  xcrun stapler validate "$APP_PATH"
+  spctl --assess --type execute --verbose=4 "$APP_PATH"
+}
+
 create_dmg() {
-    echo "💿 Creating DMG..."
+  local dmg_root="$BUILD_DIR/dmg-root"
+  rm -rf "$dmg_root" "$DMG_PATH"
+  mkdir -p "$dmg_root"
+  ditto "$APP_PATH" "$dmg_root/OneFiler.app"
+  ln -s /Applications "$dmg_root/Applications"
 
-    mkdir -p "$DIST_DIR"
-    DMG_PATH="$DIST_DIR/${FINAL_APP_NAME}-${VERSION}.dmg"
+  hdiutil create \
+    -volname OneFiler \
+    -srcfolder "$dmg_root" \
+    -format UDZO \
+    -ov \
+    "$DMG_PATH"
 
-    # Remove old DMG if exists
-    rm -f "$DMG_PATH"
-
-    # Create temporary directory for DMG contents
-    DMG_TEMP="$BUILD_DIR/dmg-temp"
-    rm -rf "$DMG_TEMP"
-    mkdir -p "$DMG_TEMP"
-
-    # Copy app to temp directory with final name
-    cp -R "$APP_PATH" "$DMG_TEMP/${FINAL_APP_NAME}.app"
-
-    # Create symbolic link to Applications folder
-    ln -s /Applications "$DMG_TEMP/Applications"
-
-    # Create DMG
-    hdiutil create \
-        -volname "$FINAL_APP_NAME" \
-        -srcfolder "$DMG_TEMP" \
-        -ov \
-        -format UDZO \
-        "$DMG_PATH"
-
-    # Clean up temp directory
-    rm -rf "$DMG_TEMP"
-
-    echo "DMG created at: $DMG_PATH"
-    echo -e "${GREEN}✅ DMG created${NC}"
-    echo ""
+  codesign \
+    --force \
+    --sign "$DEVELOPER_ID" \
+    --timestamp \
+    "$DMG_PATH"
+  codesign --verify --verbose=4 "$DMG_PATH"
 }
 
-# Function to notarize
-notarize() {
-    echo "🔐 Notarizing app..."
-
-    # Zip the app for notarization (use final name)
-    ZIP_PATH="$DIST_DIR/${FINAL_APP_NAME}-${VERSION}.zip"
-
-    # Create temp directory with renamed app
-    ZIP_TEMP="$BUILD_DIR/zip-temp"
-    rm -rf "$ZIP_TEMP"
-    mkdir -p "$ZIP_TEMP"
-    cp -R "$APP_PATH" "$ZIP_TEMP/${FINAL_APP_NAME}.app"
-
-    ditto -c -k --keepParent "$ZIP_TEMP/${FINAL_APP_NAME}.app" "$ZIP_PATH"
-    rm -rf "$ZIP_TEMP"
-
-    echo "Uploading to Apple..."
-
-    # Try keychain-stored credentials first
-    if xcrun notarytool submit "$ZIP_PATH" \
-        --keychain-profile "OneFiler Notarization" \
-        --wait 2>/dev/null; then
-        echo -e "${GREEN}✅ Notarization submitted using keychain credentials${NC}"
-    # Fall back to environment variables
-    elif [ -n "$NOTARIZATION_APPLE_ID" ] && [ -n "$NOTARIZATION_PASSWORD" ]; then
-        xcrun notarytool submit "$ZIP_PATH" \
-            --apple-id "$NOTARIZATION_APPLE_ID" \
-            --password "$NOTARIZATION_PASSWORD" \
-            --team-id "$TEAM_ID" \
-            --wait
-    else
-        echo -e "${YELLOW}⚠️  Skipping notarization (credentials not found)${NC}"
-        echo ""
-        echo "To enable notarization:"
-        echo "  xcrun notarytool store-credentials \"OneFiler Notarization\" \\"
-        echo "    --apple-id \"your@apple.id\" \\"
-        echo "    --team-id \"$TEAM_ID\" \\"
-        echo "    --password \"app-specific-password\""
-        echo ""
-        rm -f "$ZIP_PATH"
-        return
-    fi
-
-    # Staple the notarization ticket to app
-    echo "Stapling notarization ticket to app..."
-    xcrun stapler staple "$APP_PATH"
-
-    # Clean up zip
-    rm -f "$ZIP_PATH"
-
-    echo -e "${GREEN}✅ Notarization complete and stapled${NC}"
-    echo ""
+notarize_dmg() {
+  "$NOTARYTOOL" submit "$DMG_PATH" \
+    --keychain-profile "$NOTARY_PROFILE" \
+    --wait
+  xcrun stapler staple "$DMG_PATH"
+  xcrun stapler validate "$DMG_PATH"
+  spctl --assess \
+    --type open \
+    --context context:primary-signature \
+    --verbose=4 \
+    "$DMG_PATH"
 }
 
-# Function to create installer package (PKG)
-create_pkg() {
-    echo "📦 Creating PKG installer..."
-
-    # Create temp directory with renamed app for PKG
-    PKG_TEMP="$BUILD_DIR/pkg-temp"
-    rm -rf "$PKG_TEMP"
-    mkdir -p "$PKG_TEMP"
-    cp -R "$APP_PATH" "$PKG_TEMP/${FINAL_APP_NAME}.app"
-
-    # Check if we have Developer ID Installer certificate
-    if security find-identity -v -p basic | grep -q "Developer ID Installer"; then
-        PKG_PATH="$DIST_DIR/${FINAL_APP_NAME}-${VERSION}.pkg"
-        pkgbuild \
-            --component "$PKG_TEMP/${FINAL_APP_NAME}.app" \
-            --install-location "/Applications" \
-            --sign "Developer ID Installer" \
-            "$PKG_PATH"
-        echo "PKG created (signed) at: $PKG_PATH"
-    else
-        PKG_PATH="$DIST_DIR/${FINAL_APP_NAME}-${VERSION}-unsigned.pkg"
-        pkgbuild \
-            --component "$PKG_TEMP/${FINAL_APP_NAME}.app" \
-            --install-location "/Applications" \
-            "$PKG_PATH"
-        echo "PKG created (unsigned) at: $PKG_PATH"
-        echo -e "${YELLOW}Note: PKG is unsigned. Get 'Developer ID Installer' certificate to sign PKGs.${NC}"
-    fi
-
-    rm -rf "$PKG_TEMP"
-
-    echo -e "${GREEN}✅ PKG created${NC}"
-    echo ""
-}
-
-# Main execution
 main() {
-    check_prerequisites
-    build_typescript
-    bundle_nodejs
-    build_xcode
-    verify_signing
-    notarize       # Notarize and staple first
-    create_dmg     # Then create DMG with stapled app
-    create_pkg
+  check_prerequisites
+  build_archive
+  sign_exported_app
+  verify_exported_app
+  notarize_app
+  create_dmg
+  notarize_dmg
 
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "${GREEN}✅ Distribution build complete!${NC}"
-    echo ""
-    echo "Distribution files:"
-    ls -lh "$DIST_DIR"
-    echo ""
-    echo "To test the app:"
-    echo "  open '$APP_PATH'"
-    echo ""
-    echo "To install from DMG:"
-    echo "  open '$DIST_DIR/${FINAL_APP_NAME}-${VERSION}.dmg'"
+  echo "Signed OneFiler release ready: $DMG_PATH"
 }
 
-# Run
-main
+main "$@"

@@ -8,14 +8,16 @@ final class FileProviderEnumeratorTests: XCTestCase {
 
     func testStandardFoldersCount() {
         let folders = FileProviderItem.standardFolders()
-        XCTAssertEqual(folders.count, 5, "Should have exactly 5 standard folders")
+        XCTAssertEqual(folders.count, 7, "Should expose every refinio.api filer root")
     }
 
     func testStandardFoldersNames() {
         let folders = FileProviderItem.standardFolders()
         let names = Set(folders.map { $0.filename })
 
-        let expectedNames: Set<String> = ["Objects", "Chats", "Types", "Debug", "Invites"]
+        let expectedNames: Set<String> = [
+            "Objects", "Chats", "Types", "Debug", "Invites", "Profiles", "Questionnaires"
+        ]
         XCTAssertEqual(names, expectedNames)
     }
 
@@ -87,13 +89,13 @@ final class FileProviderEnumeratorTests: XCTestCase {
 
     // MARK: - Folder Capabilities
 
-    func testStandardFoldersAllowSubItems() {
+    func testReadOnlyFoldersRejectSubItems() {
         let folders = FileProviderItem.standardFolders()
 
         for folder in folders {
-            XCTAssertTrue(
+            XCTAssertFalse(
                 folder.capabilities.contains(.allowsAddingSubItems),
-                "\(folder.filename) should allow adding sub-items"
+                "\(folder.filename) should reject adding sub-items"
             )
         }
     }

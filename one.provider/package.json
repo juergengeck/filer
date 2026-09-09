@@ -1,18 +1,19 @@
 {
   "name": "@refinio/one.provider",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Apple File Provider integration for ONE - macOS filesystem bridge",
   "type": "module",
   "main": "lib/index.js",
   "scripts": {
-    "prepare:deps": "npm --prefix node-runtime run prepare:deps",
-    "build": "npm run prepare:deps && tsc && cp node-runtime/package.json node-runtime/lib/package.json",
+    "build": "swift build",
     "build:swift": "swift build",
-    "dev": "tsc --watch",
-    "clean": "rm -rf lib node-runtime/lib",
-    "test:ipc": "npm run prepare:deps && node test/ipc-bridge-test.js",
-    "test:swift-ipc": "swift test/swift-ipc-test.swift",
-    "test:connection": "node test/integration/connection-test.js"
+    "dist:mac": "bash ./scripts/build-distribution.sh",
+    "publish:refinio": "bash ./scripts/publish-to-refinio-one.sh",
+    "clean": "swift package clean",
+    "test:ipc": "swift test",
+    "test:connection": "node test/integration/connection-test.js",
+    "prepare:runtime": "pnpm --dir ../../one/packages/refinio.api build && node scripts/bundle-runtime.mjs",
+    "test:private-ipc": "python3 scripts/test-private-ipc.py"
   },
   "keywords": [
     "file-provider",
@@ -22,13 +23,5 @@
   ],
   "author": "REFINIO GmbH",
   "license": "MIT",
-  "devDependencies": {
-    "@types/node": "^20.0.0",
-    "pkg": "^5.8.1",
-    "postject": "^1.0.0-alpha.6",
-    "typescript": "^5.0.0"
-  },
-  "engines": {
-    "node": ">=20.0.0"
-  }
+  "devDependencies": {}
 }

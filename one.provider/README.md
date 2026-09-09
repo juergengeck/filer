@@ -1,206 +1,85 @@
-# one.provider
+# OneFiler for macOS
 
-Apple File Provider integration for ONE - macOS filesystem bridge using File Provider API.
+OneFiler bundles a Swift host, a Swift File Provider extension, Node.js, and the
+canonical `../../one/packages/refinio.api` runtime with its ONE dependencies.
+The application is **not Swift-only**. Each registered domain owns one ONE
+instance in a Node child managed by the host.
 
-## Architecture
-
-```
-Finder/Files App
-      ↓
-File Provider Extension (Swift, sandboxed process)
-      ↓
-ONEBridge (Swift Actor)
-      ↓
-Node.js Process (JSON-RPC over stdin/stdout)
-      ↓
-IFileSystem interface (TypeScript)
-      ↓
-one.core + one.models (content-addressed storage)
+```text
+Finder
+  -> File Provider extension (Swift, sandboxed)
+  -> private app-group Unix socket, mutual code-signature validation
+  -> OneFiler host (Swift, sandboxed)
+  -> inherited stdin/stdout, refinio.api StdioTransportPlan
+  -> ONE filesystem operations, models, synchronization and storage (Node.js)
 ```
 
-## Building
+The native path opens no HTTP server. Kernel-provided peer audit tokens and
+Apple code-signature validation restrict the socket to the intended host and
+extension from team `26W8AC52QS`. File permissions alone do not authenticate a
+caller. The extension has no network entitlement. Node inherits the host sandbox,
+runs with `--jitless`, and receives credentials only through its inherited pipe.
+The host stores instance secrets in Keychain; domain configuration contains a
+local storage UUID and email, separate from ONE's actual SHA256 identities.
 
-### 1. Build TypeScript IPC Server
+The shared operation registry authorizes explicit filesystem and device
+capabilities using the initialized ONE owner. Request-supplied tokens, identities,
+and capabilities do not establish authority. Domain errors retain their existing
+RPC representation. See [native runtime and hash audit](../docs/native-runtime-audit.md).
+
+## Build and test
+
+Build the canonical shared dependencies in `../../one` first. Select a maintained
+Node 22 or 24 executable for the target architecture; it is copied into the app.
 
 ```bash
-npm install
-npm run build
-```
-
-When `/Users/gecko/src/one` exists, the build copies `@refinio/one.core` and
-`@refinio/one.models` from that sibling workspace into `node-runtime/node_modules`.
-Otherwise it falls back to the vendored tarballs in `vendor/`.
-
-### 2. Build Swift Package and CLI Tool
-
-```bash
-swift build
-# or
-npm run build:swift
-```
-
-### 3. Create App Bundle
-
-```bash
-./scripts/create-app-bundle.sh
-```
-
-This creates `OneFiler.app` with the CLI tool at:
-`.build/debug/OneFiler.app/Contents/MacOS/onefiler`
-
-## Usage
-
-### CLI Commands
-
-```bash
-# Register a File Provider domain
-.build/debug/OneFiler.app/Contents/MacOS/onefiler register \
-  --name "ONE" \
-  --path "/Users/user/.refinio/instance"
-
-# List registered domains
-.build/debug/OneFiler.app/Contents/MacOS/onefiler list
-
-# Unregister a domain
-.build/debug/OneFiler.app/Contents/MacOS/onefiler unregister --name "ONE"
-```
-
-### Integration with refinio.api
-
-The File Provider is automatically used by refinio.api on macOS when configured:
-
-```typescript
-// In refinio-api.config.json
-{
-  "filer": {
-    "mountPoint": "/Users/user/ONE",  // Not used directly on macOS
-    "inviteUrlPrefix": "https://one.refinio.net/invite"
-  }
-}
-```
-
-refinio.api will:
-1. Detect macOS platform
-2. Find OneFiler CLI tool
-3. Register File Provider domain programmatically
-4. Start IPC server to handle extension requests
-
-## Testing
-
-### Connection Integration Test
-
-This test verifies end-to-end functionality:
-- File Provider mount exposes ONE storage
-- Invite files are readable from the filesystem
-- Connections can be established using invites
-- Bidirectional contact creation works
-
-**Prerequisites:**
-- macOS 13.0+ (Ventura)
-- refinio.api built (`cd ../refinio.api && npm run build`)
-- one.provider built (`npm run build && npm run build:swift`)
-
-**Run test:**
-
-```bash
+NODE_BINARY=/absolute/path/to/node npm run prepare:runtime
+swift test
 npm run test:connection
+npm run test:private-ipc
+xcodegen generate
+xcodebuild -project OneFiler.xcodeproj -scheme OneFilerHost -configuration Release build
 ```
 
-The test will:
-1. Start a local CommunicationServer
-2. Start a refinio.api server instance that registers the File Provider domain
-3. Verify invite files are accessible in the mount
-4. Start a client refinio.api instance that reads invites from the mounted filesystem
-5. Establish connection using the invite
-6. Verify bidirectional contact creation
-7. Clean up all processes and storage
-
-## Project Structure
-
-```
-one.provider/
-├── Sources/
-│   └── OneFiler/              # File Provider implementation
-│       ├── FileProviderExtension.swift    # Main extension implementation
-│       ├── FileProviderItem.swift         # File/directory item wrapper
-│       ├── FileProviderEnumerators.swift  # Directory enumeration
-│       └── ONEBridge.swift                # IPC bridge to Node.js
-├── node-runtime/              # Node.js IPC server
-│   ├── index.ts               # JSON-RPC server
-│   └── lib/                   # Compiled output
-├── packages/                  # Vendored dependencies
-│   ├── one.core/
-│   └── one.models/
-├── test/
-│   └── integration/
-│       └── connection-test.js # Connection integration test
-├── Package.swift              # Swift Package Manager config
-├── package.json               # Node.js config
-└── tsconfig.json             # TypeScript config
-```
-
-## IPC Protocol
-
-The Swift ONEBridge communicates with Node.js via JSON-RPC 2.0 over stdin/stdout.
-
-### Supported Methods
-
-- `initialize(instancePath: string)` - Initialize file system
-- `stat(path: string)` - Get file/directory metadata
-- `readDir(path: string)` - List directory contents
-- `readFile(path: string)` - Read file contents (base64)
-- `readFileInChunks(path, length, position)` - Read file chunk
-- `createDir(path, mode)` - Create directory
-- `createFile(path, fileHash, fileName, mode)` - Create file
-- `unlink(path)` - Delete file
-- `rmdir(path)` - Remove directory
-- `rename(src, dest)` - Rename/move file
-
-### Example Request
-
-```json
-{"jsonrpc":"2.0","method":"stat","params":{"path":"/"},"id":1}
-```
-
-### Example Response
-
-```json
-{"jsonrpc":"2.0","result":{"mode":16877,"size":0},"id":1}
-```
-
-## Development
-
-### Debug Logging
-
-File Provider extension logs can be viewed in Console.app:
+`test:connection` starts the packaged Node/ONE runtime and exercises the Swift
+bridge without a port. `test:private-ipc` requires a local signing identity and
+checks valid peers, wrong bundle identities, and an ad-hoc-signed impostor.
+For provisioned sandbox checks, including the bundled Node child:
 
 ```bash
-log stream --predicate 'subsystem == "com.one.provider"'
+FILER_PROFILE_APP=/path/to/signed/OneFiler.app \
+FILER_TEST_RUNTIME="$PWD/build/native-runtime" npm run test:private-ipc
 ```
 
-### Troubleshooting
+The signed app supplies matching host/extension provisioning profiles. Tests use
+disposable processes and storage; they do not install an app or register domains.
+Existing Fotos and read-only HTTP fixtures remain test adapters, independent of
+the production native transport.
 
-**File Provider not mounting:**
-1. Check System Settings → Privacy & Security → Extensions → File Provider
-2. Verify entitlements are correct
-3. Check Console.app for errors
-4. Try removing and re-adding the domain
+## Run
 
-**IPC communication failing:**
-1. Verify node-runtime is built: `npm run build`
-2. Check Node.js is in PATH: `which node`
-3. Inspect IPC logs in Console.app
+Install and open the signed app, then select **Register Domain** and enter a name.
+Keep OneFiler open while using the domain. The host starts each runtime on demand
+and closes its input pipe on shutdown so ONE can drain operations and close storage.
 
-**Test failures:**
-1. Ensure refinio.api is built
-2. Check all ports are free (8000, 50123, 50125)
-3. Verify CommServer starts successfully
-4. Clean up orphaned processes: `killall OneFilerMac node`
+Legacy `path` or `endpoint`/`token` configurations are rejected without being
+rewritten. Existing installations need an explicit storage/identity migration;
+creating a new UUID domain does not adopt an existing external ONE instance.
 
-## Reference
+## macOS icons
 
-This implementation follows the same architecture as:
-- **one.fuse3** - Linux FUSE3 implementation
-- **one.projfs** - Windows ProjFS implementation
+The menu bar uses `Resources/Assets.xcassets/MenuBarIcon.imageset/olive.svg`,
+an exact copy of `../olive.svg`. Keep these in sync. AppKit supplies the template
+tint; connection status changes the tooltip. The AppIcon set uses the olive on
+white. Xcode must compile the asset catalog.
 
-See [specs/001-apple-file-provider/](../../specs/001-apple-file-provider/) for detailed specification and plan.
+## Distribution
+
+```bash
+NODE_BINARY=/absolute/path/to/node npm run dist:mac
+npm run publish:refinio
+```
+
+This is the existing Developer ID, notarized DMG pipeline. Mac App Store signing,
+submission, privacy metadata, migration, and full Finder lifecycle validation
+remain release work; a successful local build does not establish Store readiness.

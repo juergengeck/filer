@@ -7,17 +7,29 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
     private var menu: NSMenu!
     private var statusMonitor: StatusMonitor!
     private var domainManager: DomainManager!
+    private let runtimeService = RuntimeService()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        do { try runtimeService.start() }
+        catch {
+            let alert = NSAlert(error: error)
+            alert.runModal()
+            NSApplication.shared.terminate(nil)
+            return
+        }
         // Create status item in menu bar
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
 
         if let button = statusItem.button {
-            // Temporarily use SF Symbol to test
-            if let iconImage = NSImage(systemSymbolName: "sparkles", accessibilityDescription: "OneFiler") {
-                button.image = iconImage
-                NSLog("OneFiler: Using SF Symbol")
+            guard let iconImage = NSImage(named: "MenuBarIcon") else {
+                fatalError("The bundled olive menu bar icon is missing")
             }
+            // AppKit tints the olive silhouette for the actual menu bar appearance,
+            // including light/dark wallpaper and the selected menu state.
+            iconImage.isTemplate = true
+            iconImage.size = NSSize(width: 18, height: 18)
+            iconImage.accessibilityDescription = "OneFiler"
+            button.image = iconImage
             button.toolTip = "OneFiler - ONE Platform File Provider"
         }
 
@@ -41,6 +53,14 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
         NSLog("OneFiler menu bar app started")
     }
 
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        Task {
+            await runtimeService.stop()
+            await MainActor.run { sender.reply(toApplicationShouldTerminate: true) }
+        }
+        return .terminateLater
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         statusMonitor.stopMonitoring()
     }
@@ -57,39 +77,46 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
         menu.addItem(NSMenuItem.separator())
 
         // Domains section
-        let domains = domainManager.listDomains()
-        if domains.isEmpty {
-            let noDomainsItem = NSMenuItem(title: "No domains registered", action: nil, keyEquivalent: "")
-            noDomainsItem.isEnabled = false
-            menu.addItem(noDomainsItem)
-        } else {
-            for (identifier, config) in domains {
-                let domainMenu = NSMenu()
+        do {
+            let domains = try domainManager.listDomains()
+            if domains.isEmpty {
+                let noDomainsItem = NSMenuItem(title: "No domains registered", action: nil, keyEquivalent: "")
+                noDomainsItem.isEnabled = false
+                menu.addItem(noDomainsItem)
+            } else {
+                for (identifier, _) in domains {
+                    let domainMenu = NSMenu()
 
-                // Status
-                let status = statusMonitor.getStatus(for: identifier)
-                let statusItem = NSMenuItem(title: "Status: \(status.description)", action: nil, keyEquivalent: "")
-                statusItem.isEnabled = false
-                domainMenu.addItem(statusItem)
+                    // Status
+                    let status = statusMonitor.getStatus(for: identifier)
+                    let statusItem = NSMenuItem(title: "Status: \(status.description)", action: nil, keyEquivalent: "")
+                    statusItem.isEnabled = false
+                    domainMenu.addItem(statusItem)
 
-                // Path
-                let pathItem = NSMenuItem(title: "Path: \(config.path)", action: nil, keyEquivalent: "")
-                pathItem.isEnabled = false
-                domainMenu.addItem(pathItem)
+                    let endpointItem = NSMenuItem(title: "Local ONE runtime", action: nil, keyEquivalent: "")
+                    endpointItem.isEnabled = false
+                    domainMenu.addItem(endpointItem)
 
-                domainMenu.addItem(NSMenuItem.separator())
+                    domainMenu.addItem(NSMenuItem.separator())
 
-                // Unregister
-                let unregisterItem = NSMenuItem(title: "Unregister", action: #selector(unregisterDomain(_:)), keyEquivalent: "")
-                unregisterItem.representedObject = identifier
-                unregisterItem.target = self
-                domainMenu.addItem(unregisterItem)
+                    // Unregister
+                    let unregisterItem = NSMenuItem(title: "Unregister", action: #selector(unregisterDomain(_:)), keyEquivalent: "")
+                    unregisterItem.representedObject = identifier
+                    unregisterItem.target = self
+                    domainMenu.addItem(unregisterItem)
 
-                // Add to main menu
-                let domainItem = NSMenuItem(title: identifier, action: nil, keyEquivalent: "")
-                domainItem.submenu = domainMenu
-                menu.addItem(domainItem)
+                    // Add to main menu
+                    let domainItem = NSMenuItem(title: identifier, action: nil, keyEquivalent: "")
+                    domainItem.submenu = domainMenu
+                    menu.addItem(domainItem)
+                }
             }
+        } catch {
+            let failure = NSMenuItem(title: "Cannot read domain configuration", action: nil, keyEquivalent: "")
+            failure.isEnabled = false
+            failure.toolTip = error.localizedDescription
+            menu.addItem(failure)
+            NSLog("OneFiler domain configuration error: \(error)")
         }
 
         menu.addItem(NSMenuItem.separator())
@@ -138,15 +165,9 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
         let nameField = NSTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
         nameField.placeholderString = "e.g., MyONE"
 
-        // Path field
-        let pathLabel = NSTextField(labelWithString: "Instance Path:")
-        let pathField = NSTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
-        pathField.placeholderString = "e.g., /Users/user/.refinio/instance"
-
         stackView.addArrangedSubview(nameLabel)
         stackView.addArrangedSubview(nameField)
-        stackView.addArrangedSubview(pathLabel)
-        stackView.addArrangedSubview(pathField)
+        alert.informativeText = "Create a local ONE instance and make its files available in Finder. Keep OneFiler open while using the drive."
 
         alert.accessoryView = stackView
         alert.addButton(withTitle: "Register")
@@ -155,23 +176,14 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
         let response = alert.runModal()
         if response == .alertFirstButtonReturn {
             let name = nameField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-            let path = pathField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
 
-            if !name.isEmpty && !path.isEmpty {
+            if !name.isEmpty {
                 do {
-                    try domainManager.registerDomain(name: name, path: path)
-                    updateMenu()
-
-                    let successAlert = NSAlert()
-                    successAlert.messageText = "Domain Registered"
-                    successAlert.informativeText = "Domain '\(name)' has been registered successfully."
-                    successAlert.runModal()
+                    try domainManager.registerDomain(name: name) { error in
+                        self.showDomainResult(error, success: "Domain '\(name)' registered.")
+                    }
                 } catch {
-                    let errorAlert = NSAlert()
-                    errorAlert.messageText = "Registration Failed"
-                    errorAlert.informativeText = error.localizedDescription
-                    errorAlert.alertStyle = .critical
-                    errorAlert.runModal()
+                    showDomainResult(error, success: "")
                 }
             }
         }
@@ -190,15 +202,23 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
         let response = alert.runModal()
         if response == .alertFirstButtonReturn {
             do {
-                try domainManager.unregisterDomain(name: identifier)
-                updateMenu()
+                try domainManager.unregisterDomain(name: identifier) { error in
+                    self.showDomainResult(error, success: "Domain '\(identifier)' removed.")
+                }
             } catch {
-                let errorAlert = NSAlert()
-                errorAlert.messageText = "Unregister Failed"
-                errorAlert.informativeText = error.localizedDescription
-                errorAlert.alertStyle = .critical
-                errorAlert.runModal()
+                showDomainResult(error, success: "")
             }
+        }
+    }
+
+    private func showDomainResult(_ error: Error?, success: String) {
+        DispatchQueue.main.async {
+            self.updateMenu()
+            let alert = NSAlert()
+            alert.messageText = error == nil ? "Domain Updated" : "Domain Update Failed"
+            alert.informativeText = error?.localizedDescription ?? success
+            alert.alertStyle = error == nil ? .informational : .critical
+            alert.runModal()
         }
     }
 
@@ -225,18 +245,6 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
 
     private func updateIcon(state: StatusMonitor.ConnectionState) {
         guard let button = statusItem.button else { return }
-
-        // For now, use the same icon for all states
-        // In the future, we could create variations with badges/overlays
-        // The base flexibel icon will adjust to dark/light mode automatically since it's a template
-
-        // Load the icon (same for all states for now)
-        if let iconPath = Bundle.main.path(forResource: "MenuBarIcon", ofType: "png"),
-           let iconImage = NSImage(contentsOfFile: iconPath) {
-            iconImage.isTemplate = true
-            iconImage.size = NSSize(width: 18, height: 18)
-            button.image = iconImage
-        }
 
         // Update tooltip to reflect state
         switch state {

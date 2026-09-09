@@ -10,34 +10,28 @@ let package = Package(
     products: [
         .library(
             name: "OneFilerExtension",
-            targets: ["OneFilerExtension"]),
-        .executable(
-            name: "onefiler",
-            targets: ["OneFilerCLI"])
+            targets: ["OneFilerExtension"])
     ],
     dependencies: [],
     targets: [
-        // File Provider extension library
+        .target(name: "OneFilerShared", path: "Sources/OneFilerShared"),        // File Provider extension library
         .target(
             name: "OneFilerExtension",
-            dependencies: [],
-            path: "Sources/OneFiler",
-            resources: [
-                .copy("../../node-runtime/lib")
-            ]
-        ),
-
-        // CLI tool for domain management
-        .executableTarget(
-            name: "OneFilerCLI",
-            dependencies: [],
-            path: "Sources/OneFilerCLI"
+            dependencies: ["OneFilerShared"],
+            path: "Sources/OneFiler"
         ),
 
         // Tests
+        .target(
+            name: "OneFilerHostSupport",
+            dependencies: ["OneFilerShared"],
+            path: "Sources/OneFilerHost",
+            exclude: ["main.swift", "MenuBarApp.swift", "StatusMonitor.swift"],
+            sources: ["DomainManager.swift", "NodeRuntimeProcess.swift", "InstanceSecrets.swift", "RuntimeService.swift"]
+        ),
         .testTarget(
             name: "OneFilerTests",
-            dependencies: ["OneFilerExtension"],
+            dependencies: ["OneFilerExtension", "OneFilerHostSupport"],
             path: "Tests/OneFilerTests"
         )
     ]

@@ -26,14 +26,17 @@ class RootEnumerator: NSObject, NSFileProviderEnumerator {
     ) {
         logger.info("🔄 ROOT ENUMERATE ITEMS CALLED")
         Task {
-            logger.info("  → Getting standard folders...")
-            // Return standard top-level folders
-            let items = FileProviderItem.standardFolders()
-            logger.info("  → Got \(items.count) folders")
-            observer.didEnumerate(items)
-            logger.info("  → Finishing enumeration")
-            observer.finishEnumerating(upTo: nil)
-            logger.info("✅ ROOT ENUMERATE COMPLETE")
+            do {
+                guard let ext = self.fileProviderExtension else {
+                    throw NSFileProviderError(.serverUnreachable)
+                }
+                let bridge = try await ext.getBridge()
+                let children = try await bridge.getChildren(parentId: "/")
+                observer.didEnumerate(children.map { FileProviderItem(oneObject: $0) })
+                observer.finishEnumerating(upTo: nil)
+            } catch {
+                observer.finishEnumeratingWithError(error)
+            }
         }
     }
     

@@ -39,7 +39,7 @@ final class FileProviderItemTests: XCTestCase {
         XCTAssertEqual(item.filename, "My Folder")
         XCTAssertEqual(item.contentType, .folder)
         XCTAssertNil(item.documentSize)
-        XCTAssertTrue(item.capabilities.contains(.allowsAddingSubItems))
+        XCTAssertFalse(item.capabilities.contains(.allowsAddingSubItems))
     }
 
     // MARK: - Root Item
@@ -57,7 +57,7 @@ final class FileProviderItemTests: XCTestCase {
     func testStandardFolders() {
         let folders = FileProviderItem.standardFolders()
 
-        XCTAssertEqual(folders.count, 5)
+        XCTAssertEqual(folders.count, 7)
 
         let folderNames = Set(folders.map { $0.filename })
         XCTAssertTrue(folderNames.contains("Objects"))
@@ -192,12 +192,13 @@ final class FileProviderItemTests: XCTestCase {
     }
 
     func testFolderAllowsAddingSubItems() {
-        let object = ONEObject(
+        var object = ONEObject(
             id: "folder",
             name: "folder",
             type: .folder
         )
 
+        object.permissions = [.read, .write]
         let item = FileProviderItem(oneObject: object)
         XCTAssertTrue(item.capabilities.contains(.allowsAddingSubItems))
     }

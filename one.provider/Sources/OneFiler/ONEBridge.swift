@@ -5,18 +5,7 @@ import os.log
 
 public struct ONEInstanceConfig {
     public let name: String
-    public let directory: String
-    public let email: String?
-    public let secret: String?
-    public let instanceName: String?
-
-    public init(name: String, directory: String, email: String? = nil, secret: String? = nil, instanceName: String? = nil) {
-        self.name = name
-        self.directory = directory
-        self.email = email
-        self.secret = secret
-        self.instanceName = instanceName
-    }
+    public init(name: String) { self.name = name }
 }
 
 public struct ONEObject {
@@ -76,272 +65,81 @@ public struct ONEChanges {
     }
 }
 
-/// Bridge to ONE database via Node.js IPC
+/// Thin authenticated RPC client for the refinio.api-owned filesystem.
 public actor ONEBridge {
 
     private let config: ONEInstanceConfig
     private let logger = Logger(subsystem: "one.filer", category: "ONEBridge")
     private let debugLogger: DebugLogger
-    private var nodeProcess: Process?
-    private var stdinPipe: Pipe?
-    private var stdoutPipe: Pipe?
+    private let invoke: (Data) async throws -> Data
+    private let close: () async -> Void
     private var requestId: Int = 0
-    private var pendingResponses: [Int: CheckedContinuation<[String: Any], Error>] = [:]
-    private var stdoutBuffer: Data = Data()
-    private var writeTask: Task<Void, Never>?
-    private var readTask: Task<Void, Never>?
-    private var writeQueue: [Data] = []
-    private var writeInProgress = false
 
-    public init(config: ONEInstanceConfig) throws {
+    public init(config: ONEInstanceConfig, invoke: ((Data) async throws -> Data)? = nil,
+                close: (() async -> Void)? = nil) throws {
         self.config = config
         self.debugLogger = try DebugLogger(component: "bridge")
+        let client = PrivateRuntimeClient(domain: config.name)
+        self.invoke = invoke ?? { try await client.invoke($0) }
+        self.close = close ?? { await client.disconnect() }
     }
 
     // MARK: - Lifecycle
 
     public func connect() async throws {
-        logger.info("Connecting to ONE instance at \(self.config.directory)")
+        logger.info("Connecting to the app-owned refinio.api runtime")
         await debugLogger.info("=== ONEBridge Connect Started ===")
-        await debugLogger.info("Instance path: \(self.config.directory)")
-
-        // Spawn Node.js process with IPC server
-        let process = Process()
-        let stdin = Pipe()
-        let stdout = Pipe()
-
-        // Find lib/index.js
-        guard let resourcePath = Bundle.main.resourcePath else {
-            logger.critical("FATAL: Could not determine bundle resource path")
-            await debugLogger.critical("FATAL: Could not determine bundle resource path")
-            throw ONEBridgeError.operationFailed
-        }
-
-        let nodePath = resourcePath + "/lib/index.js"
-        let nodeExecutablePath = resourcePath + "/bin/node"
-
-        await debugLogger.debug("Resource path: \(resourcePath)")
-        await debugLogger.debug("Node executable: \(nodeExecutablePath)")
-        await debugLogger.debug("Node script: \(nodePath)")
-
-        // Require bundled node executable
-        guard FileManager.default.fileExists(atPath: nodeExecutablePath) else {
-            logger.critical("FATAL: node executable not found at \(nodeExecutablePath). Extension must include bundled node.")
-            await debugLogger.critical("FATAL: node executable not found at \(nodeExecutablePath)")
-            throw ONEBridgeError.operationFailed
-        }
-
-        process.executableURL = URL(fileURLWithPath: nodeExecutablePath)
-        process.arguments = [nodePath]
-        process.standardInput = stdin
-        process.standardOutput = stdout
-
-        // Set working directory to Resources/ for node_modules resolution
-        process.currentDirectoryURL = URL(fileURLWithPath: resourcePath)
-
-        // Set NODE_PATH to find modules in Resources/node_modules
-        let nodeModulesPath = resourcePath + "/node_modules"
-        process.environment = (process.environment ?? [:]).merging(["NODE_PATH": nodeModulesPath]) { $1 }
-
-        await debugLogger.debug("Working directory: \(resourcePath)")
-        await debugLogger.debug("NODE_PATH: \(nodeModulesPath)")
-
-        // Capture stderr to see Node.js errors
-        let stderr = Pipe()
-        process.standardError = stderr
-
-        // Create Node.js debug logger in App Group
-        let nodeDebugLogger = try DebugLogger(component: "node")
-
-        // Log stderr output to debug logger
-        stderr.fileHandleForReading.readabilityHandler = { handle in
-            let data = handle.availableData
-
-            // Empty data means EOF - remove handler to prevent tight loop
-            if data.isEmpty {
-                handle.readabilityHandler = nil
-                self.logger.info("Node.js stderr pipe closed (EOF)")
-                Task {
-                    await nodeDebugLogger.info("Node.js stderr pipe closed (EOF)")
-                }
-                return
-            }
-
-            if let output = String(data: data, encoding: .utf8) {
-                // Use NSLog to avoid redaction
-                NSLog("[ONEBridge] Node.js stderr: %@", output)
-                self.logger.error("Node.js stderr: \(output)")
-
-                // Write to debug file in App Group
-                Task {
-                    await nodeDebugLogger.error("Node.js stderr: \(output)")
-                }
-            }
-        }
-
-        self.nodeProcess = process
-        self.stdinPipe = stdin
-        self.stdoutPipe = stdout
-
-        try process.run()
-        NSLog("[ONEBridge] Node.js process.run() succeeded, PID: %d", process.processIdentifier)
-        logger.info("Node.js process started (PID: \(process.processIdentifier))")
-        await debugLogger.info("Node.js process started (PID: \(process.processIdentifier))")
-
-        // Start reading stdout in background - retain strong reference via task
-        self.readTask = Task {
-            await self.readResponses()
-        }
-
-        // Initialize the file system with credentials
-        var params: [String: Any] = ["instancePath": self.config.directory]
-        if let email = self.config.email {
-            params["email"] = email
-            await debugLogger.debug("Using email: \(email)")
-        }
-        if let secret = self.config.secret {
-            params["secret"] = secret
-            await debugLogger.debug("Using secret: [REDACTED]")
-        }
-        if let instanceName = self.config.instanceName {
-            params["name"] = instanceName
-            await debugLogger.debug("Using instance name: \(instanceName)")
-        }
-
-        await debugLogger.info("Sending initialize IPC request")
-        let result = try await self.sendRequest(method: "initialize", params: params)
+        await debugLogger.info("Transport: private XPC and inherited pipes")
+        let result = try await self.sendRequest(method: "ping", params: [:])
         if result["status"] as? String != "ok" {
-            await debugLogger.error("Initialize failed: invalid response")
+            await debugLogger.error("Health check failed: invalid response")
             throw ONEBridgeError.invalidResponse
         }
-        logger.info("Node.js IPC initialized")
-        await debugLogger.info("Node.js IPC initialized successfully")
+        logger.info("refinio.api filesystem RPC connected")
+        await debugLogger.info("refinio.api filesystem RPC connected")
         await debugLogger.info("=== ONEBridge Connect Completed ===")
     }
 
     public func disconnect() async {
-        logger.info("Disconnecting from ONE instance")
+        await close()
+        logger.info("Disconnecting from refinio.api")
         await debugLogger.info("=== ONEBridge Disconnect Started ===")
-
-        // Cancel tasks
-        readTask?.cancel()
-        writeTask?.cancel()
-        readTask = nil
-        writeTask = nil
-
-        // Terminate process
-        if let pid = nodeProcess?.processIdentifier {
-            await debugLogger.info("Terminating Node.js process (PID: \(pid))")
-        }
-        nodeProcess?.terminate()
-        nodeProcess = nil
-        stdinPipe = nil
-        stdoutPipe = nil
-
-        // Fail all pending requests
-        let pendingCount = pendingResponses.count
-        if pendingCount > 0 {
-            await debugLogger.warning("Failing \(pendingCount) pending requests")
-        }
-        for (_, continuation) in pendingResponses {
-            continuation.resume(throwing: ONEBridgeError.notConnected)
-        }
-        pendingResponses.removeAll()
-
         await debugLogger.info("=== ONEBridge Disconnect Completed ===")
     }
 
     // MARK: - IPC Communication
 
     private func sendRequest(method: String, params: [String: Any]) async throws -> [String: Any] {
-        guard stdinPipe != nil else {
-            await debugLogger.error("sendRequest failed: not connected")
-            throw ONEBridgeError.notConnected
-        }
-
         requestId += 1
         let id = requestId
 
         let request: [String: Any] = [
-            "jsonrpc": "2.0",
-            "method": method,
-            "params": params,
-            "id": id
+            "operation": "filer:\(method)", "request": params, "requestId": String(id)
         ]
-
-        let jsonData = try JSONSerialization.data(withJSONObject: request)
-        var message = jsonData
-        message.append(contentsOf: "\n".utf8)
-
-        logger.debug("Sending IPC request: \(method) (id: \(id))")
-        await debugLogger.debug("→ IPC Request: \(method) (id: \(id))")
-
-        return try await withCheckedThrowingContinuation { continuation in
-            pendingResponses[id] = continuation
-            writeQueue.append(message)
-            Task {
-                await self.processWriteQueue()
+        let data = try await invoke(JSONSerialization.data(withJSONObject: request))
+        guard let response = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              response["requestId"] as? String == String(id) else {
+            throw ONEBridgeError.invalidResponse
+        }
+        guard response["success"] as? Bool == true else {
+            let failure = response["error"] as? [String: Any]
+            throw NSError(domain: "one.filer.transport", code: 1,
+                userInfo: [NSLocalizedDescriptionKey: failure?["message"] as? String ?? "Runtime operation failed"])
+        }
+        guard let json = response["result"] as? [String: Any] else { throw ONEBridgeError.invalidResponse }
+        if let error = json["error"] as? [String: Any] {
+            guard let message = error["message"] as? String,
+                  let code = error["code"] as? Int else {
+                throw ONEBridgeError.invalidResponse
             }
+            await debugLogger.error("← RPC Error (id: \(id)): code=\(code)")
+            throw DomainWriteError.fromRPC(code: code, message: message)
         }
-    }
-
-    private func processWriteQueue() async {
-        guard !writeInProgress else { return }
-        guard !writeQueue.isEmpty else { return }
-        guard let stdin = stdinPipe?.fileHandleForWriting else { return }
-
-        writeInProgress = true
-
-        while let message = writeQueue.first {
-            writeQueue.removeFirst()
-            stdin.write(message)
+        guard let result = json["result"] as? [String: Any] else {
+            throw ONEBridgeError.invalidResponse
         }
-
-        writeInProgress = false
-    }
-
-    private func readResponses() async {
-        guard let stdout = stdoutPipe?.fileHandleForReading else { return }
-
-        await debugLogger.debug("Starting stdout reader task")
-
-        // Use async bytes sequence instead of blocking availableData
-        do {
-            for try await data in stdout.bytes {
-                stdoutBuffer.append(Data([data]))
-
-                // Process complete lines
-                while let newlineRange = stdoutBuffer.range(of: Data("\n".utf8)) {
-                let lineData = stdoutBuffer.subdata(in: 0..<newlineRange.lowerBound)
-                stdoutBuffer.removeSubrange(0..<newlineRange.upperBound)
-
-                guard let json = try? JSONSerialization.jsonObject(with: lineData) as? [String: Any] else {
-                    continue
-                }
-
-                guard let id = json["id"] as? Int else { continue }
-
-                if let continuation = pendingResponses.removeValue(forKey: id) {
-                    if let error = json["error"] as? [String: Any] {
-                        let message = error["message"] as? String ?? "Unknown error"
-                        let code = error["code"] as? Int ?? -1
-                        logger.error("IPC error (id: \(id)): \(message)")
-                        await debugLogger.error("← IPC Error (id: \(id)): code=\(code), message=\(message)")
-                        continuation.resume(throwing: ONEBridgeError.operationFailed)
-                    } else if let result = json["result"] as? [String: Any] {
-                        logger.debug("IPC response received (id: \(id))")
-                        await debugLogger.debug("← IPC Response (id: \(id)): OK")
-                        continuation.resume(returning: result)
-                    }
-                }
-                }
-            }
-        } catch {
-            logger.error("Error reading stdout: \(error.localizedDescription)")
-            await debugLogger.error("Error reading stdout: \(error.localizedDescription)")
-        }
-
-        await debugLogger.info("stdout reader task exited")
+        await debugLogger.debug("← RPC Response (id: \(id)): OK")
+        return result
     }
 
     // MARK: - Public API
@@ -351,12 +149,13 @@ public actor ONEBridge {
         let normalizedPath = id.hasPrefix("/") ? id : "/\(id)"
 
         let result = try await sendRequest(method: "stat", params: ["path": normalizedPath])
-        let mode = result["mode"] as? Int ?? 0
-        let size = result["size"] as? Int ?? 0
+        guard let mode = result["mode"] as? Int, let size = result["size"] as? Int else {
+            throw ONEBridgeError.invalidResponse
+        }
         let isDirectory = (mode & 0o040000) != 0
 
         var obj = ONEObject(
-            id: normalizedPath,
+            id: String(normalizedPath.dropFirst()),
             name: (normalizedPath as NSString).lastPathComponent,
             type: isDirectory ? .folder : .file,
             size: size
@@ -384,6 +183,9 @@ public actor ONEBridge {
             permissions.insert(.delete)
         }
         obj.permissions = permissions
+        obj.contentHash = result["contentHash"] as? String ?? ""
+        obj.metadataHash = result["metadataHash"] as? String ?? ""
+        obj.mimeType = result["mimeType"] as? String
 
         // Set current date as modification/creation date (IFileSystem doesn't provide dates)
         let now = Date()
@@ -405,9 +207,7 @@ public actor ONEBridge {
         NSLog("🔥 ONEBridge.getChildren: readDir response received")
 
         guard let children = result["children"] as? [String] else {
-            logger.warning("  → No children found in response")
-            NSLog("🔥 ONEBridge.getChildren: No children in response")
-            return []
+            throw ONEBridgeError.invalidResponse
         }
 
         logger.info("  → Found \(children.count) children: \(children)")
@@ -416,16 +216,9 @@ public actor ONEBridge {
         var objects: [ONEObject] = []
         for child in children {
             let childPath = normalizedPath == "/" ? "/\(child)" : "\(normalizedPath)/\(child)"
-            do {
-                var obj = try await getObject(id: childPath)
-                // Set parentId to match the parent's itemIdentifier (no leading slash for non-root)
-                // This is critical: the parent folder's id is "invites" but we normalized to "/invites"
-                // We need to use the original parentId so it matches FileProviderItem.itemIdentifier
-                obj.parentId = parentId
-                objects.append(obj)
-            } catch {
-                logger.warning("Failed to get child object: \(childPath)")
-            }
+            var obj = try await getObject(id: childPath)
+            obj.parentId = normalizedPath == "/" ? nil : String(normalizedPath.dropFirst())
+            objects.append(obj)
         }
 
         logger.info("  → Returning \(objects.count) ONEObjects")
@@ -447,13 +240,38 @@ public actor ONEBridge {
         return data
     }
 
-    public func writeContent(id: String, data: Data) async throws {
+    @discardableResult
+    public func writeContent(id: String, data: Data, baseVersion: Data? = nil) async throws -> String? {
         // Normalize path: ensure it starts with /
         let normalizedPath = id.hasPrefix("/") ? id : "/\(id)"
 
         logger.info("Writing \(data.count) bytes to \(normalizedPath)")
-        let base64String = data.base64EncodedString()
-        _ = try await sendRequest(method: "writeFile", params: ["path": normalizedPath, "content": base64String])
+        let request = ContentWriteRequest(path: normalizedPath, content: data, baseVersion: baseVersion)
+        let result = try await sendRequest(method: "writeFile", params: request.parameters)
+        guard let status = result["status"] as? String else { throw ONEBridgeError.invalidResponse }
+        if status == "ok" { return nil }
+        guard status == "accepted" || status == "unchanged",
+              let version = result["contentVersion"] as? String, !version.isEmpty,
+              result["operationId"] as? String == request.operationId else {
+            throw ONEBridgeError.invalidResponse
+        }
+        return version
+    }
+
+    /// Create an item through the owning filesystem and return its persisted metadata.
+    public func createItem(parentId: String, name: String, data: Data?, isDirectory: Bool) async throws -> ONEObject {
+        guard !name.isEmpty, !name.contains("/"), name != ".", name != ".." else {
+            throw ONEBridgeError.operationFailed
+        }
+        let parentPath = parentId.hasPrefix("/") ? parentId : "/\(parentId)"
+        let path = parentPath == "/" ? "/\(name)" : "\(parentPath)/\(name)"
+        if isDirectory {
+            _ = try await sendRequest(method: "createDir", params: ["path": path, "mode": 0o040755])
+        } else {
+            guard let data else { throw ONEBridgeError.operationFailed }
+            try await writeContent(id: path, data: data)
+        }
+        return try await getObject(id: path)
     }
 
     public func deleteObject(id: String) async throws {
@@ -523,6 +341,7 @@ public actor ONEBridge {
 
 public enum ONEBridgeError: Error {
     case notConnected
+    case notAuthenticated
     case timeout
     case invalidResponse
     case operationFailed
