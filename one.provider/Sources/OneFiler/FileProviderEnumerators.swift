@@ -1,173 +1,70 @@
 import FileProvider
-import os.log
 
-// MARK: - Root Enumerator
+/// Enumerate owner-produced snapshots and resumable changes for one stable container.
+final class FilerEnumerator: NSObject, NSFileProviderEnumerator {
+    private let container: String
+    private let bridge: () async throws -> ONEBridge
+    private let state = NSLock()
+    private var tasks: [UUID: Task<Void, Never>] = [:]
 
-class RootEnumerator: NSObject, NSFileProviderEnumerator {
-
-    private weak var fileProviderExtension: FileProviderExtension?
-    private var currentAnchor: Data?
-    private let logger = Logger(subsystem: "one.filer", category: "RootEnum")
-
-    init(extension: FileProviderExtension) {
-        self.fileProviderExtension = `extension`
+    init(container: String, bridge: @escaping () async throws -> ONEBridge) {
+        self.container = container
+        self.bridge = bridge
         super.init()
-        logger.info("🎯 RootEnumerator CREATED")
     }
 
     func invalidate() {
-        logger.info("❌ RootEnumerator INVALIDATED")
-        // Cancel any ongoing operations
+        let active = state.withLock { let active = Array(tasks.values); tasks.removeAll(); return active }
+        for task in active { task.cancel() }
     }
 
-    func enumerateItems(
-        for observer: NSFileProviderEnumerationObserver,
-        startingAt page: NSFileProviderPage
-    ) {
-        logger.info("🔄 ROOT ENUMERATE ITEMS CALLED")
-        Task {
-            do {
-                guard let ext = self.fileProviderExtension else {
-                    throw NSFileProviderError(.serverUnreachable)
-                }
-                let bridge = try await ext.getBridge()
-                let children = try await bridge.getChildren(parentId: "/")
-                observer.didEnumerate(children.map { FileProviderItem(oneObject: $0) })
-                observer.finishEnumerating(upTo: nil)
-            } catch {
-                observer.finishEnumeratingWithError(error)
+    /// Retain only active work, including when File Provider calls from different queues.
+    private func start(_ operation: @escaping () async -> Void) {
+        let id = UUID()
+        state.withLock {
+            tasks[id] = Task {
+                await operation()
+                _ = self.state.withLock { self.tasks.removeValue(forKey: id) }
             }
         }
     }
-    
-    func enumerateChanges(
-        for observer: NSFileProviderChangeObserver,
-        from anchor: NSFileProviderSyncAnchor
-    ) {
-        // Root-level synthetic folders never change
-        // Report no changes and use the same anchor
-        logger.info("🔄 ROOT ENUMERATE CHANGES (no changes - synthetic folders)")
-        observer.finishEnumeratingChanges(upTo: anchor, moreComing: false)
+
+    func enumerateItems(for observer: NSFileProviderEnumerationObserver, startingAt page: NSFileProviderPage) {
+        start { [self] in
+            do {
+                let client = try await bridge()
+                let initial = page.rawValue == (NSFileProviderPage.initialPageSortedByName as Data) ||
+                    page.rawValue == (NSFileProviderPage.initialPageSortedByDate as Data)
+                let token = initial ? nil : page.rawValue
+                let result = try await client.enumerateItems(container: container, page: token)
+                try Task.checkCancellation()
+                observer.didEnumerate(result.items.map { FileProviderItem(oneObject: $0) })
+                observer.finishEnumerating(upTo: result.nextPage.map { NSFileProviderPage($0) })
+            } catch { observer.finishEnumeratingWithError(error) }
+        }
+    }
+
+    func enumerateChanges(for observer: NSFileProviderChangeObserver, from anchor: NSFileProviderSyncAnchor) {
+        start { [self] in
+            do {
+                let client = try await bridge()
+                let result = try await client.getChanges(container: container, since: anchor.rawValue)
+                try Task.checkCancellation()
+                observer.didDeleteItems(withIdentifiers: result.deleted.map { NSFileProviderItemIdentifier($0) })
+                observer.didUpdate(result.updated.map { FileProviderItem(oneObject: $0) })
+                observer.finishEnumeratingChanges(upTo: NSFileProviderSyncAnchor(result.newAnchor), moreComing: result.moreComing)
+            } catch { observer.finishEnumeratingWithError(error) }
+        }
     }
 
     func currentSyncAnchor(completionHandler: @escaping (NSFileProviderSyncAnchor?) -> Void) {
-        // Root-level synthetic folders never change, return fixed anchor
-        logger.info("📍 ROOT CURRENT SYNC ANCHOR (fixed)")
-        let fixedAnchor = NSFileProviderSyncAnchor("root-v1".data(using: .utf8)!)
-        completionHandler(fixedAnchor)
-    }
-}
-
-// MARK: - Objects Enumerator
-
-class ObjectsEnumerator: NSObject, NSFileProviderEnumerator {
-
-    private weak var fileProviderExtension: FileProviderExtension?
-    private let containerIdentifier: NSFileProviderItemIdentifier
-
-    init(extension: FileProviderExtension, containerIdentifier: NSFileProviderItemIdentifier) {
-        self.fileProviderExtension = `extension`
-        self.containerIdentifier = containerIdentifier
-        super.init()
-    }
-
-    func invalidate() {
-        // Cancel any ongoing operations
-    }
-
-    func enumerateItems(
-        for observer: NSFileProviderEnumerationObserver,
-        startingAt page: NSFileProviderPage
-    ) {
-        Task {
+        start { [self] in
             do {
-                guard let ext = self.fileProviderExtension else {
-                    throw NSFileProviderError(.serverUnreachable)
-                }
-                let bridge = try await ext.getBridge()
-
-                // Get children from ONE database
-                let children = try await bridge.getChildren(parentId: containerIdentifier.rawValue)
-                let items = children.map { FileProviderItem(oneObject: $0) }
-
-                observer.didEnumerate(items)
-                observer.finishEnumerating(upTo: nil)
-
-            } catch {
-                observer.finishEnumeratingWithError(error)
-            }
+                let client = try await bridge()
+                let anchor = try await client.getCurrentAnchor(container: container)
+                try Task.checkCancellation()
+                completionHandler(NSFileProviderSyncAnchor(anchor))
+            } catch { completionHandler(nil) }
         }
-    }
-    
-    func enumerateChanges(
-        for observer: NSFileProviderChangeObserver,
-        from anchor: NSFileProviderSyncAnchor
-    ) {
-        // For now, don't track changes in subfolders
-        // Future: Implement per-folder change tracking
-        observer.finishEnumeratingChanges(upTo: anchor, moreComing: false)
-    }
-}
-
-// MARK: - Generic Enumerator (for other folders)
-
-class GenericEnumerator: NSObject, NSFileProviderEnumerator {
-
-    private weak var fileProviderExtension: FileProviderExtension?
-    private let containerIdentifier: NSFileProviderItemIdentifier
-    private let logger = Logger(subsystem: "one.filer", category: "GenericEnum")
-
-    init(extension: FileProviderExtension, containerIdentifier: NSFileProviderItemIdentifier) {
-        self.fileProviderExtension = `extension`
-        self.containerIdentifier = containerIdentifier
-        super.init()
-        logger.info("🎯 GenericEnumerator CREATED for: \(containerIdentifier.rawValue)")
-    }
-
-    func invalidate() {
-        logger.info("❌ GenericEnumerator INVALIDATED for: \(self.containerIdentifier.rawValue)")
-        // Cancel any ongoing operations
-    }
-
-    func enumerateItems(
-        for observer: NSFileProviderEnumerationObserver,
-        startingAt page: NSFileProviderPage
-    ) {
-        logger.info("🔄 ENUMERATE ITEMS for: \(self.containerIdentifier.rawValue)")
-        Task {
-            do {
-                logger.info("  → Getting extension...")
-                guard let ext = self.fileProviderExtension else {
-                    logger.error("  ❌ Extension is nil!")
-                    throw NSFileProviderError(.serverUnreachable)
-                }
-                logger.info("  → Getting bridge...")
-                let bridge = try await ext.getBridge()
-                logger.info("  → Got bridge, calling getChildren...")
-
-                // Get children from ONE database
-                let children = try await bridge.getChildren(parentId: self.containerIdentifier.rawValue)
-                logger.info("  → Got \(children.count) children from IPC")
-                let items = children.map { FileProviderItem(oneObject: $0) }
-                logger.info("  → Converted to \(items.count) FileProviderItems")
-
-                observer.didEnumerate(items)
-                logger.info("  → Called didEnumerate with \(items.count) items")
-                observer.finishEnumerating(upTo: nil)
-                logger.info("✅ ENUMERATE COMPLETE for: \(self.containerIdentifier.rawValue)")
-
-            } catch {
-                logger.error("❌ ENUMERATE FAILED for \(self.containerIdentifier.rawValue): \(error.localizedDescription)")
-                observer.finishEnumeratingWithError(error)
-            }
-        }
-    }
-    
-    func enumerateChanges(
-        for observer: NSFileProviderChangeObserver,
-        from anchor: NSFileProviderSyncAnchor
-    ) {
-        // For now, don't track changes in subfolders
-        observer.finishEnumeratingChanges(upTo: anchor, moreComing: false)
     }
 }

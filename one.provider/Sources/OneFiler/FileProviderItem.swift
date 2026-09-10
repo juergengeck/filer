@@ -17,7 +17,7 @@ class FileProviderItem: NSObject, NSFileProviderItem {
             name: "ONE Database",
             type: .folder,
             size: 0,
-            modified: Date()
+            modified: nil
         )
         return FileProviderItem(oneObject: rootObject)
     }
@@ -135,7 +135,7 @@ class FileProviderItem: NSObject, NSFileProviderItem {
         // Generate version data from item properties
         // For content version, use combination of id + size + modification date
         let contentString = oneObject.contentHash.isEmpty
-            ? "\(oneObject.id):\(oneObject.size):\(oneObject.modified.timeIntervalSince1970)"
+            ? "\(oneObject.id):\(oneObject.size):\((oneObject.modified?.timeIntervalSince1970 ?? 0))"
             : oneObject.contentHash
         let contentData = contentString.data(using: .utf8) ?? Data()
 
@@ -242,7 +242,7 @@ class FileProviderItem: NSObject, NSFileProviderItem {
     /// Content policy determines when the system should download the item
     @available(macOS 12.0, *)
     var contentPolicy: NSFileProviderContentPolicy {
-        if oneObject.type == .folder {
+        if oneObject.type == .folder || oneObject.downloadOnDemand {
             return .downloadLazily  // Folders don't have content to download
         }
         // For files, allow eager downloading (download on first access)

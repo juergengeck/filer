@@ -226,6 +226,11 @@ class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension {
                 await debugLogger.info("fetchContents: Getting object metadata for \(itemIdentifier.rawValue)")
                 let object = try await bridge.getObject(id: itemIdentifier.rawValue)
 
+                if let requestedVersion, !object.contentHash.isEmpty,
+                   requestedVersion.contentVersion != Data(object.contentHash.utf8) {
+                    throw NSFileProviderError(.versionNoLongerAvailable)
+                }
+
                 // Create temporary file
                 let tempDir = FileManager.default.temporaryDirectory
                 let tempURL = tempDir.appendingPathComponent(UUID().uuidString)
@@ -235,10 +240,7 @@ class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension {
 
                 // Read content from ONE database
                 await debugLogger.info("fetchContents: Reading content...")
-                let content = try await bridge.readContent(id: object.id)
-                await debugLogger.info("fetchContents: Got \(content.count) bytes")
-
-                try content.write(to: tempURL)
+                try await bridge.copyContent(id: object.id, to: tempURL, size: object.size, progress: progress, version: object.contentHash)
                 await debugLogger.info("fetchContents: Wrote to temp file")
 
                 // Return file and updated item
@@ -246,7 +248,7 @@ class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension {
                 logger.info("📥 FETCH CONTENTS SUCCESS: \(tempURL.path)")
                 NSLog("🔥🔥🔥 FETCH CONTENTS SUCCESS: \(tempURL.path)")
                 completionHandler(tempURL, item, nil)
-                progress.completedUnitCount = 100
+                progress.completedUnitCount = progress.totalUnitCount
 
             } catch {
                 logger.error("📥 FETCH CONTENTS FAILED: \(error.localizedDescription)")
@@ -268,24 +270,19 @@ class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension {
         logger.info("📂 ENUMERATOR REQUESTED: container=\(containerItemIdentifier.rawValue)")
         NSLog("🔥🔥🔥 ENUMERATOR FACTORY: Creating enumerator for \(containerItemIdentifier.rawValue)")
 
-        // Return appropriate enumerator based on container
-        // The enumerator itself will wait for bridge to be ready
+        let container: String
         switch containerItemIdentifier {
-        case .rootContainer:
-            logger.info("  → Creating RootEnumerator")
-            NSLog("🔥🔥🔥 ENUMERATOR TYPE: RootEnumerator")
-            return RootEnumerator(extension: self)
-
-        case .workingSet:
-            NSLog("🔥🔥🔥 ENUMERATOR TYPE: WorkingSetEnumerator (empty)")
-            // Return empty enumerator for working set - we don't track recently accessed files yet
-            return RootEnumerator(extension: self)  // Temporarily use RootEnumerator
-
-        default:
-            return GenericEnumerator(extension: self, containerIdentifier: containerItemIdentifier)
+        case .rootContainer: container = "root"
+        case .workingSet: container = "workingSet"
+        default: container = containerItemIdentifier.rawValue
+        }
+        return FilerEnumerator(container: container) { [weak self] in
+            guard let self else { throw NSFileProviderError(.serverUnreachable) }
+            return try await self.getBridge()
         }
     }
     
+
     // MARK: - Creation
 
     func createItem(
@@ -304,6 +301,14 @@ class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension {
                 let parent = itemTemplate.parentItemIdentifier == .rootContainer
                     ? "/" : itemTemplate.parentItemIdentifier.rawValue
                 let data = try url.map { try Data(contentsOf: $0) }
+                if options.contains(.mayAlreadyExist), let existing = try await bridge.reconcileImportedItem(
+                    parentId: parent, name: itemTemplate.filename, data: data,
+                    isDirectory: itemTemplate.contentType == .folder
+                ) {
+                    completionHandler(FileProviderItem(oneObject: existing), [], false, nil)
+                    progress.completedUnitCount = 1
+                    return
+                }
                 let object = try await bridge.createItem(
                     parentId: parent, name: itemTemplate.filename, data: data,
                     isDirectory: itemTemplate.contentType == .folder

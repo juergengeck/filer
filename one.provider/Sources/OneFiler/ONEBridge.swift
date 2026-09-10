@@ -1,4 +1,5 @@
 import Foundation
+import FileProvider
 import os.log
 
 // MARK: - Data Types
@@ -12,8 +13,9 @@ public struct ONEObject {
     public let id: String
     public let name: String
     public let type: ObjectType
+    public var path: String?
     public var size: Int = 0
-    public var modified: Date = Date()
+    public var modified: Date? = Date()
     public var created: Date?
     public var accessed: Date?
     public var parentId: String?
@@ -24,6 +26,7 @@ public struct ONEObject {
     public var mimeType: String?
     public var thumbnail: Data?
     public var permissions: Set<Permission> = [.read]
+    public var downloadOnDemand: Bool = false
 
     public var fileExtension: String? {
         guard type == .file else { return nil }
@@ -32,7 +35,7 @@ public struct ONEObject {
         return String(components.last!)
     }
 
-    public init(id: String, name: String, type: ObjectType, size: Int = 0, modified: Date = Date(), parentId: String? = nil) {
+    public init(id: String, name: String, type: ObjectType, size: Int = 0, modified: Date? = Date(), parentId: String? = nil) {
         self.id = id
         self.name = name
         self.type = type
@@ -57,11 +60,13 @@ public struct ONEChanges {
     public let updated: [ONEObject]
     public let deleted: [String]
     public let newAnchor: Data
+    public let moreComing: Bool
 
-    public init(updated: [ONEObject] = [], deleted: [String] = [], newAnchor: Data = Data()) {
+    public init(updated: [ONEObject] = [], deleted: [String] = [], newAnchor: Data = Data(), moreComing: Bool = false) {
         self.updated = updated
         self.deleted = deleted
         self.newAnchor = newAnchor
+        self.moreComing = moreComing
     }
 }
 
@@ -89,7 +94,7 @@ public actor ONEBridge {
     public func connect() async throws {
         logger.info("Connecting to the app-owned refinio.api runtime")
         await debugLogger.info("=== ONEBridge Connect Started ===")
-        await debugLogger.info("Transport: private XPC and inherited pipes")
+        await debugLogger.info("Transport: private authenticated socket and inherited pipes")
         let result = try await self.sendRequest(method: "ping", params: [:])
         if result["status"] as? String != "ok" {
             await debugLogger.error("Health check failed: invalid response")
@@ -145,10 +150,14 @@ public actor ONEBridge {
     // MARK: - Public API
 
     public func getObject(id: String) async throws -> ONEObject {
+        if id.hasPrefix("filer:") {
+            return try decodeItem(await sendRequest(method: "getItem", params: ["id": id]))
+        }
         // Normalize path: ensure it starts with /
         let normalizedPath = id.hasPrefix("/") ? id : "/\(id)"
 
         let result = try await sendRequest(method: "stat", params: ["path": normalizedPath])
+        if let item = result["item"] as? [String: Any] { return try decodeItem(item) }
         guard let mode = result["mode"] as? Int, let size = result["size"] as? Int else {
             throw ONEBridgeError.invalidResponse
         }
@@ -185,6 +194,7 @@ public actor ONEBridge {
         obj.permissions = permissions
         obj.contentHash = result["contentHash"] as? String ?? ""
         obj.metadataHash = result["metadataHash"] as? String ?? ""
+        obj.downloadOnDemand = result["downloadOnDemand"] as? Bool ?? false
         obj.mimeType = result["mimeType"] as? String
 
         // Set current date as modification/creation date (IFileSystem doesn't provide dates)
@@ -196,6 +206,15 @@ public actor ONEBridge {
     }
 
     public func getChildren(parentId: String) async throws -> [ONEObject] {
+        if parentId.hasPrefix("filer:") || parentId == "workingSet" {
+            var result: [ONEObject] = []
+            var page: Data?
+            repeat {
+                let batch = try await enumerateItems(container: parentId, page: page)
+                result.append(contentsOf: batch.items); page = batch.nextPage
+            } while page != nil
+            return result
+        }
         // Normalize path: ensure it starts with /
         let normalizedPath = parentId.hasPrefix("/") ? parentId : "/\(parentId)"
 
@@ -217,7 +236,9 @@ public actor ONEBridge {
         for child in children {
             let childPath = normalizedPath == "/" ? "/\(child)" : "\(normalizedPath)/\(child)"
             var obj = try await getObject(id: childPath)
-            obj.parentId = normalizedPath == "/" ? nil : String(normalizedPath.dropFirst())
+            if !obj.id.hasPrefix("filer:") {
+                obj.parentId = normalizedPath == "/" ? nil : String(normalizedPath.dropFirst())
+            }
             objects.append(obj)
         }
 
@@ -228,7 +249,7 @@ public actor ONEBridge {
 
     public func readContent(id: String) async throws -> Data {
         // Normalize path: ensure it starts with /
-        let normalizedPath = id.hasPrefix("/") ? id : "/\(id)"
+        let normalizedPath = try await resolvePath(id)
 
         let result = try await sendRequest(method: "readFile", params: ["path": normalizedPath])
         guard let base64String = result["content"] as? String else {
@@ -240,10 +261,32 @@ public actor ONEBridge {
         return data
     }
 
+    /// Hydrate directly to disk without retaining a model-sized RPC response in memory.
+    public func copyContent(id: String, to destination: URL, size: Int, progress: Progress, version: String? = nil) async throws {
+        let item = id.hasPrefix("filer:") ? try await getObject(id: id) : nil
+        if let item, item.contentHash != version || item.size != size {
+            throw DomainWriteError.fromRPC(code: -32022, message: "Requested content version is no longer current")
+        }
+        let normalizedPath = try await resolvePath(id)
+        try await ContentHydration.write(to: destination, size: size, progress: progress) { length, position in
+            let result: [String: Any]
+            if let item {
+                result = try await self.sendRequest(method: "readItemContent", params: [
+                    "id": id, "version": item.contentHash, "length": length, "position": position])
+            } else {
+                result = try await self.sendRequest(method: "readFileInChunks", params: [
+                    "path": normalizedPath, "length": length, "position": position])
+            }
+            guard let encoded = result["content"] as? String,
+                  let bytes = Data(base64Encoded: encoded) else { throw ONEBridgeError.invalidResponse }
+            return bytes
+        }
+    }
+
     @discardableResult
     public func writeContent(id: String, data: Data, baseVersion: Data? = nil) async throws -> String? {
         // Normalize path: ensure it starts with /
-        let normalizedPath = id.hasPrefix("/") ? id : "/\(id)"
+        let normalizedPath = try await resolvePath(id)
 
         logger.info("Writing \(data.count) bytes to \(normalizedPath)")
         let request = ContentWriteRequest(path: normalizedPath, content: data, baseVersion: baseVersion)
@@ -263,7 +306,7 @@ public actor ONEBridge {
         guard !name.isEmpty, !name.contains("/"), name != ".", name != ".." else {
             throw ONEBridgeError.operationFailed
         }
-        let parentPath = parentId.hasPrefix("/") ? parentId : "/\(parentId)"
+        let parentPath = try await resolvePath(parentId)
         let path = parentPath == "/" ? "/\(name)" : "\(parentPath)/\(name)"
         if isDirectory {
             _ = try await sendRequest(method: "createDir", params: ["path": path, "mode": 0o040755])
@@ -274,9 +317,25 @@ public actor ONEBridge {
         return try await getObject(id: path)
     }
 
+    /// Reconcile an OS reimport with the authoritative item without writing into a read-only mount.
+    public func reconcileImportedItem(parentId: String, name: String, data: Data?, isDirectory: Bool) async throws -> ONEObject? {
+        let parent = try await resolvePath(parentId)
+        let path = parent == "/" ? "/\(name)" : "\(parent)/\(name)"
+        let existing: ONEObject
+        do { existing = try await getObject(id: path) }
+        catch let error as NSError where error.domain == NSFileProviderErrorDomain && error.code == NSFileProviderError.Code.noSuchItem.rawValue {
+            return nil
+        }
+        guard (existing.type == .folder) == isDirectory else { throw CocoaError(.fileWriteFileExists) }
+        if let data, !isDirectory, data != (try await readContent(id: existing.id)) {
+            throw CocoaError(.fileWriteNoPermission)
+        }
+        return existing
+    }
+
     public func deleteObject(id: String) async throws {
         // Normalize path: ensure it starts with /
-        let normalizedPath = id.hasPrefix("/") ? id : "/\(id)"
+        let normalizedPath = try await resolvePath(id)
 
         logger.info("Deleting object \(normalizedPath)")
         _ = try await sendRequest(method: "unlink", params: ["path": normalizedPath])
@@ -284,7 +343,7 @@ public actor ONEBridge {
 
     public func rename(id: String, newName: String) async throws {
         // Normalize path: ensure it starts with /
-        let normalizedPath = id.hasPrefix("/") ? id : "/\(id)"
+        let normalizedPath = try await resolvePath(id)
 
         logger.info("Renaming \(normalizedPath) to \(newName)")
         let parentPath = (normalizedPath as NSString).deletingLastPathComponent
@@ -292,51 +351,78 @@ public actor ONEBridge {
         _ = try await sendRequest(method: "rename", params: ["src": normalizedPath, "dest": newPath])
     }
 
-    public func getChanges(since anchor: Data?) async throws -> ONEChanges {
-        let anchorString = anchor.flatMap { String(data: $0, encoding: .utf8) } ?? "0"
-
-        let result = try await sendRequest(method: "getChanges", params: ["since": anchorString])
-
-        // Parse updated objects
-        var updatedObjects: [ONEObject] = []
-        if let updated = result["updated"] as? [[String: Any]] {
-            for item in updated {
-                guard let id = item["id"] as? String,
-                      let name = item["name"] as? String,
-                      let typeString = item["type"] as? String else {
-                    continue
-                }
-
-                let type: ONEObject.ObjectType = typeString == "directory" ? .folder : .file
-                let size = item["size"] as? Int ?? 0
-
-                var obj = ONEObject(id: id, name: name, type: type, size: size)
-
-                if let modifiedTimestamp = item["modified"] as? Double {
-                    obj.modified = Date(timeIntervalSince1970: modifiedTimestamp)
-                }
-
-                updatedObjects.append(obj)
-            }
-        }
-
-        // Parse deleted ids
-        let deletedIds = result["deleted"] as? [String] ?? []
-
-        // Get new anchor
-        let newAnchorString = result["newAnchor"] as? String ?? String(Date().timeIntervalSince1970)
-        let newAnchor = Data(newAnchorString.utf8)
-
-        return ONEChanges(updated: updatedObjects, deleted: deletedIds, newAnchor: newAnchor)
+    /// Preserve stable identifiers, parent membership, and owner-produced versions at every RPC boundary.
+    private func decodeItem(_ item: [String: Any]) throws -> ONEObject {
+        guard let id = item["id"] as? String, Self.isItemID(id),
+              let parent = item["parentId"] as? String, parent == "root" || Self.isItemID(parent),
+              let name = item["name"] as? String, !name.isEmpty,
+              let path = item["path"] as? String, path.hasPrefix("/"),
+              let type = item["type"] as? String, type == "file" || type == "directory",
+              let size = item["size"] as? Int, size >= 0,
+              let contentVersion = item["contentVersion"] as? String, !contentVersion.isEmpty,
+              let metadataVersion = item["metadataVersion"] as? String, !metadataVersion.isEmpty,
+              let lazy = item["downloadOnDemand"] as? Bool else { throw ONEBridgeError.invalidResponse }
+        var object = ONEObject(id: id, name: name, type: type == "file" ? .file : .folder,
+                               size: size, modified: nil, parentId: parent == "root" ? nil : parent)
+        object.path = path
+        object.contentHash = contentVersion
+        object.metadataHash = metadataVersion
+        object.downloadOnDemand = lazy
+        return object
     }
 
-    public func getCurrentAnchor() async throws -> Data {
-        let result = try await sendRequest(method: "getCurrentAnchor", params: [:])
-        if let anchorString = result["anchor"] as? String {
-            return Data(anchorString.utf8)
+    /// Persistent identities are resolved by the owner; legacy addresses remain explicit paths.
+    private func resolvePath(_ id: String) async throws -> String {
+        if id.hasPrefix("filer:") {
+            guard let path = try await getObject(id: id).path else { throw ONEBridgeError.invalidResponse }
+            return path
         }
-        return Data(String(Date().timeIntervalSince1970).utf8)
+        return id.hasPrefix("/") ? id : "/\(id)"
     }
+
+    private static func isItemID(_ value: String) -> Bool {
+        let bytes = value.dropFirst(6).utf8
+        return value.hasPrefix("filer:") && bytes.count == 64 && bytes.allSatisfy { (48...57).contains($0) || (97...102).contains($0) }
+    }
+
+    /// Read one bounded page from a captured snapshot. Root also exposes the existing unconverted mounts.
+    public func enumerateItems(container: String, page: Data? = nil) async throws -> (items: [ONEObject], nextPage: Data?) {
+        if container == "root" || (!container.hasPrefix("filer:") && container != "workingSet") {
+            guard page == nil else { throw ONEBridgeError.invalidResponse }
+            return (try await getChildren(parentId: container == "root" ? "/" : container), nil)
+        }
+        var params: [String: Any] = ["container": container, "limit": 100]
+        if let page {
+            guard let token = String(data: page, encoding: .utf8) else { throw ONEBridgeError.invalidResponse }
+            params["page"] = token
+        }
+        let result = try await sendRequest(method: "enumerateItems", params: params)
+        guard let rows = result["items"] as? [[String: Any]] else { throw ONEBridgeError.invalidResponse }
+        let nextPage: Data?
+        if let value = result["nextPage"] {
+            guard let token = value as? String, !token.isEmpty else { throw ONEBridgeError.invalidResponse }
+            nextPage = Data(token.utf8)
+        } else { nextPage = nil }
+        return (try rows.map(decodeItem), nextPage)
+    }
+
+    /// Return the server's exact continuation; never synthesize an anchor after a malformed response.
+    public func getChanges(container: String, since anchor: Data) async throws -> ONEChanges {
+        guard let token = String(data: anchor, encoding: .utf8), !token.isEmpty else { throw ONEBridgeError.invalidResponse }
+        let result = try await sendRequest(method: "getChanges", params: ["container": container, "since": token, "limit": 100])
+        guard let rows = result["updated"] as? [[String: Any]],
+              let deleted = result["deleted"] as? [String], deleted.allSatisfy(Self.isItemID),
+              let next = result["newAnchor"] as? String, !next.isEmpty,
+              let more = result["moreComing"] as? Bool else { throw ONEBridgeError.invalidResponse }
+        return ONEChanges(updated: try rows.map(decodeItem), deleted: deleted, newAnchor: Data(next.utf8), moreComing: more)
+    }
+
+    public func getCurrentAnchor(container: String) async throws -> Data {
+        let result = try await sendRequest(method: "getCurrentAnchor", params: ["container": container])
+        guard let anchor = result["anchor"] as? String, !anchor.isEmpty else { throw ONEBridgeError.invalidResponse }
+        return Data(anchor.utf8)
+    }
+
 }
 
 public enum ONEBridgeError: Error {
