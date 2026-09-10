@@ -95,7 +95,7 @@ class DomainManager {
         guard let provider = NSFileProviderManager(for: domain) else {
             throw PrivateSocket.failure("The File Provider domain is unavailable.")
         }
-        provider.signalEnumerator(for: .rootContainer, completionHandler: completion)
+        provider.signalEnumerator(for: .workingSet, completionHandler: completion)
     }
 
     private func withConfiguration<T>(write: Bool = false, _ operation: (inout [String: DomainConfig], Data?) throws -> T) throws -> T {

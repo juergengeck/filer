@@ -26,26 +26,22 @@ class FileProviderItem: NSObject, NSFileProviderItem {
     static func standardFolders() -> [FileProviderItem] {
         return [
             FileProviderItem(oneObject: ONEObject(
+                id: "Files", name: "Files", type: .folder,
+                parentId: NSFileProviderItemIdentifier.rootContainer.rawValue
+            )),
+            FileProviderItem(oneObject: ONEObject(
+                id: "Fotos", name: "Fotos", type: .folder,
+                parentId: NSFileProviderItemIdentifier.rootContainer.rawValue
+            )),
+            FileProviderItem(oneObject: ONEObject(
                 id: "chats",
                 name: "Chats",
                 type: .folder,
                 parentId: NSFileProviderItemIdentifier.rootContainer.rawValue
             )),
             FileProviderItem(oneObject: ONEObject(
-                id: "debug",
-                name: "Debug",
-                type: .folder,
-                parentId: NSFileProviderItemIdentifier.rootContainer.rawValue
-            )),
-            FileProviderItem(oneObject: ONEObject(
-                id: "invites",
-                name: "Invites",
-                type: .folder,
-                parentId: NSFileProviderItemIdentifier.rootContainer.rawValue
-            )),
-            FileProviderItem(oneObject: ONEObject(
-                id: "objects",
-                name: "Objects",
+                id: "ONE",
+                name: "ONE",
                 type: .folder,
                 parentId: NSFileProviderItemIdentifier.rootContainer.rawValue
             )),
@@ -58,12 +54,6 @@ class FileProviderItem: NSObject, NSFileProviderItem {
             FileProviderItem(oneObject: ONEObject(
                 id: "questionnaires",
                 name: "Questionnaires",
-                type: .folder,
-                parentId: NSFileProviderItemIdentifier.rootContainer.rawValue
-            )),
-            FileProviderItem(oneObject: ONEObject(
-                id: "types",
-                name: "Types",
                 type: .folder,
                 parentId: NSFileProviderItemIdentifier.rootContainer.rawValue
             ))
@@ -173,7 +163,7 @@ class FileProviderItem: NSObject, NSFileProviderItem {
         
         if oneObject.type == .folder {
             caps.insert(.allowsContentEnumerating)
-            if oneObject.permissions.contains(.write) {
+            if oneObject.permissions.contains(.write) || oneObject.canAddChildren {
                 caps.insert(.allowsAddingSubItems)
             }
         }

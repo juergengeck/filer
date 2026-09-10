@@ -101,7 +101,7 @@ export class Filer {
             this.models.topicModel,
             this.models.channelManager,
             this.models.notifications,
-            '/objects'
+            '/ONE/System/objects'
         );
         const debugFileSystem = new DebugFileSystem(
             this.models.leuteModel,
@@ -121,11 +121,16 @@ export class Filer {
         debugFileSystem.commitHash = COMMIT_HASH;
 
         const rootFileSystem = new TemporaryFileSystem();
+        const oneFileSystem = new TemporaryFileSystem();
+        const systemFileSystem = new TemporaryFileSystem();
+        await rootFileSystem.mountFileSystem('/ONE', oneFileSystem);
+        await oneFileSystem.mountFileSystem('/System', systemFileSystem);
+        await oneFileSystem.mountFileSystem('/settings', new TemporaryFileSystem());
         await rootFileSystem.mountFileSystem('/chats', chatFileSystem);
-        await rootFileSystem.mountFileSystem('/debug', debugFileSystem);
-        await rootFileSystem.mountFileSystem('/invites', pairingFileSystem);
-        await rootFileSystem.mountFileSystem('/objects', objectsFileSystem);
-        await rootFileSystem.mountFileSystem('/types', typesFileSystem);
+        await systemFileSystem.mountFileSystem('/debug', debugFileSystem);
+        await oneFileSystem.mountFileSystem('/invites', pairingFileSystem);
+        await systemFileSystem.mountFileSystem('/objects', objectsFileSystem);
+        await systemFileSystem.mountFileSystem('/types', typesFileSystem);
         if (this.models.flexibelHealthDataSource) {
             await this.models.flexibelHealthDataSource.init?.();
             this.initializedHealthDataSource = this.models.flexibelHealthDataSource;

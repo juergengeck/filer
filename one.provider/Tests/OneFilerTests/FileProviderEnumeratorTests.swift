@@ -8,7 +8,7 @@ final class FileProviderEnumeratorTests: XCTestCase {
 
     func testStandardFoldersCount() {
         let folders = FileProviderItem.standardFolders()
-        XCTAssertEqual(folders.count, 7, "Should expose every refinio.api filer root")
+        XCTAssertEqual(folders.count, 6, "Should expose every refinio.api filer root")
     }
 
     func testStandardFoldersNames() {
@@ -16,7 +16,7 @@ final class FileProviderEnumeratorTests: XCTestCase {
         let names = Set(folders.map { $0.filename })
 
         let expectedNames: Set<String> = [
-            "Objects", "Chats", "Types", "Debug", "Invites", "Profiles", "Questionnaires"
+            "Files", "Fotos", "ONE", "Chats", "Profiles", "Questionnaires"
         ]
         XCTAssertEqual(names, expectedNames)
     }
@@ -47,22 +47,6 @@ final class FileProviderEnumeratorTests: XCTestCase {
 
     // MARK: - Folder Identifiers
 
-    func testInvitesFolderIdentifier() {
-        let folders = FileProviderItem.standardFolders()
-        let invites = folders.first { $0.filename == "Invites" }
-
-        XCTAssertNotNil(invites)
-        XCTAssertEqual(invites?.itemIdentifier.rawValue, "invites")
-    }
-
-    func testObjectsFolderIdentifier() {
-        let folders = FileProviderItem.standardFolders()
-        let objects = folders.first { $0.filename == "Objects" }
-
-        XCTAssertNotNil(objects)
-        XCTAssertEqual(objects?.itemIdentifier.rawValue, "objects")
-    }
-
     func testChatsFolderIdentifier() {
         let folders = FileProviderItem.standardFolders()
         let chats = folders.first { $0.filename == "Chats" }
@@ -71,20 +55,12 @@ final class FileProviderEnumeratorTests: XCTestCase {
         XCTAssertEqual(chats?.itemIdentifier.rawValue, "chats")
     }
 
-    func testTypesFolderIdentifier() {
+    func testONEFolderIdentifier() {
         let folders = FileProviderItem.standardFolders()
-        let types = folders.first { $0.filename == "Types" }
+        let one = folders.first { $0.filename == "ONE" }
 
-        XCTAssertNotNil(types)
-        XCTAssertEqual(types?.itemIdentifier.rawValue, "types")
-    }
-
-    func testDebugFolderIdentifier() {
-        let folders = FileProviderItem.standardFolders()
-        let debug = folders.first { $0.filename == "Debug" }
-
-        XCTAssertNotNil(debug)
-        XCTAssertEqual(debug?.itemIdentifier.rawValue, "debug")
+        XCTAssertNotNil(one)
+        XCTAssertEqual(one?.itemIdentifier.rawValue, "ONE")
     }
 
     // MARK: - Folder Capabilities

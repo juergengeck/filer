@@ -57,14 +57,11 @@ final class FileProviderItemTests: XCTestCase {
     func testStandardFolders() {
         let folders = FileProviderItem.standardFolders()
 
-        XCTAssertEqual(folders.count, 7)
+        XCTAssertEqual(folders.count, 6)
 
         let folderNames = Set(folders.map { $0.filename })
-        XCTAssertTrue(folderNames.contains("Objects"))
         XCTAssertTrue(folderNames.contains("Chats"))
-        XCTAssertTrue(folderNames.contains("Types"))
-        XCTAssertTrue(folderNames.contains("Debug"))
-        XCTAssertTrue(folderNames.contains("Invites"))
+        XCTAssertTrue(folderNames.contains("ONE"))
 
         // All should be folders under root
         for folder in folders {
@@ -73,13 +70,13 @@ final class FileProviderItemTests: XCTestCase {
         }
     }
 
-    func testInvitesFolderExists() {
+    func testONEFolderExists() {
         let folders = FileProviderItem.standardFolders()
-        let invitesFolder = folders.first { $0.filename == "Invites" }
+        let oneFolder = folders.first { $0.filename == "ONE" }
 
-        XCTAssertNotNil(invitesFolder, "Invites folder should exist in standard folders")
-        XCTAssertEqual(invitesFolder?.itemIdentifier.rawValue, "invites")
-        XCTAssertEqual(invitesFolder?.parentItemIdentifier, .rootContainer)
+        XCTAssertNotNil(oneFolder, "ONE folder should exist in standard folders")
+        XCTAssertEqual(oneFolder?.itemIdentifier.rawValue, "ONE")
+        XCTAssertEqual(oneFolder?.parentItemIdentifier, .rootContainer)
     }
 
     // MARK: - Content Types

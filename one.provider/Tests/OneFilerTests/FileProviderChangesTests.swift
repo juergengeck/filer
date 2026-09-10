@@ -46,6 +46,29 @@ final class FileProviderChangesTests: XCTestCase {
         }, close: {})
     }
 
+    func testNestedProjectionRootUsesItsPathOwnedParent() async throws {
+        var row = item
+        row["parentId"] = "ONE/System"
+        row["path"] = "/ONE/System/models"
+        row["name"] = "models"
+        row["type"] = "directory"
+        let client = try bridge { _, _ in ["item": row] }
+        let object = try await client.getObject(id: "/ONE/System/models")
+        XCTAssertEqual(object.parentId, "ONE/System")
+        XCTAssertEqual(FileProviderItem(oneObject: object).parentItemIdentifier.rawValue, "ONE/System")
+    }
+
+    func testImportDirectoryAllowsDropsWithoutAdvertisingMutationOfTheMount() async throws {
+        let client = try bridge { _, _ in
+            ["mode": 0o40555, "size": 0, "canAddChildren": true, "contentHash": "root-version"]
+        }
+        let object = try await client.getObject(id: "/Files")
+        let native = FileProviderItem(oneObject: object)
+        XCTAssertTrue(native.capabilities.contains(.allowsAddingSubItems))
+        XCTAssertFalse(native.capabilities.contains(.allowsRenaming))
+        XCTAssertFalse(native.capabilities.contains(.allowsDeleting))
+    }
+
     func testEnumeratorsPreserveItemVersionsPagesAndChangeAnchors() async throws {
         let row = item
         let client = try bridge { operation, params in
@@ -105,6 +128,19 @@ final class FileProviderChangesTests: XCTestCase {
         let error = DomainWriteError.fromRPC(code: -32020, message: "expired")
         XCTAssertEqual(error.domain, NSFileProviderErrorDomain)
         XCTAssertEqual(error.code, NSFileProviderError.Code.syncAnchorExpired.rawValue)
+    }
+
+    func testPathContainersUseAbsoluteFilesystemAddressesForAnchorsAndChanges() async throws {
+        let client = try bridge { operation, params in
+            XCTAssertEqual(params["container"] as? String, "/Gesundheit/Patient")
+            if operation == "filer:getCurrentAnchor" { return ["anchor": "health-version"] }
+            XCTAssertEqual(operation, "filer:getChanges")
+            XCTAssertEqual(params["since"] as? String, "health-version")
+            return ["updated": [], "deleted": [], "newAnchor": "health-version", "moreComing": false]
+        }
+        let anchor = try await client.getCurrentAnchor(container: "Gesundheit/Patient")
+        let changes = try await client.getChanges(container: "Gesundheit/Patient", since: anchor)
+        XCTAssertEqual(changes.newAnchor, anchor)
     }
 
     func testHydrationUsesTheRequestedPersistentContentVersion() async throws {

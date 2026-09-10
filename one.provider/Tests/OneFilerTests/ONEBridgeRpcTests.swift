@@ -1,8 +1,16 @@
 import XCTest
+import FileProvider
 @testable import OneFilerExtension
 @testable import OneFilerHostSupport
 
 final class ONEBridgeRpcTests: XCTestCase {
+    func testPublicationNotificationsAddressTheEnumeratedPathIdentifier() {
+        XCTAssertEqual(RuntimeService.containerIdentifier("/Gesundheit").rawValue, "Gesundheit")
+        XCTAssertEqual(RuntimeService.containerIdentifier("/Gesundheit/Patient/Temperatur").rawValue, "Gesundheit/Patient/Temperatur")
+        XCTAssertEqual(RuntimeService.containerIdentifier("root"), .rootContainer)
+        XCTAssertEqual(RuntimeService.containerIdentifier("workingSet"), .workingSet)
+        XCTAssertEqual(RuntimeService.containerIdentifier("filer:abc").rawValue, "filer:abc")
+    }
     /// Start canonical ONE through the same pipe owner used by the signed host.
     func testPrivateRefinioApiRoundTrip() async throws {
         let environment = ProcessInfo.processInfo.environment
@@ -28,6 +36,27 @@ final class ONEBridgeRpcTests: XCTestCase {
         try await bridge.connect()
         let children = try await bridge.getChildren(parentId: "chats")
         XCTAssertFalse(children.isEmpty)
+        var workingItems: [ONEObject] = []
+        var page: Data?
+        repeat {
+            let result = try await bridge.enumerateItems(container: "workingSet", page: page)
+            workingItems.append(contentsOf: result.items)
+            page = result.nextPage
+        } while page != nil
+        for mount in ["/Files", "/Fotos", "/Gesundheit", "/ONE/System/models"] {
+            XCTAssertTrue(workingItems.contains { $0.path == mount }, mount)
+        }
+        XCTAssertTrue(workingItems.first { $0.path == "/Files" }?.canAddChildren == true)
+        XCTAssertFalse(workingItems.first { $0.path == "/Fotos" }?.canAddChildren == true)
+        XCTAssertFalse(workingItems.first { $0.path == "/Gesundheit" }?.canAddChildren == true)
+        let reconciled = try await bridge.reconcileImportedItem(parentId: "/", name: "chats", data: nil, isDirectory: true)
+        XCTAssertEqual(reconciled?.type, .folder)
+        let missing = try await bridge.reconcileImportedItem(parentId: "/", name: "missing-reimport-item", data: nil, isDirectory: true)
+        XCTAssertNil(missing)
+        do {
+            _ = try await bridge.reconcileImportedItem(parentId: "/", name: "chats", data: Data(), isDirectory: false)
+            XCTFail("Reimport must reject a directory/file collision")
+        } catch { XCTAssertEqual((error as NSError).code, CocoaError.fileWriteFileExists.rawValue) }
         let request: [String: Any] = ["operation": "introspection:listOperations", "request": [:],
             "authToken": "forged", "capabilities": ["*"], "requestId": "forbidden"]
         let denied = try await runtime.invoke(JSONSerialization.data(withJSONObject: request))
@@ -59,13 +88,13 @@ final class ONEBridgeRpcTests: XCTestCase {
         createInterface({input: process.stdin}).on('line', line => {
           if (!ready) { ready = true; console.log(JSON.stringify({ready: true, owner: 'a'.repeat(64), instance: 'b'.repeat(64)})); return; }
           const request = JSON.parse(line);
-          console.log(JSON.stringify({event: 'filerChanged', containers: request.operation === 'invalid' ? ['/arbitrary/path'] : ['workingSet', 'filer:' + 'c'.repeat(64), '/Gesundheit']}));
+          console.log(JSON.stringify({event: 'filerChanged', containers: request.operation === 'invalid' ? ['/arbitrary/path'] : ['workingSet', 'filer:' + 'c'.repeat(64), 'ONE/System', '/Gesundheit', '/Files', '/Fotos']}));
           console.log(JSON.stringify({requestId: request.requestId, success: true, result: {status: 'ok'}}));
         });
         """.utf8).write(to: entry)
         let notification = expectation(description: "typed change notification")
         let runtime = NodeRuntimeProcess(node: URL(fileURLWithPath: node), entry: entry, preload: preload, onChange: { containers in
-            XCTAssertEqual(containers, ["workingSet", "filer:" + String(repeating: "c", count: 64), "/Gesundheit"])
+            XCTAssertEqual(containers, ["workingSet", "filer:" + String(repeating: "c", count: 64), "ONE/System", "/Gesundheit", "/Files", "/Fotos"])
             notification.fulfill()
         })
         do {
@@ -86,4 +115,13 @@ final class ONEBridgeRpcTests: XCTestCase {
         try FileManager.default.removeItem(at: directory)
     }
 
+    /// Mounted publication paths remain bounded even when their roots expand.
+    func testPublishedNotificationPathsRejectTraversal() {
+        for path in ["/Gesundheit", "/Files", "/Fotos", "/Gesundheit/Patient/Temperatur", "/Files/folder", "/Fotos/collection"] {
+            XCTAssertTrue(NodeRuntimeProcess.isPublishedDirectory(path), path)
+        }
+        for path in ["/arbitrary/path", "/FilesOther", "/Fotos/../ONE", "/Files/./item", "/Files//item", "/Gesundheit/", "/Files/a\\b", "/Fotos/a\0b"] {
+            XCTAssertFalse(NodeRuntimeProcess.isPublishedDirectory(path), path)
+        }
+    }
 }

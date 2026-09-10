@@ -25,6 +25,7 @@ public struct ONEObject {
     public var typeId: String?
     public var mimeType: String?
     public var thumbnail: Data?
+    public var canAddChildren: Bool = false
     public var permissions: Set<Permission> = [.read]
     public var downloadOnDemand: Bool = false
 
@@ -192,6 +193,7 @@ public actor ONEBridge {
             permissions.insert(.delete)
         }
         obj.permissions = permissions
+        obj.canAddChildren = result["canAddChildren"] as? Bool ?? false
         obj.contentHash = result["contentHash"] as? String ?? ""
         obj.metadataHash = result["metadataHash"] as? String ?? ""
         obj.downloadOnDemand = result["downloadOnDemand"] as? Bool ?? false
@@ -353,8 +355,8 @@ public actor ONEBridge {
 
     /// Preserve stable identifiers, parent membership, and owner-produced versions at every RPC boundary.
     private func decodeItem(_ item: [String: Any]) throws -> ONEObject {
-        guard let id = item["id"] as? String, Self.isItemID(id),
-              let parent = item["parentId"] as? String, parent == "root" || Self.isItemID(parent),
+        guard let id = item["id"] as? String,
+              let parent = item["parentId"] as? String,
               let name = item["name"] as? String, !name.isEmpty,
               let path = item["path"] as? String, path.hasPrefix("/"),
               let type = item["type"] as? String, type == "file" || type == "directory",
@@ -362,12 +364,25 @@ public actor ONEBridge {
               let contentVersion = item["contentVersion"] as? String, !contentVersion.isEmpty,
               let metadataVersion = item["metadataVersion"] as? String, !metadataVersion.isEmpty,
               let lazy = item["downloadOnDemand"] as? Bool else { throw ONEBridgeError.invalidResponse }
+        let pathId = String(path.dropFirst())
+        guard Self.isItemID(id) || (id == pathId && !id.isEmpty && !id.contains("\\") && !id.contains("\0") &&
+            id.split(separator: "/", omittingEmptySubsequences: false).allSatisfy({ !$0.isEmpty && $0 != "." && $0 != ".." })) else {
+            throw ONEBridgeError.invalidResponse
+        }
+        let pathParent = String(((path as NSString).deletingLastPathComponent).dropFirst())
+        guard parent == "root" || Self.isItemID(parent) || (!pathParent.isEmpty && parent == pathParent) else {
+            throw ONEBridgeError.invalidResponse
+        }
         var object = ONEObject(id: id, name: name, type: type == "file" ? .file : .folder,
                                size: size, modified: nil, parentId: parent == "root" ? nil : parent)
         object.path = path
         object.contentHash = contentVersion
         object.metadataHash = metadataVersion
         object.downloadOnDemand = lazy
+        if let capability = item["canAddChildren"] {
+            guard let canAddChildren = capability as? Bool else { throw ONEBridgeError.invalidResponse }
+            object.canAddChildren = canAddChildren
+        }
         return object
     }
 
@@ -409,7 +424,7 @@ public actor ONEBridge {
     /// Return the server's exact continuation; never synthesize an anchor after a malformed response.
     public func getChanges(container: String, since anchor: Data) async throws -> ONEChanges {
         guard let token = String(data: anchor, encoding: .utf8), !token.isEmpty else { throw ONEBridgeError.invalidResponse }
-        let result = try await sendRequest(method: "getChanges", params: ["container": container, "since": token, "limit": 100])
+        let result = try await sendRequest(method: "getChanges", params: ["container": Self.rpcContainer(container), "since": token, "limit": 100])
         guard let rows = result["updated"] as? [[String: Any]],
               let deleted = result["deleted"] as? [String], deleted.allSatisfy(Self.isItemID),
               let next = result["newAnchor"] as? String, !next.isEmpty,
@@ -418,9 +433,15 @@ public actor ONEBridge {
     }
 
     public func getCurrentAnchor(container: String) async throws -> Data {
-        let result = try await sendRequest(method: "getCurrentAnchor", params: ["container": container])
+        let result = try await sendRequest(method: "getCurrentAnchor", params: ["container": Self.rpcContainer(container)])
         guard let anchor = result["anchor"] as? String, !anchor.isEmpty else { throw ONEBridgeError.invalidResponse }
         return Data(anchor.utf8)
+    }
+
+    /// Native path identifiers omit the slash required by filesystem RPC addresses.
+    private static func rpcContainer(_ value: String) -> String {
+        if value == "root" || value == "workingSet" || value.hasPrefix("filer:") || value.hasPrefix("/") { return value }
+        return "/" + value
     }
 
 }

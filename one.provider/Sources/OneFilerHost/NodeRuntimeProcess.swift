@@ -113,7 +113,7 @@ final class NodeRuntimeProcess: @unchecked Sendable {
                 if let event = response["event"] {
                     guard bootstrapped, event as? String == "filerChanged", response["requestId"] == nil,
                           let containers = response["containers"] as? [String], !containers.isEmpty, containers.count <= 128,
-                          containers.allSatisfy({ $0 == "root" || $0 == "workingSet" ||
+                          containers.allSatisfy({ $0 == "root" || $0 == "workingSet" || $0 == "ONE/System" ||
                               ($0.hasPrefix("filer:") && Self.isHash(String($0.dropFirst(6)))) || Self.isPublishedDirectory($0) }) else {
                         throw Self.error("Invalid filesystem change notification.")
                     }
@@ -147,9 +147,9 @@ final class NodeRuntimeProcess: @unchecked Sendable {
         stop()
     }
 
-    /// Only the explicitly mounted publication namespace may use path identifiers.
-    private static func isPublishedDirectory(_ value: String) -> Bool {
-        guard value == "/Gesundheit" || value.hasPrefix("/Gesundheit/") else { return false }
+    /// Only explicitly mounted file publications may use absolute path identifiers.
+    static func isPublishedDirectory(_ value: String) -> Bool {
+        guard ["/Gesundheit", "/Files", "/Fotos"].contains(where: { value == $0 || value.hasPrefix($0 + "/") }) else { return false }
         return !value.contains("\\") && !value.contains("\0") &&
             value.dropFirst().split(separator: "/", omittingEmptySubsequences: false).allSatisfy { !$0.isEmpty && $0 != "." && $0 != ".." }
     }

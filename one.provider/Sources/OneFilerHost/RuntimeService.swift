@@ -132,13 +132,11 @@ final class RuntimeService {
                             guard let manager = NSFileProviderManager(for: providerDomain) else {
                                 throw PrivateSocket.failure("Cannot resolve the registered File Provider domain.")
                             }
-                            for value in containers {
-                                // Recheck after suspension: retired storage cannot signal its replacement.
-                                guard try DomainManager().listDomains()[name]?.storageId == config.storageId else { break }
-                                let id: NSFileProviderItemIdentifier = value == "root" ? .rootContainer :
-                                    (value == "workingSet" ? .workingSet : NSFileProviderItemIdentifier(value))
-                                try await manager.signalEnumerator(for: id)
-                            }
+                            // Replicated providers only honor working-set notifications.
+                            // The runtime's validated containers describe the change source.
+                            guard !containers.isEmpty,
+                                  try DomainManager().listDomains()[name]?.storageId == config.storageId else { continue }
+                            try await manager.signalEnumerator(for: .workingSet)
                         }
                     } catch { NSLog("Filer change signaling failed: %@", error.localizedDescription) }
                 }
@@ -149,5 +147,12 @@ final class RuntimeService {
                 "commServerUrl": "wss://comm10.dev.refinio.one", "inviteUrlPrefix": "https://refinio.one/invite"])
             return child
         } catch { await child.shutdown(); throw error }
+    }
+
+    /// Match ONEBridge's path item identifiers when routing validated runtime notifications.
+    static func containerIdentifier(_ value: String) -> NSFileProviderItemIdentifier {
+        if value == "root" { return .rootContainer }
+        if value == "workingSet" { return .workingSet }
+        return NSFileProviderItemIdentifier(value.hasPrefix("/") ? String(value.dropFirst()) : value)
     }
 }
