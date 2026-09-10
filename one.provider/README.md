@@ -61,17 +61,60 @@ the production native transport.
 Install and open the signed app, then select **Register Domain** and enter a name.
 Keep OneFiler open while using the domain. The host starts each runtime on demand
 and closes its input pipe on shutdown so ONE can drain operations and close storage.
+Removing a domain retires its runtime through configuration-directory observation.
+Concurrent domain operations preserve unrelated configuration, and replacement
+runtimes wait until the previous owner finishes shutting down.
 
 Legacy `path` or `endpoint`/`token` configurations are rejected without being
 rewritten. Existing installations need an explicit storage/identity migration;
 creating a new UUID domain does not adopt an existing external ONE instance.
 
+## Pair with Cube or another ONE device
+
+Register a domain with the same identity email as Cube for device enrollment.
+Choose **Pair with Another Device…** in that domain's menu and paste the complete
+invitation link. Keep both apps open. If Finder shows an **Activate** banner,
+activate OneFiler to allow enumeration.
+
+The installed signed host also provides these commands:
+
+```bash
+/Applications/OneFiler.app/Contents/MacOS/OneFilerHost --register-domain "Cube" --email demo@demo.de
+/Applications/OneFiler.app/Contents/MacOS/OneFilerHost --pair-domain "Cube" < invitation.txt
+```
+
+The invitation file contains a secret: keep it private and use a fresh invitation
+from the peer. The command contacts the running host through the same authenticated
+socket used by the extension; it does not start another storage owner. Pairing
+success is distinct from completion of domain-specific data synchronization.
+See [Cube integration evidence](../docs/flexibel-cube-integration.md) for the live
+Finder check and the remaining clinical filesystem boundary.
+
 ## macOS icons
 
 The menu bar uses `Resources/Assets.xcassets/MenuBarIcon.imageset/olive.svg`,
 an exact copy of `../olive.svg`. Keep these in sync. AppKit supplies the template
-tint; connection status changes the tooltip. The AppIcon set uses the olive on
-white. Xcode must compile the asset catalog.
+tint; connection status changes the tooltip. The full-color AppIcon set used by
+Finder's path bar has a transparent canvas and cutout, with a thin white edge
+around the black olive for contrast on light and dark surfaces. Regenerate every
+size from the canonical vector with `swift scripts/generate-app-icons.swift`.
+These full-color icons do not receive the sidebar/menu template tint.
+Xcode must compile the asset catalog.
+
+Finder's sidebar uses the separate `FilerSidebar.symbolset`, declared through
+`CFBundleIcons/CFBundlePrimaryIcon/CFBundleSymbolName` in the extension's plist.
+The extension must also compile the asset catalog. Its monochrome symbol preserves
+the path from `../olive.svg` at every weight and scale; Finder supplies the tint.
+The glyph uses 150% optical sizing around its center to match neighboring sidebar
+symbols rather than appearing as a small dot at text cap height.
+Keep that path synchronized when changing the logo.
+
+Installed check on 2026-09-09: the compiled extension symbol loads through AppKit
+and renders the olive in black and white. Existing `ONE-Test` and other legacy
+Finder locations belong to `com.one.filer.extension`, whereas this app provides
+`one.filer.extension`. Those locations still report a missing app. Finder does pick
+up the new sidebar artwork after refreshing its bundle metadata; the icon update
+does not resolve or migrate the old provider domains.
 
 ## Distribution
 
