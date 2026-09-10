@@ -1,9 +1,13 @@
 # Fotos integration
 
-The HTTP flows below are external integration fixtures. The native app now owns
-a bundled Node/refinio.api instance over private IPC; it does not accept an
-endpoint or token when registering a domain. Native Fotos mounting requires
-composing Fotos into that owning runtime. See [native runtime](../one.provider/README.md).
+The native app exposes `/Fotos` for collections shared from fotos.one through
+ONE pairing. It composes the shared collection adapter from `fotos.core` into
+its bundled refinio.api runtime. See [Files and Fotos](files-and-fotos.md).
+
+The HTTP flows below remain external integration fixtures for the original
+writable `/fotos` library adapter. They do not select the native `/Fotos`
+collection mount. The native host owns its instance over private IPC and does
+not accept an endpoint or token when registering a domain.
 
 Run from the Filer workspace:
 

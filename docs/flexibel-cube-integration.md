@@ -60,18 +60,40 @@ rendered its JSON successfully.
 
 Drive: `/Users/gecko/Library/CloudStorage/OneFiler-FlexibelCubeDemo`.
 
-This verifies native pairing and browsing of shared platform data. It does not
-establish a completed clinical Finder view.
-The runtime currently exposes `/chats`, `/debug`, `/invites`, `/objects`, `/types`,
-`/profiles`, and `/models`. `/Gesundheit` is not composed into the native runtime.
-The existing health projection requires a Flexibel-owned verified data source;
-Filer must not substitute raw storage scans or the unauthenticated debug API.
+Native pairing and clinical Finder browsing are now verified for the demo publication.
+The updated runtime also exposes `/Gesundheit`. Cube's `flexibel-health-files`
+plan publishes 15 verified demo records for the explicitly selected canonical
+patient as JSON BLOBs in a `PersistentFileSystemRoot` tree. An owner-only
+`ChannelInfo` carries the current root; normal paired CHUM carries its declared
+closure. Filer follows that current publication without interpreting raw clinical
+objects or using Cube's debug API as its data transport.
+
+Finder enumerated `Gesundheit/Patient-Test [canonical patient id]` and its clinical
+categories. All 15 JSON files were hydrated through macOS File Provider and their
+sizes and SHA-256 hashes matched the downloaded publication. Finder Quick Look
+rendered the 305-byte BodyTemperature record (37.2 °C) successfully.
+
+The final blocker was a missing `objectEvents.init()` in FilerRuntime. CHUM had
+stored the health tree and committed its channel head, but ChannelManager never
+received the storage event. Filer now owns dispatcher startup and shutdown around
+its model lifecycle and reports dispatch errors. A real-runtime regression proves
+channel-ready completion, health-file arrival notifications, file reads, and
+registry restoration after restart.
+
+The affected demo's exact imported channel was repaired once through the existing
+ChannelManager owner. Its head and file bytes were preserved; no storage scan or
+startup replay was added. Native notification identifiers and anchor RPC paths
+now translate consistently between Finder identifiers and absolute filesystem
+paths. The mounted files remain readable while Cube is closed.
+The receiver now explicitly declines unsupported advertised root schemas before
+parsing, while accepted roots and their dependencies retain strict validation.
+Filer prioritizes current ChannelInfo snapshots before background version history.
 
 ## Native build
 
-OneFiler 1.0.1 build 4 bundles the updated canonical runtime and official Node
-24.19.0. The Swift suite passed (75 tests, 5 environment-dependent skips), as did
-the packaged Swift/Node integration (2 tests). Five signed IPC checks accepted
+OneFiler 1.0.1 build 5 bundles the updated canonical runtime and official Node
+24.19.0. The Swift suite passed (77 tests, 5 environment-dependent skips), as did
+the packaged Swift/Node integration (3 tests). Five signed IPC checks accepted
 the extension and host CLI and rejected wrong identities and an ad-hoc impostor.
 The Debug app has development
 signing; recursive strict signature verification passed. This is a local update,
@@ -84,7 +106,80 @@ instance directories and the old provider's `group.com.one.filer` configuration
 were not changed. This is not a migration of legacy identities or data; those
 old locations still require their own credential-preserving migration.
 
-The remaining clinical integration work is to compose the Flexibel-owned
-clinical filesystem through a supported domain boundary. See
+Native delivery and Finder hydration are complete for this read-only JSON slice.
+A fresh clinical update across the live pair remains unverified: the running Cube
+had a study-center role and correctly rejected clinical entry, then Cube was
+closed during verification. No replacement clinical record was created. See
 `specs/002-flexibel-xlsx-roundtrip/plan.md` for that ownership boundary; workbook
 editing is a later slice.
+
+## Native HTML data view
+
+Flexibel's health data source selects exact hashes from its verified projection
+and calls ONE.core `implode(hash, undefined, {retainIdReferences: true})`.
+Exact object references are embedded recursively; identity references retain
+their native links without selecting a current version. The demo patient's ID
+has no local version head, so expanding it with the default resolver fails.
+This explicit policy does not suppress errors for missing exact objects.
+The file publisher carries those unchanged
+microdata bytes as `.html` files in the existing owner-only publication tree.
+It does not serialize the projection's JSON convenience view. Filer reads the
+published HTML and adds a document shell with CSS, preserving the native object
+markup and embedded reference hashes byte-for-byte.
+
+The styles consume canonical `one/packages/vger.ui/styles/theme.css` plus the
+shared `microdata.css` selectors for `itemscope`, `itemtype`, and `itemprop`.
+They are embedded at build time; the optional VGER UI peer is excluded from the
+native runtime closure. Font-package imports are removed for the theme's system
+font stacks. No React, scripts, fetch, CDN, or data reconstruction is involved.
+Finder versions include the stylesheet and document-shell hash.
+
+Compared reference implementations:
+
+- Fotos `fotos.core/src/ingest/index-html.ts` creates browsable folder documents,
+  embeds CSS, and retains semantic attributes with a corresponding parser. This
+  is folder indexing; portable browser HTML export is separately deferred by
+  `docs/product/ui/decisions/D-05-html-export.md`.
+- VGER `vger.cube/src/main/services/memory-storage-handler.ts` separates memory
+  content, document wrapping, and `memory.core` styles. Its `renderMemoryAsHtml`
+  creates a domain-specific presentation with source metadata; it is not the
+  raw native-object imploder.
+- VGER `vger.cube/src/main/services/html-export/implode-wrapper.ts` calls ONE's
+  `implode()` directly. That is the source-preserving path used here. Filer does
+  not copy the JSON renderer or the memory-specific field rendering.
+
+The earlier JSON-to-HTML renderer and generated aggregate page were removed.
+On 2026-09-10 Cube published 15 HTML records in root
+`2134c0f3c3a9c235505df46808ea0a89ab38bebb90a75e4b074b9cff63c01228`.
+All 15 reached the native runtime and were hydrated through the Finder mount;
+their SHA-256 hashes match the documents served by the signed runtime.
+Previously downloaded JSON files remain in the macOS cache, while the current
+publication tree contains HTML. HTML remains read-only; future edits must pass through
+Flexibel's owning plans and validation, not overwrite the publication BLOBs.
+
+The native refresh path now follows the replicated File Provider contract:
+macOS ignores folder-level signals, so every validated notification wakes
+`workingSet`. `PublishedWorkingSet` includes Files, Fotos, and Gesundheit while
+delegating model enumeration and exact model deltas to their existing persistent
+projection. Publication versions bind pagination and expire a changed working
+set. Path identities are preserved, and Files retains its explicit
+`canAddChildren` capability independently of read-only POSIX modes.
+
+The installed host also accepts the model parent `ONE/System` and all three
+publication namespaces in its validated notification protocol. Previously the
+new model location caused it to reject a startup notification and stop Node.
+
+Validation includes a real stored-object round trip: `implode` → CSS document →
+extract unchanged native microdata → `explode`, with identical root hash and
+nested reference hashes. Publisher tests cover verified source selection and
+exact microdata bytes. The native round-trip test also verifies that retained
+identity links do not invoke the version resolver; the default resolver behavior
+is unchanged. The core imploder/exploder suites passed all 18 tests, including
+retained identity links inside embedded objects and collections.
+The experimental platform's corresponding 16 microdata tests passed as well;
+its older collection parser also needed the canonical nested-context fix.
+The publisher's six tests, all-three-mount working-set regressions, full Filer
+runtime build, and four packaged Swift/Node tests passed. Packaged checks verify
+Files/Fotos/Gesundheit/model presence and the Files ingestion capability.
+Browser automation blocked local file URL navigation;
+browser visual QA is not claimed.

@@ -4,6 +4,25 @@ Monorepo for the current Filer workspace and platform-specific filesystem provid
 
 The root workspace consumes and evolves the shared ONE packages in `../one/packages/*`. This is Filer's canonical platform base, including `one.core`, `trie.core`, `chat.core`, and `refinio.api`. `../one-experimental` remains the base for Flexibel only; Filer must not depend on or make shared-platform changes there.
 
+## Filesystem Layout
+
+The root also contains `Files` for BLOB-backed imports and `Fotos` for collections shared from fotos.one through ONE pairing. See [Files and Fotos](docs/files-and-fotos.md).
+
+System folders live under `ONE`:
+
+```text
+ONE/
+├── System/
+│   ├── debug/
+│   ├── models/
+│   ├── objects/
+│   └── types/
+├── settings/
+└── invites/
+```
+
+`settings` is currently an empty directory. Chats, profiles, and domain folders remain at the filesystem root. Existing model libraries migrate to the new path on startup while preserving item identities and file content.
+
 ## Workspace Commands
 
 The repository root provides pnpm entrypoints for the active platform packages:

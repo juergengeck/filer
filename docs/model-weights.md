@@ -1,6 +1,6 @@
 # Model weights through Filer
 
-Filer exposes shared model revisions at `/models/<encoded-model>/<revision>-<manifest-hash>/`.
+Filer exposes shared model revisions at `/ONE/System/models/<encoded-model>/<revision>-<manifest-hash>/`.
 Each directory contains the original relative filenames, including tokenizer and configuration
 files. Revision files are read-only. Model names are encoded as one directory component;
 the manifest hash distinguishes different packages of the same upstream revision.
