@@ -8,6 +8,8 @@
     "build": "node ./scripts/run-workspace-script.mjs build",
     "test": "pnpm test:provider:ipc",
     "test:filer": "pnpm --dir one.filer test",
+    "build:models": "pnpm --dir ../one/packages/one.core build && pnpm --dir ../one/packages/filer.core build && pnpm --dir ../one/packages/llm.one build && pnpm --dir ../one/packages/refinio.api build",
+    "test:models": "pnpm build:models && node scripts/test-model-weights-integration.mjs",
     "clean": "node ./scripts/run-workspace-script.mjs clean",
     "dev:provider": "pnpm --dir one.provider dev",
     "build:provider": "pnpm --dir one.provider build",
