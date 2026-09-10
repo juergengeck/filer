@@ -17,7 +17,10 @@ import Darwin
             let peer = Darwin.accept(listener, nil, nil)
             guard peer >= 0 else { exit(4) }
             do {
+                // Match descriptors accepted by the production nonblocking listener.
+                guard fcntl(peer, F_SETFL, O_NONBLOCK) == 0 else { exit(4) }
                 try PrivateSocket.configure(peer)
+                guard fcntl(peer, F_GETFL) & O_NONBLOCK == 0 else { exit(4) }
                 try PrivateSocket.validatePeer(peer, requirement: RuntimeSecurity.clientRequirement)
                 let request = try PrivateSocket.readFrame(peer)
                 try PrivateSocket.writeFrame(peer, request)

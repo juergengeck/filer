@@ -24,7 +24,7 @@ with tempfile.TemporaryDirectory(prefix='filer-ipc-security-') as temp:
         shutil.copy2(probe, binary)
         subprocess.run(['codesign', '--force', '--sign', '-' if role == 'adhoc' else identity, '--identifier', identifier, str(binary)], check=True)
         binaries[role] = binary
-    for server_role, client_role, expected in [('host', 'extension', 0), ('host', 'wrong', 3), ('wrong', 'extension', 3), ('host', 'adhoc', 3)]:
+    for server_role, client_role, expected in [('host', 'extension', 0), ('host', 'host', 0), ('host', 'wrong', 3), ('wrong', 'extension', 3), ('host', 'adhoc', 3)]:
         endpoint = root / (uuid.uuid4().hex[:8] + '.sock')
         server = subprocess.Popen([str(binaries[server_role]), 'server', str(endpoint)], stdout=subprocess.PIPE, text=True)
         try:

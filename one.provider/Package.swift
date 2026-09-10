@@ -27,7 +27,7 @@ let package = Package(
             dependencies: ["OneFilerShared"],
             path: "Sources/OneFilerHost",
             exclude: ["main.swift", "MenuBarApp.swift", "StatusMonitor.swift"],
-            sources: ["DomainManager.swift", "NodeRuntimeProcess.swift", "InstanceSecrets.swift", "RuntimeService.swift"]
+            sources: ["DomainManager.swift", "NodeRuntimeProcess.swift", "InstanceSecrets.swift", "RuntimeService.swift", "RuntimePool.swift", "RuntimeConfigurationObserver.swift", "PairingInvitation.swift"]
         ),
         .testTarget(
             name: "OneFilerTests",

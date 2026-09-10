@@ -1,15 +1,15 @@
 import Foundation
 import FileProvider
+import CryptoKit
+import Darwin
 #if SWIFT_PACKAGE
 import OneFilerShared
 #endif
 
+/// Coordinates the app and its signed CLI without holding a global lock across OS callbacks.
 class DomainManager {
     typealias DomainOperation = (NSFileProviderDomain, @escaping (Error?) -> Void) -> Void
-
     typealias DomainConfig = LocalDomainConfiguration
-
-    private let containerURL: URL?
     private let configFileURL: URL?
     private let addDomain: DomainOperation
     private let removeDomain: DomainOperation
@@ -17,134 +17,129 @@ class DomainManager {
     init(configFileURL: URL? = nil,
          addDomain: @escaping DomainOperation = { NSFileProviderManager.add($0, completionHandler: $1) },
          removeDomain: @escaping DomainOperation = { NSFileProviderManager.remove($0, completionHandler: $1) }) {
+        self.configFileURL = configFileURL ?? FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: RuntimeSecurity.group)?.appendingPathComponent("domains.json")
         self.addDomain = addDomain
         self.removeDomain = removeDomain
-        if let configFileURL {
-            self.containerURL = configFileURL.deletingLastPathComponent()
-            self.configFileURL = configFileURL
-            return
-        }
-        // Get App Group container
-        containerURL = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: "group.one.filer"
-        )
-
-        if let containerURL = containerURL {
-            self.configFileURL = containerURL.appendingPathComponent("domains.json")
-        } else {
-            self.configFileURL = nil
-            NSLog("⚠️ DomainManager: Failed to get App Group container URL")
-        }
     }
-
-    // MARK: - Domain Management
 
     func listDomains() throws -> [String: DomainConfig] {
-        guard let configFileURL = configFileURL else {
-            throw NSError(domain: "DomainManager", code: -1, userInfo: [
-                NSLocalizedDescriptionKey: "Failed to access App Group container"
-            ])
-        }
-
-        guard FileManager.default.fileExists(atPath: configFileURL.path) else {
-            return [:]
-        }
-
-        let data = try Data(contentsOf: configFileURL)
-        return try JSONDecoder().decode([String: DomainConfig].self, from: data)
+        try withConfiguration { domains, _ in domains }
     }
 
-    func registerDomain(name: String, completion: @escaping (Error?) -> Void = { _ in }) throws {
-        guard let configFileURL = configFileURL else {
-            throw NSError(domain: "DomainManager", code: -1, userInfo: [
-                NSLocalizedDescriptionKey: "Failed to access App Group container"
-            ])
+    func registerDomain(name: String, email: String? = nil, completion: @escaping (Error?) -> Void = { _ in }) throws {
+        if let email, email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            throw PrivateSocket.failure("An identity email is required.")
         }
-
-        guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            throw NSError(domain: "one.filer.domain", code: 1, userInfo: [NSLocalizedDescriptionKey: "A domain name is required."])
-        }
-
-        // Read existing domains
-        var domains = try listDomains()
-        let previousData = FileManager.default.fileExists(atPath: configFileURL.path)
-            ? try Data(contentsOf: configFileURL) : nil
-
-        // Add or update domain
-        if domains[name] == nil {
-            let identifier = UUID()
-            domains[name] = DomainConfig(storageId: identifier, email: "\(identifier.uuidString.lowercased())@filer.local")
-        }
-
-        // Write back to file
-        let data = try JSONEncoder().encode(domains)
-        try data.write(to: configFileURL, options: .atomic)
-
-        // Register with File Provider
-        let domain = NSFileProviderDomain(identifier: NSFileProviderDomainIdentifier(rawValue: name), displayName: name)
-
-        addDomain(domain) { error in
-            if let error = error {
-                do {
-                    guard try Data(contentsOf: configFileURL) == data else {
-                        throw NSError(domain: "DomainManager", code: -3, userInfo: [
-                            NSLocalizedDescriptionKey: "Domain configuration changed during registration"
-                        ])
-                    }
-                    if let previousData {
-                        try previousData.write(to: configFileURL, options: .atomic)
-                    } else {
-                        try FileManager.default.removeItem(at: configFileURL)
-                    }
-                } catch {
-                    completion(error)
-                    return
+        let lease = try acquireDomain(name)
+        let finish: (Error?) -> Void = { error in lease.release(); completion(error) }
+        do {
+            let change = try withConfiguration(write: true) { domains, original -> (DomainConfig?, DomainConfig, [String: DomainConfig], Data?) in
+                let previous = domains[name]
+                if let previous, let email, previous.email != email {
+                    throw PrivateSocket.failure("This domain already belongs to another identity. Create a new domain to use a different email.")
                 }
-                NSLog("⚠️ DomainManager: Failed to add domain '\(name)': \(error)")
-            } else {
-                NSLog("✅ DomainManager: Domain '\(name)' registered successfully")
+                let id = UUID()
+                let config = previous ?? DomainConfig(storageId: id, email: email ?? "\(id.uuidString.lowercased())@filer.local")
+                domains[name] = config
+                return (previous, config, domains, original)
             }
-            completion(error)
-        }
+            let domain = NSFileProviderDomain(identifier: NSFileProviderDomainIdentifier(rawValue: name), displayName: name)
+            addDomain(domain) { error in
+                if let error {
+                    do {
+                        try self.withConfiguration { domains, _ in
+                            guard domains[name] == change.1, let url = self.configFileURL else { throw Self.conflict() }
+                            if domains == change.2 {
+                                if let original = change.3 { try original.write(to: url, options: .atomic) }
+                                else { try FileManager.default.removeItem(at: url) }
+                            } else {
+                                domains[name] = change.0
+                                try JSONEncoder().encode(domains).write(to: url, options: .atomic)
+                            }
+                        }
+                    } catch { finish(error); return }
+                    finish(error)
+                } else { finish(nil) }
+            }
+        } catch { lease.release(); throw error }
     }
 
     func unregisterDomain(name: String, completion: @escaping (Error?) -> Void = { _ in }) throws {
-        guard let configFileURL = configFileURL else {
-            throw NSError(domain: "DomainManager", code: -1, userInfo: [
-                NSLocalizedDescriptionKey: "Failed to access App Group container"
-            ])
-        }
-
-        // Read existing domains
-        var domains = try listDomains()
-
-        // Remove domain from config
-        domains.removeValue(forKey: name)
-
-        // Write back to file
-        let data = try JSONEncoder().encode(domains)
-
-        // Unregister from File Provider
-        let domainIdentifier = NSFileProviderDomainIdentifier(rawValue: name)
-        let domain = NSFileProviderDomain(identifier: domainIdentifier, displayName: name)
-
-        removeDomain(domain) { error in
-            if let error = error {
-                NSLog("⚠️ DomainManager: Failed to remove domain '\(name)': \(error)")
-            } else {
+        let lease = try acquireDomain(name)
+        let finish: (Error?) -> Void = { error in lease.release(); completion(error) }
+        do {
+            // Validate existing configuration before asking macOS to remove anything.
+            let expected = try listDomains()[name]
+            let domain = NSFileProviderDomain(identifier: NSFileProviderDomainIdentifier(rawValue: name), displayName: name)
+            removeDomain(domain) { error in
+                if let error { finish(error); return }
                 do {
-                    try data.write(to: configFileURL, options: .atomic)
-                } catch {
-                    completion(error)
-                    return
-                }
-                NSLog("✅ DomainManager: Domain '\(name)' unregistered successfully")
+                    // Re-read after the callback: other domains may have changed meanwhile.
+                    try self.withConfiguration(write: true) { domains, _ in
+                        guard domains[name] == expected else { throw Self.conflict() }
+                        domains.removeValue(forKey: name)
+                    }
+                    finish(nil)
+                } catch { finish(error) }
             }
-            completion(error)
-        }
+        } catch { lease.release(); throw error }
     }
 
-    func getDomainConfig(name: String) throws -> DomainConfig? {
-        return try listDomains()[name]
+    func getDomainConfig(name: String) throws -> DomainConfig? { try listDomains()[name] }
+
+    /// Ask File Provider to enumerate the current tree after runtime mounts change.
+    func refreshDomain(name: String, completion: @escaping (Error?) -> Void) throws {
+        guard try getDomainConfig(name: name) != nil else { throw PrivateSocket.failure("Unknown domain.") }
+        let domain = NSFileProviderDomain(identifier: NSFileProviderDomainIdentifier(name), displayName: name)
+        guard let provider = NSFileProviderManager(for: domain) else {
+            throw PrivateSocket.failure("The File Provider domain is unavailable.")
+        }
+        provider.signalEnumerator(for: .rootContainer, completionHandler: completion)
     }
+
+    private func withConfiguration<T>(write: Bool = false, _ operation: (inout [String: DomainConfig], Data?) throws -> T) throws -> T {
+        guard let url = configFileURL else { throw PrivateSocket.failure("The Filer app-group container is unavailable.") }
+        let lease = try DomainLease(url: url.deletingLastPathComponent().appendingPathComponent("domains.lock"), nonblocking: false)
+        defer { lease.release() }
+        let original = FileManager.default.fileExists(atPath: url.path) ? try Data(contentsOf: url) : nil
+        var domains = try original.map { try JSONDecoder().decode([String: DomainConfig].self, from: $0) } ?? [:]
+        let previous = domains
+        let result = try operation(&domains, original)
+        if write && domains != previous {
+            try JSONEncoder().encode(domains).write(to: url, options: .atomic)
+        }
+        return result
+    }
+
+    /// This digest names a local operation lock; it is not a ONE object reference.
+    private func acquireDomain(_ name: String) throws -> DomainLease {
+        guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw PrivateSocket.failure("A domain name is required.") }
+        guard let url = configFileURL else { throw PrivateSocket.failure("The Filer app-group container is unavailable.") }
+        let key = SHA256.hash(data: Data(name.utf8)).map { String(format: "%02x", $0) }.joined()
+        return try DomainLease(url: url.deletingLastPathComponent().appendingPathComponent("domain-\(key).lock"), nonblocking: true)
+    }
+
+    private static func conflict() -> NSError { PrivateSocket.failure("Domain configuration changed during the operation.") }
+}
+
+/// File locks also serialize separate host CLI processes. The lock inode is never unlinked.
+private final class DomainLease {
+    private let lock = NSLock()
+    private var fd: Int32
+    init(url: URL, nonblocking: Bool) throws {
+        fd = Darwin.open(url.path, O_CREAT | O_RDWR | O_CLOEXEC | O_NOFOLLOW, 0o600)
+        guard fd >= 0 else { throw PrivateSocket.failure("Cannot lock domain configuration.") }
+        if flock(fd, LOCK_EX | (nonblocking ? LOCK_NB : 0)) != 0 {
+            Darwin.close(fd)
+            fd = -1
+            throw PrivateSocket.failure("Another operation is already changing this domain.")
+        }
+    }
+    func release() {
+        lock.lock()
+        defer { lock.unlock() }
+        if fd >= 0 { Darwin.close(fd); fd = -1 }
+    }
+    deinit { release() }
 }

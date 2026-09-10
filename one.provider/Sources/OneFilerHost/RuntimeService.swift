@@ -1,16 +1,24 @@
 import Foundation
 import Darwin
+import FileProvider
 #if SWIFT_PACKAGE
 import OneFilerShared
 #endif
 
-/// One owner holds an exclusive app-group lock and accepts only the signed extension.
+/// One owner holds an exclusive app-group lock and accepts only signed Filer clients.
 final class RuntimeService {
-    private let runtimes = RuntimeOwner()
+    private let runtimes = RuntimePool(configuration: { try DomainManager().listDomains() }, factory: RuntimeService.createRuntime)
+    private var configurationSource: RuntimeConfigurationObserver?
     private let queue = DispatchQueue(label: "one.filer.runtime.accept")
     private var source: DispatchSourceRead?
     private var lockFD: Int32 = -1
     private var socketPath: String?
+
+    /// The menu uses the same runtime owner as Finder; it never opens a second instance.
+    func pair(domain: String, invitationURL: String) async throws {
+        let request = try PairingInvitation.request(url: invitationURL)
+        try PairingInvitation.validateResponse(await runtimes.perform(domain: domain, request: request))
+    }
 
     func start() throws {
         let directory = try RuntimeSecurity.container()
@@ -32,10 +40,26 @@ final class RuntimeService {
             lockFD = lock
             socketPath = path
             source.resume()
-        } catch { Darwin.close(lock); throw error }
+            configurationSource = try RuntimeConfigurationObserver(directory: directory) { [weak self] in
+                guard let self else { return }
+                Task {
+                    do { try await self.runtimes.reconcile() }
+                    catch { NSLog("Filer could not reconcile runtime configuration: %@", error.localizedDescription) }
+                }
+            }
+        } catch {
+            source?.cancel()
+            source = nil
+            if let socketPath { unlink(socketPath) }
+            lockFD = -1
+            Darwin.close(lock)
+            throw error
+        }
     }
 
     func stop() async {
+        configurationSource?.stop()
+        configurationSource = nil
         source?.cancel()
         source = nil
         await runtimes.stop()
@@ -58,73 +82,72 @@ final class RuntimeService {
                       let domain = envelope["domain"] as? String, let request = envelope["request"] else {
                     throw PrivateSocket.failure("Invalid private runtime request.")
                 }
-                let data = try JSONSerialization.data(withJSONObject: request)
+                guard var operation = request as? [String: Any],
+                      let clientId = operation["requestId"] as? String, !clientId.isEmpty else {
+                    throw CocoaError(.coderInvalidValue)
+                }
+                // Request sequences belong to clients; use one unique pipe ID per operation.
+                operation["requestId"] = UUID().uuidString
+                let data = try JSONSerialization.data(withJSONObject: operation)
                 Task {
+                    defer { Darwin.close(fd) }
+                    let reply: [String: Any]
                     do {
-                        let response = try await runtimes.perform(domain: domain, request: data)
-                        try PrivateSocket.writeFrame(fd, response)
+                        let result = try await runtimes.perform(domain: domain, request: data)
+                        guard var response = try JSONSerialization.jsonObject(with: result) as? [String: Any] else { throw CocoaError(.coderInvalidValue) }
+                        response["requestId"] = clientId
+                        reply = response
                     } catch {
-                        // Never disclose bootstrap credentials or storage paths through transport errors.
+                        let failure = error as NSError
+                        let removed = failure.domain == "one.filer.runtime" && failure.code == 4
+                        reply = ["requestId": clientId, "success": false, "error": [
+                            "code": removed ? "DOMAIN_UNREGISTERED" : "RUNTIME_UNAVAILABLE",
+                            "message": removed ? "This domain is no longer registered with Filer." : "The local ONE runtime could not complete the operation."]]
+                        NSLog("Filer runtime operation failed (%@:%ld)", failure.domain, failure.code)
                     }
-                    Darwin.close(fd)
+                    // A disconnected caller cannot receive a response; never replay its operation.
+                    do { try PrivateSocket.writeFrame(fd, JSONSerialization.data(withJSONObject: reply)) }
+                    catch { NSLog("Filer runtime response connection closed") }
                 }
             } catch { Darwin.close(fd) }
         }
     }
-}
 
-/// Runtime configuration is resolved from the host-owned domain table, never from request parameters.
-private actor RuntimeOwner {
-    private var children: [UUID: Task<NodeRuntimeProcess, Error>] = [:]
-    private var stopped = false
-
-    func perform(domain: String, request: Data) async throws -> Data {
-        guard !stopped else { throw CocoaError(.userCancelled) }
-        guard let config = try DomainManager().getDomainConfig(name: domain) else {
-            throw NSError(domain: "one.filer.runtime", code: 4,
-                          userInfo: [NSLocalizedDescriptionKey: "This domain is not registered with Filer."])
-        }
-        if let task = children[config.storageId], let child = try? await task.value, !child.isRunning {
-            children.removeValue(forKey: config.storageId)
-        }
-        if children[config.storageId] == nil {
-            let task = Task<NodeRuntimeProcess, Error> {
-                let bundle = Bundle.main
-                guard let executable = bundle.executableURL, let resources = bundle.resourceURL else {
-                    throw CocoaError(.fileNoSuchFile)
+    /// All paths and credentials are resolved by the owner, never supplied by an IPC caller.
+    private static func createRuntime(domain: String, config: LocalDomainConfiguration) async throws -> any OwnedRuntime {
+        let bundle = Bundle.main
+        guard let executable = bundle.executableURL, let resources = bundle.resourceURL else { throw CocoaError(.fileNoSuchFile) }
+        let root = resources.appendingPathComponent("runtime")
+        let directory = try RuntimeSecurity.container().appendingPathComponent("instances").appendingPathComponent(config.storageId.uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let child = NodeRuntimeProcess(node: executable.deletingLastPathComponent().appendingPathComponent("node"),
+            entry: root.appendingPathComponent("node_modules/@refinio/api/dist/src/filer/stdio-main.js"),
+            preload: root.appendingPathComponent("console-to-stderr.cjs"), onChange: { containers in
+                Task {
+                    do {
+                        // A storage owner may back more than one configured domain.
+                        let names = try DomainManager().listDomains().filter { $0.value.storageId == config.storageId }.keys.sorted()
+                        for name in names {
+                            let providerDomain = NSFileProviderDomain(identifier: NSFileProviderDomainIdentifier(name), displayName: name)
+                            guard let manager = NSFileProviderManager(for: providerDomain) else {
+                                throw PrivateSocket.failure("Cannot resolve the registered File Provider domain.")
+                            }
+                            for value in containers {
+                                // Recheck after suspension: retired storage cannot signal its replacement.
+                                guard try DomainManager().listDomains()[name]?.storageId == config.storageId else { break }
+                                let id: NSFileProviderItemIdentifier = value == "root" ? .rootContainer :
+                                    (value == "workingSet" ? .workingSet : NSFileProviderItemIdentifier(value))
+                                try await manager.signalEnumerator(for: id)
+                            }
+                        }
+                    } catch { NSLog("Filer change signaling failed: %@", error.localizedDescription) }
                 }
-                let node = executable.deletingLastPathComponent().appendingPathComponent("node")
-                let root = resources.appendingPathComponent("runtime")
-                let directory = try RuntimeSecurity.container().appendingPathComponent("instances").appendingPathComponent(config.storageId.uuidString)
-                try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-                let child = NodeRuntimeProcess(node: node,
-                    entry: root.appendingPathComponent("node_modules/@refinio/api/dist/src/filer/stdio-main.js"),
-                    preload: root.appendingPathComponent("console-to-stderr.cjs"))
-                try await child.start(configuration: ["directory": directory.path, "email": config.email,
-                    "secret": InstanceSecrets.getOrCreate(instance: config.storageId), "name": domain,
-                    "commServerUrl": "wss://comm10.dev.refinio.one", "inviteUrlPrefix": "https://refinio.one/invite"])
-                return child
-            }
-            children[config.storageId] = task
-        }
-        guard let task = children[config.storageId] else { throw CocoaError(.fileNoSuchFile) }
-        let child: NodeRuntimeProcess
-        do { child = try await task.value }
-        catch { children.removeValue(forKey: config.storageId); throw error }
-        guard !stopped else { child.stop(); throw CocoaError(.userCancelled) }
-        // Each IPC client has its own request sequence. Re-key only the pipe envelope.
-        guard var envelope = try JSONSerialization.jsonObject(with: request) as? [String: Any],
-              let clientId = envelope["requestId"] as? String else { throw CocoaError(.coderInvalidValue) }
-        envelope["requestId"] = UUID().uuidString
-        let result = try await child.invoke(JSONSerialization.data(withJSONObject: envelope))
-        guard var response = try JSONSerialization.jsonObject(with: result) as? [String: Any] else { throw CocoaError(.coderInvalidValue) }
-        response["requestId"] = clientId
-        return try JSONSerialization.data(withJSONObject: response)
-    }
-
-    func stop() async {
-        stopped = true
-        for task in children.values { if let child = try? await task.value { await child.shutdown() } }
-        children.removeAll()
+            })
+        do {
+            try await child.start(configuration: ["directory": directory.path, "email": config.email,
+                "secret": InstanceSecrets.getOrCreate(instance: config.storageId), "name": domain,
+                "commServerUrl": "wss://comm10.dev.refinio.one", "inviteUrlPrefix": "https://refinio.one/invite"])
+            return child
+        } catch { await child.shutdown(); throw error }
     }
 }

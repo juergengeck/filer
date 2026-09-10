@@ -8,6 +8,7 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
     private var statusMonitor: StatusMonitor!
     private var domainManager: DomainManager!
     private let runtimeService = RuntimeService()
+    private var pairingDomains = Set<String>()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         do { try runtimeService.start() }
@@ -84,7 +85,7 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
                 noDomainsItem.isEnabled = false
                 menu.addItem(noDomainsItem)
             } else {
-                for (identifier, _) in domains {
+                for (identifier, _) in domains.sorted(by: { $0.key < $1.key }) {
                     let domainMenu = NSMenu()
 
                     // Status
@@ -96,6 +97,18 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
                     let endpointItem = NSMenuItem(title: "Local ONE runtime", action: nil, keyEquivalent: "")
                     endpointItem.isEnabled = false
                     domainMenu.addItem(endpointItem)
+
+                    let pairItem = NSMenuItem(title: pairingDomains.contains(identifier) ? "Pairing…" : "Pair with Another Device…",
+                                             action: #selector(pairDomain(_:)), keyEquivalent: "")
+                    pairItem.target = self
+                    pairItem.representedObject = identifier
+                    pairItem.isEnabled = !pairingDomains.contains(identifier)
+                    domainMenu.addItem(pairItem)
+
+                    let refreshFiles = NSMenuItem(title: "Refresh Files", action: #selector(refreshDomainFiles(_:)), keyEquivalent: "")
+                    refreshFiles.target = self
+                    refreshFiles.representedObject = identifier
+                    domainMenu.addItem(refreshFiles)
 
                     domainMenu.addItem(NSMenuItem.separator())
 
@@ -167,6 +180,10 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
 
         stackView.addArrangedSubview(nameLabel)
         stackView.addArrangedSubview(nameField)
+        let emailField = NSTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
+        emailField.placeholderString = "Use the same email as Cube for device pairing"
+        stackView.addArrangedSubview(NSTextField(labelWithString: "Identity email (optional):"))
+        stackView.addArrangedSubview(emailField)
         alert.informativeText = "Create a local ONE instance and make its files available in Finder. Keep OneFiler open while using the drive."
 
         alert.accessoryView = stackView
@@ -179,12 +196,44 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
 
             if !name.isEmpty {
                 do {
-                    try domainManager.registerDomain(name: name) { error in
+                    let email = emailField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                    try domainManager.registerDomain(name: name, email: email.isEmpty ? nil : email) { error in
                         self.showDomainResult(error, success: "Domain '\(name)' registered.")
                     }
                 } catch {
                     showDomainResult(error, success: "")
                 }
+            }
+        }
+    }
+
+    /// Start pairing on the existing host owner and leave the menu responsive while it runs.
+    @objc private func pairDomain(_ sender: NSMenuItem) {
+        guard let domain = sender.representedObject as? String, !pairingDomains.contains(domain) else { return }
+        let alert = NSAlert()
+        alert.messageText = "Pair \(domain)"
+        alert.informativeText = "Paste the invitation from Cube or another ONE device. Device enrollment requires this domain to use the same identity email."
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 420, height: 24))
+        field.placeholderString = "Pairing invitation link"
+        alert.accessoryView = field
+        alert.addButton(withTitle: "Pair")
+        alert.addButton(withTitle: "Cancel")
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        let url = field.stringValue
+        pairingDomains.insert(domain)
+        updateMenu()
+        Task {
+            var failure: Error?
+            do { try await runtimeService.pair(domain: domain, invitationURL: url) }
+            catch { failure = error }
+            let error = failure
+            await MainActor.run {
+                self.pairingDomains.remove(domain)
+                self.updateMenu()
+                let result = NSAlert()
+                result.messageText = error == nil ? "Device Paired" : "Pairing Failed"
+                result.informativeText = error?.localizedDescription ?? "\(domain) is paired. The other device determines which data is shared; synchronization continues while Filer is open."
+                result.runModal()
             }
         }
     }
@@ -235,6 +284,15 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
 
         let logsURL = containerURL.appendingPathComponent("logs")
         NSWorkspace.shared.open(logsURL)
+    }
+
+    @objc private func refreshDomainFiles(_ sender: NSMenuItem) {
+        guard let name = sender.representedObject as? String else { return }
+        do {
+            try domainManager.refreshDomain(name: name) { error in
+                if let error { DispatchQueue.main.async { NSAlert(error: error).runModal() } }
+            }
+        } catch { NSAlert(error: error).runModal() }
     }
 
     @objc private func quit() {

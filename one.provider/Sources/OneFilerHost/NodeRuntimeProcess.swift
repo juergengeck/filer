@@ -11,12 +11,15 @@ final class NodeRuntimeProcess: @unchecked Sendable {
     private var pending: [String: (Result<Data, Error>) -> Void] = [:]
     private var generations: [String: UUID] = [:]
     private var failure: Error?
+    private var bootstrapped = false
+    private let onChange: @Sendable ([String]) -> Void
     private static let maxFrame = 96 * 1024 * 1024
 
-    var isRunning: Bool { process.isRunning }
+    var isRunning: Bool { state.sync { failure == nil && process.isRunning } }
 
-    /// Paths are supplied by the host's signed bundle, never by an XPC request.
-    init(node: URL, entry: URL, preload: URL) {
+    /// Paths are supplied by the host's signed bundle, never by an IPC request.
+    init(node: URL, entry: URL, preload: URL, onChange: @escaping @Sendable ([String]) -> Void = { _ in }) {
+        self.onChange = onChange
         process.executableURL = node
         process.arguments = ["--jitless", "--require", preload.path, entry.path]
         // Do not inherit NODE_OPTIONS, NODE_PATH, inspector settings, or injected loaders.
@@ -107,11 +110,22 @@ final class NodeRuntimeProcess: @unchecked Sendable {
                 guard let response = try JSONSerialization.jsonObject(with: line) as? [String: Any] else {
                     throw Self.error("Invalid runtime response.")
                 }
+                if let event = response["event"] {
+                    guard bootstrapped, event as? String == "filerChanged", response["requestId"] == nil,
+                          let containers = response["containers"] as? [String], !containers.isEmpty, containers.count <= 128,
+                          containers.allSatisfy({ $0 == "root" || $0 == "workingSet" ||
+                              ($0.hasPrefix("filer:") && Self.isHash(String($0.dropFirst(6)))) || Self.isPublishedDirectory($0) }) else {
+                        throw Self.error("Invalid filesystem change notification.")
+                    }
+                    onChange(containers)
+                    continue
+                }
                 let id: String
                 if response["ready"] as? Bool == true {
                     guard Self.isHash(response["owner"]), Self.isHash(response["instance"]) else {
                         throw Self.error("The runtime did not return valid ONE identities.")
                     }
+                    bootstrapped = true
                     id = "bootstrap"
                 } else if let requestId = response["requestId"] as? String { id = requestId }
                 else { throw Self.error("Runtime response has no request ID.") }
@@ -131,6 +145,13 @@ final class NodeRuntimeProcess: @unchecked Sendable {
         for reply in replies { reply(.failure(error)) }
         output.fileHandleForReading.readabilityHandler = nil
         stop()
+    }
+
+    /// Only the explicitly mounted publication namespace may use path identifiers.
+    private static func isPublishedDirectory(_ value: String) -> Bool {
+        guard value == "/Gesundheit" || value.hasPrefix("/Gesundheit/") else { return false }
+        return !value.contains("\\") && !value.contains("\0") &&
+            value.dropFirst().split(separator: "/", omittingEmptySubsequences: false).allSatisfy { !$0.isEmpty && $0 != "." && $0 != ".." }
     }
 
     private static func isHash(_ value: Any?) -> Bool {

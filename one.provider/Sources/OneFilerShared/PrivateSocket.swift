@@ -50,6 +50,11 @@ public enum PrivateSocket {
 
     /// Timeouts bound stalled local peers; failed operations are never replayed.
     public static func configure(_ fd: Int32) throws {
+        // Accepted BSD sockets may inherit the listener's nonblocking flag.
+        let flags = fcntl(fd, F_GETFL)
+        guard flags >= 0, fcntl(fd, F_SETFL, flags & ~O_NONBLOCK) == 0 else {
+            throw failure("Cannot configure blocking runtime IO.")
+        }
         var timeout = timeval(tv_sec: 65, tv_usec: 0)
         var yes: Int32 = 1
         guard setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, socklen_t(MemoryLayout.size(ofValue: timeout))) == 0,
