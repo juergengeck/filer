@@ -14,6 +14,8 @@ if pgrep -x OneFilerHost >/dev/null; then
   exit 1
 fi
 DESTINATION="${FILER_INSTALL_PATH:-/Applications/OneFiler.app}"
+case "$DESTINATION" in /*.app) ;; *) echo "FILER_INSTALL_PATH must be an absolute .app path" >&2; exit 1 ;; esac
+rm -rf "$DESTINATION"
 ditto "$APP_PATH" "$DESTINATION"
 open "$DESTINATION"
 echo "Installed $DESTINATION. Register domains from its menu; legacy configurations require explicit migration."
