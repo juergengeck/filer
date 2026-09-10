@@ -13,7 +13,7 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         do { try runtimeService.start() }
         catch {
-            let alert = NSAlert(error: error)
+            let alert = Self.createAlert(error: error)
             alert.runModal()
             NSApplication.shared.terminate(nil)
             return
@@ -161,8 +161,25 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
 
     // MARK: - Actions
 
+    /// Uses the appearance-aware olive artwork instead of NSAlert's boxed app icon.
+    private static func createAlert(error: Error? = nil) -> NSAlert {
+        let alert: NSAlert
+        if let error {
+            alert = NSAlert(error: error)
+        } else {
+            alert = NSAlert()
+        }
+        guard let icon = NSImage(named: "FilerIcon")?.copy() as? NSImage else {
+            fatalError("The bundled olive dialog icon is missing")
+        }
+        icon.size = NSSize(width: 64, height: 64)
+        icon.accessibilityDescription = "OneFiler"
+        alert.icon = icon
+        return alert
+    }
+
     @objc private func registerNewDomain() {
-        let alert = NSAlert()
+        let alert = Self.createAlert()
         alert.messageText = "Register New Domain"
         alert.informativeText = "Enter domain details:"
         alert.alertStyle = .informational
@@ -210,7 +227,7 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
     /// Start pairing on the existing host owner and leave the menu responsive while it runs.
     @objc private func pairDomain(_ sender: NSMenuItem) {
         guard let domain = sender.representedObject as? String, !pairingDomains.contains(domain) else { return }
-        let alert = NSAlert()
+        let alert = Self.createAlert()
         alert.messageText = "Pair \(domain)"
         alert.informativeText = "Paste the invitation from Cube or another ONE device. Device enrollment requires this domain to use the same identity email."
         let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 420, height: 24))
@@ -230,7 +247,7 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
             await MainActor.run {
                 self.pairingDomains.remove(domain)
                 self.updateMenu()
-                let result = NSAlert()
+                let result = Self.createAlert()
                 result.messageText = error == nil ? "Device Paired" : "Pairing Failed"
                 result.informativeText = error?.localizedDescription ?? "\(domain) is paired. The other device determines which data is shared; synchronization continues while Filer is open."
                 result.runModal()
@@ -241,7 +258,7 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
     @objc private func unregisterDomain(_ sender: NSMenuItem) {
         guard let identifier = sender.representedObject as? String else { return }
 
-        let alert = NSAlert()
+        let alert = Self.createAlert()
         alert.messageText = "Unregister Domain"
         alert.informativeText = "Are you sure you want to unregister domain '\(identifier)'?"
         alert.alertStyle = .warning
@@ -263,7 +280,7 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
     private func showDomainResult(_ error: Error?, success: String) {
         DispatchQueue.main.async {
             self.updateMenu()
-            let alert = NSAlert()
+            let alert = Self.createAlert()
             alert.messageText = error == nil ? "Domain Updated" : "Domain Update Failed"
             alert.informativeText = error?.localizedDescription ?? success
             alert.alertStyle = error == nil ? .informational : .critical
@@ -290,9 +307,9 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
         guard let name = sender.representedObject as? String else { return }
         do {
             try domainManager.refreshDomain(name: name) { error in
-                if let error { DispatchQueue.main.async { NSAlert(error: error).runModal() } }
+                if let error { DispatchQueue.main.async { Self.createAlert(error: error).runModal() } }
             }
-        } catch { NSAlert(error: error).runModal() }
+        } catch { Self.createAlert(error: error).runModal() }
     }
 
     @objc private func quit() {
