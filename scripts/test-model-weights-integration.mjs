@@ -121,11 +121,16 @@ try {
   assert.equal(library[0].pinned, false);
   for (const chunk of chunks) assert.equal(await recipient.command('exists', {hash: chunk}), false,
     'Browsing metadata must not replicate weight BLOBs');
-  const modelDirectory = (await rpc(recipient, 'readDir', {path: '/models'})).children[0];
-  const revisionDirectory = (await rpc(recipient, 'readDir', {path: `/models/${modelDirectory}`})).children[0];
-  const filePath = `/models/${modelDirectory}/${revisionDirectory}/model.safetensors`;
+  assert.deepEqual(new Set((await rpc(recipient, 'readDir', {path: '/ONE'})).children), new Set(['System', 'settings', 'invites']));
+  assert.deepEqual(new Set((await rpc(recipient, 'readDir', {path: '/ONE/System'})).children), new Set(['debug', 'models', 'objects', 'types']));
+  const modelRoot = await rpc(recipient, 'stat', {path: '/ONE/System/models'});
+  assert.equal(modelRoot.item.parentId, 'ONE/System');
+  const modelDirectory = (await rpc(recipient, 'readDir', {path: '/ONE/System/models'})).children[0];
+  const revisionDirectory = (await rpc(recipient, 'readDir', {path: `/ONE/System/models/${modelDirectory}`})).children[0];
+  const filePath = `/ONE/System/models/${modelDirectory}/${revisionDirectory}/model.safetensors`;
   const stat = await rpc(recipient, 'stat', {path: filePath});
   assert.equal(stat.size, weights.length);
+  assert.equal(stat.item.path, filePath);
   assert.match(stat.item.id, /^filer:[a-f0-9]{64}$/);
   assert.equal(stat.item.contentVersion, createHash('sha256').update(weights).digest('hex'));
   assert.deepEqual(await rpc(recipient, 'getItem', {id: stat.item.id}), stat.item);

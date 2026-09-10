@@ -42,10 +42,10 @@ try {
     totalBytes: bytes, metadataReceivedAt: new Date().toISOString(), pinned: entry.pinned};
   await writeFile(path.join(values.evidence, 'result.json'), JSON.stringify(evidence, null, 2) + '\n');
   await target.call('modelWeights:waitForPeer', {person: source.ready.owner, timeoutMs: 120000});
-  const root = (await target.call('filer:readDir', {path: '/models'})).result;
+  const root = (await target.call('filer:readDir', {path: '/ONE/System/models'})).result;
   let revisionPath;
   for (const model of root.children) {
-    const directory = `/models/${model}`;
+    const directory = `/ONE/System/models/${model}`;
     const revisions = (await target.call('filer:readDir', {path: directory})).result;
     const selected = revisions.children.find(name => name.endsWith(`-${hash}`));
     if (selected) { revisionPath = `${directory}/${selected}`; break; }

@@ -10,6 +10,9 @@ const siblingDependencyPackages = [
     {directory: '../one/packages/one.models'},
     {directory: '../one/packages/trie.core'},
     {directory: '../one/packages/chat.core'},
+    {directory: '../one/packages/filer.core'},
+    {directory: '../one/packages/llm.one'},
+    {directory: '../fotos/fotos.core'},
     {directory: '../one/packages/refinio.api'}
 ];
 

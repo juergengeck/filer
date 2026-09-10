@@ -12,7 +12,7 @@
     "clean": "swift package clean",
     "test:ipc": "swift test",
     "test:connection": "node test/integration/connection-test.js",
-    "prepare:runtime": "pnpm --dir ../../one/packages/filer.core build && pnpm --dir ../../one/packages/llm.one build && pnpm --dir ../../one/packages/refinio.api build && node scripts/bundle-runtime.mjs",
+    "prepare:runtime": "pnpm --dir ../../one/packages/filer.core build && pnpm --dir ../../one/packages/llm.one build && pnpm --dir ../../fotos/fotos.core build && pnpm --dir ../../one/packages/refinio.api build && node scripts/bundle-runtime.mjs",
     "test:private-ipc": "python3 scripts/test-private-ipc.py"
   },
   "keywords": [
