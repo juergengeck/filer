@@ -92,14 +92,24 @@ Finder check and the remaining clinical filesystem boundary.
 
 ## macOS icons
 
-The menu bar uses `Resources/Assets.xcassets/MenuBarIcon.imageset/olive.svg`,
-an exact copy of `../olive.svg`. Keep these in sync. AppKit supplies the template
-tint; connection status changes the tooltip. The full-color AppIcon set used by
-Finder's path bar has a transparent canvas and cutout, with a thin white edge
-around the black olive for contrast on light and dark surfaces. Regenerate every
-size from the canonical vector with `swift scripts/generate-app-icons.swift`.
-These full-color icons do not receive the sidebar/menu template tint.
-Xcode must compile the asset catalog.
+The menu bar uses the SVG template at
+`Resources/Assets.xcassets/MenuBarIcon.imageset/olive.svg`, an exact copy of
+`../olive.svg`. Keep these in sync. AppKit supplies its tint; connection status
+changes the tooltip.
+
+Finder's path bar needs the named asset declared by `CFBundleIconName`:
+`FilerIcon.imageset`. It supplies original-color SVG renditions for light (black)
+and dark (white) appearance, rather than depending on template tinting. Both
+preserve the transparent background and cutout of `../olive.svg`, without a stroke.
+`CFBundleIconFile` separately points to `Resources/Olive.icns` for icon-file
+consumers. Regenerate the image-set renditions and that file together with
+`swift scripts/generate-app-icons.swift`.
+
+Keep `ASSETCATALOG_COMPILER_APPICON_NAME` explicitly empty: XcodeGen otherwise
+defaults it to `AppIcon` and overrides the explicit `CFBundleIconName=FilerIcon`.
+Keep both icon plist keys: removing the named asset leaves Finder's path bar with
+a generic package icon. Xcode must compile the asset catalog for the named icon,
+menu-bar template, and sidebar symbol.
 
 Finder's sidebar uses the separate `FilerSidebar.symbolset`, declared through
 `CFBundleIcons/CFBundlePrimaryIcon/CFBundleSymbolName` in the extension's plist.

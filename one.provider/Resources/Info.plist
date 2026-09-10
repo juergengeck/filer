@@ -10,6 +10,10 @@
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
+	<key>CFBundleIconFile</key>
+	<string>Olive</string>
+	<key>CFBundleIconName</key>
+	<string>FilerIcon</string>
 	<key>CFBundleName</key>
 	<string>OneFiler</string>
 	<key>CFBundlePackageType</key>

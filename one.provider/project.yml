@@ -27,8 +27,11 @@ targets:
       - path: Sources/OneFilerHost
       - path: Resources/Assets.xcassets
         buildPhase: resources
+      - path: Resources/Olive.icns
+        buildPhase: resources
     settings:
-      ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+      # Use the appearance-aware ICNS file; XcodeGen otherwise defaults to AppIcon.
+      ASSETCATALOG_COMPILER_APPICON_NAME: ""
       PRODUCT_BUNDLE_IDENTIFIER: one.filer
       INFOPLIST_FILE: Resources/Info.plist
       COMBINE_HIDPI_IMAGES: YES
