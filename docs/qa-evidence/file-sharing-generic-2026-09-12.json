@@ -1,0 +1,154 @@
+{
+  "status": "passed",
+  "scope": "Two isolated ONE instances over local CHUM relay; production FileProviderOperations IPC; no native Finder interaction",
+  "runtimeGeneration": "Canonical build outputs with fresh temporary stores; differs from frozen retained-store Fotos native experiment",
+  "traces": {
+    "generic-object-transfer": {
+      "surface": "FileProviderOperations.handle over test child-process IPC",
+      "nativeFinderExercised": false,
+      "grantor": "collection-recipient",
+      "grantee": "collection-source",
+      "workerRuntime": {
+        "grantor": {
+          "execPath": "/Users/gecko/src/filer/one.provider/build/toolchain/node",
+          "nodeVersion": "v24.19.0",
+          "execArgv": [
+            "--jitless"
+          ],
+          "jitless": true
+        },
+        "grantee": {
+          "execPath": "/Users/gecko/src/filer/one.provider/build/toolchain/node",
+          "nodeVersion": "v24.19.0",
+          "execArgv": [
+            "--jitless"
+          ],
+          "jitless": true
+        }
+      },
+      "grantRpc": {
+        "started": {
+          "at": "2026-09-12T10:59:33.331Z",
+          "elapsedMs": 14311.655542
+        },
+        "returned": {
+          "at": "2026-09-12T10:59:34.253Z",
+          "elapsedMs": 15230.194959
+        },
+        "durationMs": 918.539417
+      },
+      "authoritativeIdAccessStored": {
+        "workerObservedAt": "2026-09-12T10:59:34.245Z",
+        "driverObserved": {
+          "at": "2026-09-12T10:59:34.245Z",
+          "elapsedMs": 15222.462417
+        },
+        "afterGrantStartMs": 910.8068750000002
+      },
+      "chumRootArrival": {
+        "idHash": "325a5db66790265652bc2fcdb9b77067c6c929aa5b39eec576a99ff6099fe5c2",
+        "hash": "0e00134690117064301998e5e14a9cadb6d2b78b06d1e7a147a6652fcb6f0980",
+        "workerObservedAt": "2026-09-12T10:59:34.932Z",
+        "driverObserved": {
+          "at": "2026-09-12T10:59:34.932Z",
+          "elapsedMs": 15909.734667
+        },
+        "afterGrantStartMs": 1598.0791250000002,
+        "afterGrantRpcReturnMs": 679.5397080000002
+      },
+      "receiverStorageRead": {
+        "started": {
+          "at": "2026-09-12T10:59:34.932Z",
+          "elapsedMs": 15909.746459
+        },
+        "completed": {
+          "at": "2026-09-12T10:59:34.940Z",
+          "elapsedMs": 15917.009625
+        },
+        "roundTripMs": 7.263166000000638,
+        "startedAt": "2026-09-12T10:59:34.932Z",
+        "rootReadMs": 2.963792,
+        "entryReadMs": 0.666375,
+        "blobReadMs": 0.824416,
+        "totalMs": 4.454583,
+        "rootHash": "0e00134690117064301998e5e14a9cadb6d2b78b06d1e7a147a6652fcb6f0980",
+        "entryHash": "93322e9222ccdc264a7dcb6dfc8a2a9af8ef98dc23e4acc9ac41d6ebdce5c4d5",
+        "blobHash": "cd334aad42351e9f9a0b28d4048df4a2399acccddd701bdb03aa2227996f6834",
+        "byteLength": 220000,
+        "sha256": "cd334aad42351e9f9a0b28d4048df4a2399acccddd701bdb03aa2227996f6834"
+      },
+      "receiverFilesystemProjection": {
+        "files": [],
+        "objects": [],
+        "projectedObjectReadable": false,
+        "readError": "Object folder does not exist"
+      },
+      "accessBeforeRevoke": {
+        "person": "43b9b0afc565210c440bca5a8743a84c7f4f6d8390921e93018ab16551dc681f",
+        "idHash": "325a5db66790265652bc2fcdb9b77067c6c929aa5b39eec576a99ff6099fe5c2",
+        "rootHash": "0e00134690117064301998e5e14a9cadb6d2b78b06d1e7a147a6652fcb6f0980",
+        "entryHash": "93322e9222ccdc264a7dcb6dfc8a2a9af8ef98dc23e4acc9ac41d6ebdce5c4d5",
+        "blobHash": "cd334aad42351e9f9a0b28d4048df4a2399acccddd701bdb03aa2227996f6834",
+        "idGranted": true,
+        "idAccessible": true,
+        "rootAccessible": true,
+        "entryAccessible": true,
+        "blobAccessible": true,
+        "observedAt": "2026-09-12T10:59:34.955Z",
+        "durationMs": 0.9515
+      }
+    },
+    "generic-object-revocation": {
+      "surface": "FileProviderOperations.handle over test child-process IPC",
+      "nativeFinderExercised": false,
+      "revokeRpc": {
+        "started": {
+          "at": "2026-09-12T10:59:34.960Z",
+          "elapsedMs": 15937.788917
+        },
+        "returned": {
+          "at": "2026-09-12T10:59:35.046Z",
+          "elapsedMs": 16023.272542
+        },
+        "durationMs": 85.48362500000076
+      },
+      "authoritativeIdAccessStored": {
+        "workerObservedAt": "2026-09-12T10:59:35.046Z",
+        "driverObserved": {
+          "at": "2026-09-12T10:59:35.046Z",
+          "elapsedMs": 16023.231125
+        },
+        "afterRevokeStartMs": 85.44220800000039,
+        "recipients": []
+      },
+      "effectiveAccessCheck": {
+        "started": {
+          "at": "2026-09-12T10:59:35.046Z",
+          "elapsedMs": 16023.292209
+        },
+        "completed": {
+          "at": "2026-09-12T10:59:35.047Z",
+          "elapsedMs": 16024.557792
+        },
+        "roundTripMs": 1.2655830000003334,
+        "person": "43b9b0afc565210c440bca5a8743a84c7f4f6d8390921e93018ab16551dc681f",
+        "idHash": "325a5db66790265652bc2fcdb9b77067c6c929aa5b39eec576a99ff6099fe5c2",
+        "rootHash": "0e00134690117064301998e5e14a9cadb6d2b78b06d1e7a147a6652fcb6f0980",
+        "entryHash": "93322e9222ccdc264a7dcb6dfc8a2a9af8ef98dc23e4acc9ac41d6ebdce5c4d5",
+        "blobHash": "cd334aad42351e9f9a0b28d4048df4a2399acccddd701bdb03aa2227996f6834",
+        "idGranted": false,
+        "idAccessible": false,
+        "rootAccessible": false,
+        "entryAccessible": false,
+        "blobAccessible": false,
+        "observedAt": "2026-09-12T10:59:35.047Z",
+        "durationMs": 0.998583
+      },
+      "retainedCopyGuarantee": "Previously received immutable objects remain in receiver storage; future root versions are no longer id-accessible"
+    }
+  },
+  "completion": [
+    "PASS: Files imports; contact HTML object sharing and revocation; independent persisted photo associations; signed collection sharing, updates, and restart"
+  ],
+  "reproduce": "FILER_TEST_NODE=/Users/gecko/src/filer/one.provider/build/toolchain/node FILER_TEST_NODE_ARGS='[\"--jitless\"]' node scripts/test-files-collections-integration.mjs"
+}

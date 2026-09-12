@@ -1,5 +1,14 @@
 # Glue, Fotos, and Filer integration QA
 
+The [12 September file-sharing trace](file-sharing-trace.md) attributes first-share
+latency and records the native File Provider registration failure and recovery.
+
+Native QA reports and authenticated file-sharing receipts are browsable in
+`ONE/System/Journal`. QA retains `qa-<runId>.json` for each terminal run, including
+failed and cancelled runs, and updates the same run atomically. The former single
+`qa-reports/latest.json` is relocated there on the first upgraded runtime opening.
+The journal is read-only and survives application restart.
+
 Filer owns an embedded `filer-test-runner` plan, following Flexibel's four-instance runner pattern. The participants are a production Glue registrar, Alice's Fotos app, Bob's Filer app, and Charlie's Fotos app. Charlie pairs with Alice but receives no collection grant.
 
 The runner calls application operations. Fotos imports through its normal photo pipeline, edits real collections, and commits the same share operations as its UI. Bob reads the production `/Fotos` filesystem. Collection addresses use the shared filesystem helper (stable collection ID plus issuer). No test process fabricates identity certificates, storage objects, or receiver snapshots.

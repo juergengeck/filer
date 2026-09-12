@@ -1,7 +1,8 @@
 # Object folders and sharing through Filer
 
-Status: implemented for contacts and owned imported files; received Fotos collections
-retain their sender-controlled read-only projection.
+Status: implemented for contacts, owned imported files, and authenticated received
+files. Received files are read-only; received Fotos collections retain their
+sender-controlled projection.
 
 ## Current runtime
 
@@ -13,6 +14,28 @@ repository. It exposes:
 - `/objects/<imported filename>/` for each owned file, containing its HTML view,
   original content, `Shared with`, and `People in photo`;
 - `/Files` as the existing import surface, preserving original paths and bytes.
+- `/ONE/System/journal` for sharing receipts and retained QA run reports (displayed
+  as `ONE/System/Journal` in Finder).
+
+Completed CHUM object imports persist a receiver-owned receipt binding the exact
+file root to the authenticated sending person. Received objects appear alongside
+owned objects in `/objects`, with deterministic identity-based name disambiguation
+when filenames collide. They expose their summary and original bytes, without
+editable sharing or photo-association folders. Their original sender retains
+ownership; receipt does not add the file to the receiver's owned `/Files` root.
+
+The first authenticated immutable entry for a stable object identity is retained.
+Repeated delivery and later photo-association metadata do not replace it; a
+different entry under the same immutable identity is rejected. A stored object
+that merely claims an owner cannot be promoted into an authenticated receipt.
+Revocation stops future sender access; it does not erase already received copies.
+Old data imported before receipt recording requires a renewed authenticated head
+import to gain this projection; Filer does not infer provenance by scanning storage.
+
+Journal receipts are immutable JSON views. QA reports are retained per run, updated
+atomically for that run, and remain visible after restart. The previous single
+`qa-reports/latest.json` is migrated to its run's journal entry. Journal contents
+cannot be changed by dragging or deleting files in the mounted view.
 
 Valid profiles without a name appear as `Unnamed contact`, with identity-based
 disambiguation when necessary. Names preserve readable Unicode. Renaming a profile
@@ -35,6 +58,9 @@ duplicate imports, HTML/name handling, native RPC copy/delete behavior, and a
 two-instance test transferring object bytes after a contact HTML share. The
 two-instance test also checks association and revocation persistence across restart.
 Live Finder drag-and-drop has not been manually exercised for this change.
+
+The [file-sharing trace](file-sharing-trace.md) distinguishes receiver storage
+transfer from filesystem visibility and records the separate native Fotos path.
 
 ## Purpose
 

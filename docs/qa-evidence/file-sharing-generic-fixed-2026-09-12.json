@@ -1,0 +1,174 @@
+{
+  "status": "passed",
+  "traces": {
+    "generic-object-transfer": {
+      "surface": "FileProviderOperations.handle over test child-process IPC",
+      "nativeFinderExercised": false,
+      "grantor": "collection-recipient",
+      "grantee": "collection-source",
+      "workerRuntime": {
+        "grantor": {
+          "execPath": "/Users/gecko/src/filer/one.provider/build/toolchain/node",
+          "nodeVersion": "v24.19.0",
+          "execArgv": [
+            "--jitless"
+          ],
+          "jitless": true
+        },
+        "grantee": {
+          "execPath": "/Users/gecko/src/filer/one.provider/build/toolchain/node",
+          "nodeVersion": "v24.19.0",
+          "execArgv": [
+            "--jitless"
+          ],
+          "jitless": true
+        }
+      },
+      "grantRpc": {
+        "started": {
+          "at": "2026-09-12T11:20:46.920Z",
+          "elapsedMs": 13905.680875
+        },
+        "returned": {
+          "at": "2026-09-12T11:20:48.187Z",
+          "elapsedMs": 15164.512792
+        },
+        "durationMs": 1258.8319169999995
+      },
+      "authoritativeIdAccessStored": {
+        "workerObservedAt": "2026-09-12T11:20:48.180Z",
+        "driverObserved": {
+          "at": "2026-09-12T11:20:48.180Z",
+          "elapsedMs": 15157.747083
+        },
+        "afterGrantStartMs": 1252.0662080000002
+      },
+      "chumRootArrival": {
+        "idHash": "325a5db66790265652bc2fcdb9b77067c6c929aa5b39eec576a99ff6099fe5c2",
+        "hash": "32a4f6d298a48f569b39404905a98f5bf1fb802b0542923968e659024e5093be",
+        "workerObservedAt": "2026-09-12T11:20:49.238Z",
+        "driverObserved": {
+          "at": "2026-09-12T11:20:49.239Z",
+          "elapsedMs": 16216.020458
+        },
+        "afterGrantStartMs": 2310.339583000001,
+        "afterGrantRpcReturnMs": 1051.5076660000013
+      },
+      "receiverReceiptStored": {
+        "workerObservedAt": "2026-09-12T11:20:49.311Z",
+        "driverObserved": {
+          "at": "2026-09-12T11:20:49.312Z",
+          "elapsedMs": 16289.13675
+        },
+        "afterGrantStartMs": 2383.4558749999997
+      },
+      "receiverStorageRead": {
+        "started": {
+          "at": "2026-09-12T11:20:49.312Z",
+          "elapsedMs": 16289.147917
+        },
+        "completed": {
+          "at": "2026-09-12T11:20:49.319Z",
+          "elapsedMs": 16296.70025
+        },
+        "roundTripMs": 7.552332999999635,
+        "startedAt": "2026-09-12T11:20:49.312Z",
+        "rootReadMs": 2.852041,
+        "entryReadMs": 0.449625,
+        "blobReadMs": 1.041959,
+        "totalMs": 4.343625,
+        "rootHash": "32a4f6d298a48f569b39404905a98f5bf1fb802b0542923968e659024e5093be",
+        "entryHash": "5925670360d9b6ad1d89bfbe3e69f0c95053fcd147cacbafcf353028aadff617",
+        "blobHash": "9116ef22d5dc9148e8b3401ae8e457bb1b0cf55a858c6f425fcca5604dc5bc78",
+        "byteLength": 220000,
+        "sha256": "9116ef22d5dc9148e8b3401ae8e457bb1b0cf55a858c6f425fcca5604dc5bc78"
+      },
+      "receiverFilesystemProjection": {
+        "files": [],
+        "objects": [
+          "document.bin"
+        ],
+        "projectedObjectReadable": true
+      },
+      "receiverJournal": {
+        "path": "/ONE/System/journal",
+        "entries": [
+          "received-a574c9a47980cee7a4410ea3a705612c3eb8bbd61b241498a7a89cf86df921b7.json"
+        ],
+        "record": {
+          "receiptHash": "a574c9a47980cee7a4410ea3a705612c3eb8bbd61b241498a7a89cf86df921b7",
+          "source": "4668bd2179c3ae9513eacef82048e18caaa2a2360c86d256a5dbd3ceeccdfc82",
+          "rootIdHash": "325a5db66790265652bc2fcdb9b77067c6c929aa5b39eec576a99ff6099fe5c2",
+          "rootHash": "32a4f6d298a48f569b39404905a98f5bf1fb802b0542923968e659024e5093be",
+          "path": "/document.bin",
+          "size": 220000
+        }
+      },
+      "accessBeforeRevoke": {
+        "person": "43b9b0afc565210c440bca5a8743a84c7f4f6d8390921e93018ab16551dc681f",
+        "idHash": "325a5db66790265652bc2fcdb9b77067c6c929aa5b39eec576a99ff6099fe5c2",
+        "rootHash": "32a4f6d298a48f569b39404905a98f5bf1fb802b0542923968e659024e5093be",
+        "entryHash": "5925670360d9b6ad1d89bfbe3e69f0c95053fcd147cacbafcf353028aadff617",
+        "blobHash": "9116ef22d5dc9148e8b3401ae8e457bb1b0cf55a858c6f425fcca5604dc5bc78",
+        "idGranted": true,
+        "idAccessible": true,
+        "rootAccessible": true,
+        "entryAccessible": true,
+        "blobAccessible": true,
+        "observedAt": "2026-09-12T11:20:49.347Z",
+        "durationMs": 1.064583
+      }
+    },
+    "generic-object-revocation": {
+      "surface": "FileProviderOperations.handle over test child-process IPC",
+      "nativeFinderExercised": false,
+      "revokeRpc": {
+        "started": {
+          "at": "2026-09-12T11:20:49.348Z",
+          "elapsedMs": 16324.860667
+        },
+        "returned": {
+          "at": "2026-09-12T11:20:49.466Z",
+          "elapsedMs": 16443.60475
+        },
+        "durationMs": 118.74408299999777
+      },
+      "authoritativeIdAccessStored": {
+        "workerObservedAt": "2026-09-12T11:20:49.466Z",
+        "driverObserved": {
+          "at": "2026-09-12T11:20:49.466Z",
+          "elapsedMs": 16443.44775
+        },
+        "afterRevokeStartMs": 118.58708299999853,
+        "recipients": []
+      },
+      "effectiveAccessCheck": {
+        "started": {
+          "at": "2026-09-12T11:20:49.466Z",
+          "elapsedMs": 16443.611458
+        },
+        "completed": {
+          "at": "2026-09-12T11:20:49.469Z",
+          "elapsedMs": 16446.424417
+        },
+        "roundTripMs": 2.812958999998955,
+        "person": "43b9b0afc565210c440bca5a8743a84c7f4f6d8390921e93018ab16551dc681f",
+        "idHash": "325a5db66790265652bc2fcdb9b77067c6c929aa5b39eec576a99ff6099fe5c2",
+        "rootHash": "32a4f6d298a48f569b39404905a98f5bf1fb802b0542923968e659024e5093be",
+        "entryHash": "5925670360d9b6ad1d89bfbe3e69f0c95053fcd147cacbafcf353028aadff617",
+        "blobHash": "9116ef22d5dc9148e8b3401ae8e457bb1b0cf55a858c6f425fcca5604dc5bc78",
+        "idGranted": false,
+        "idAccessible": false,
+        "rootAccessible": false,
+        "entryAccessible": false,
+        "blobAccessible": false,
+        "observedAt": "2026-09-12T11:20:49.469Z",
+        "durationMs": 2.473833
+      },
+      "retainedCopyGuarantee": "Previously received immutable objects remain in receiver storage; future root versions are no longer id-accessible"
+    }
+  },
+  "completion": [
+    "PASS: Files imports; projected received generic objects; contact HTML object sharing and revocation; independent persisted photo associations; signed collection sharing, updates, and restart"
+  ]
+}

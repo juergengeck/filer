@@ -1,0 +1,447 @@
+{
+  "traceId": "951aa719-d41f-48e2-997c-5eafe7d89397",
+  "startEpochMs": 1789209963949,
+  "fixture": {
+    "name": "qa-share-trace-951aa719.png",
+    "size": 196992,
+    "sha256": "5e768ac19f2b5cc885003ae51db52afa8d370bfb907c35678132ece7edff657d",
+    "generationSeed": "951aa719-d41f-48e2-997c-5eafe7d89397"
+  },
+  "collection": {
+    "id": "648baba2-99c2-458f-b411-937be9ee0d35",
+    "name": "Filer QA sharing trace 951aa719",
+    "photoHashes": [
+      "5e768ac19f2b5cc885003ae51db52afa8d370bfb907c35678132ece7edff657d"
+    ],
+    "revision": 4,
+    "path": "/Fotos/648baba2-99c2-458f-b411-937be9ee0d35 (ee2d45c07b441af38451589dabd79381d1e39d1cae1a82d5bd8addffe5fb44e7)",
+    "issuer": "ee2d45c07b441af38451589dabd79381d1e39d1cae1a82d5bd8addffe5fb44e7",
+    "recipient": "a855d8d94355a8117f9824bd0413a266eff3510b58bc5b3b41c6ac2d5aadf035"
+  },
+  "calls": [
+    {
+      "label": "alice.importPhotoFixture",
+      "startedAtEpochMs": 1789209962717,
+      "durationMs": 829.02
+    },
+    {
+      "label": "alice.createCollection",
+      "startedAtEpochMs": 1789209963546,
+      "durationMs": 73.51
+    },
+    {
+      "label": "alice.setCollectionRecipients",
+      "startedAtEpochMs": 1789209963949,
+      "durationMs": 1231.09
+    },
+    {
+      "label": "bob.waitForFotos",
+      "startedAtEpochMs": 1789209965180,
+      "durationMs": 4077.88
+    },
+    {
+      "label": "finder.verifyOriginal",
+      "startedAtEpochMs": 1789209969258,
+      "durationMs": 60064.87,
+      "error": "[Errno 2] No such file or directory: '/Users/gecko/Library/CloudStorage/OneFiler-FilerQA/Fotos/648baba2-99c2-458f-b411-937be9ee0d35 (ee2d45c07b441af38451589dabd79381d1e39d1cae1a82d5bd8addffe5fb44e7)/qa-share-trace-951aa719.png'"
+    }
+  ],
+  "throughProjectionMs": 5309.09,
+  "senderSpans": [
+    {
+      "seq": 32,
+      "phase": "selected-photo-sync",
+      "scopeKind": "collection",
+      "scopeId": "648baba2-99c2-458f-b411-937be9ee0d35",
+      "startedAt": "2026-09-12T10:46:03.970Z",
+      "finishedAt": "2026-09-12T10:46:05.048Z",
+      "durationMs": 1078,
+      "outcome": "success",
+      "offsetMs": 21
+    },
+    {
+      "seq": 33,
+      "phase": "manifest-resolution",
+      "scopeKind": "collection",
+      "scopeId": "648baba2-99c2-458f-b411-937be9ee0d35",
+      "startedAt": "2026-09-12T10:46:05.048Z",
+      "finishedAt": "2026-09-12T10:46:05.051Z",
+      "durationMs": 3,
+      "outcome": "success",
+      "offsetMs": 1099
+    },
+    {
+      "seq": 34,
+      "phase": "scope-closure",
+      "scopeKind": "collection",
+      "scopeId": "648baba2-99c2-458f-b411-937be9ee0d35",
+      "startedAt": "2026-09-12T10:46:05.051Z",
+      "finishedAt": "2026-09-12T10:46:05.055Z",
+      "durationMs": 4,
+      "outcome": "success",
+      "offsetMs": 1102
+    },
+    {
+      "seq": 35,
+      "phase": "scope-root-load-or-create",
+      "scopeKind": "collection",
+      "scopeId": "648baba2-99c2-458f-b411-937be9ee0d35",
+      "startedAt": "2026-09-12T10:46:05.055Z",
+      "finishedAt": "2026-09-12T10:46:05.059Z",
+      "durationMs": 4,
+      "outcome": "success",
+      "offsetMs": 1106
+    },
+    {
+      "seq": 36,
+      "phase": "certificate-status-check",
+      "scopeKind": "collection",
+      "scopeId": "648baba2-99c2-458f-b411-937be9ee0d35",
+      "startedAt": "2026-09-12T10:46:05.059Z",
+      "finishedAt": "2026-09-12T10:46:05.060Z",
+      "durationMs": 1,
+      "outcome": "success",
+      "offsetMs": 1110
+    },
+    {
+      "seq": 37,
+      "phase": "certificate-store",
+      "scopeKind": "collection",
+      "scopeId": "648baba2-99c2-458f-b411-937be9ee0d35",
+      "startedAt": "2026-09-12T10:46:05.060Z",
+      "finishedAt": "2026-09-12T10:46:05.071Z",
+      "durationMs": 11,
+      "outcome": "success",
+      "offsetMs": 1111
+    },
+    {
+      "seq": 38,
+      "phase": "certificate-sign",
+      "scopeKind": "collection",
+      "scopeId": "648baba2-99c2-458f-b411-937be9ee0d35",
+      "startedAt": "2026-09-12T10:46:05.071Z",
+      "finishedAt": "2026-09-12T10:46:05.082Z",
+      "durationMs": 11,
+      "outcome": "success",
+      "offsetMs": 1122
+    },
+    {
+      "seq": 39,
+      "phase": "certificate-chain-access",
+      "scopeKind": "collection",
+      "scopeId": "648baba2-99c2-458f-b411-937be9ee0d35",
+      "startedAt": "2026-09-12T10:46:05.082Z",
+      "finishedAt": "2026-09-12T10:46:05.093Z",
+      "durationMs": 11,
+      "outcome": "success",
+      "offsetMs": 1133
+    },
+    {
+      "seq": 40,
+      "phase": "certificate-chain-store",
+      "scopeKind": "collection",
+      "scopeId": "648baba2-99c2-458f-b411-937be9ee0d35",
+      "startedAt": "2026-09-12T10:46:05.093Z",
+      "finishedAt": "2026-09-12T10:46:05.110Z",
+      "durationMs": 17,
+      "outcome": "success",
+      "offsetMs": 1144
+    },
+    {
+      "seq": 41,
+      "phase": "manifest-access-replace",
+      "scopeKind": "collection",
+      "scopeId": "648baba2-99c2-458f-b411-937be9ee0d35",
+      "startedAt": "2026-09-12T10:46:05.110Z",
+      "finishedAt": "2026-09-12T10:46:05.139Z",
+      "durationMs": 29,
+      "outcome": "success",
+      "offsetMs": 1161
+    },
+    {
+      "seq": 42,
+      "phase": "manifest-store",
+      "scopeKind": "collection",
+      "scopeId": "648baba2-99c2-458f-b411-937be9ee0d35",
+      "startedAt": "2026-09-12T10:46:05.139Z",
+      "finishedAt": "2026-09-12T10:46:05.139Z",
+      "durationMs": 0,
+      "outcome": "success",
+      "offsetMs": 1190
+    },
+    {
+      "seq": 43,
+      "phase": "commit-scope",
+      "scopeKind": "collection",
+      "scopeId": "648baba2-99c2-458f-b411-937be9ee0d35",
+      "startedAt": "2026-09-12T10:46:05.051Z",
+      "finishedAt": "2026-09-12T10:46:05.139Z",
+      "durationMs": 88,
+      "outcome": "success",
+      "offsetMs": 1102
+    }
+  ],
+  "receiver": {
+    "signatureVerificationCountDelta": 17,
+    "synchronousCryptoCount": 17,
+    "synchronousCryptoTotalMs": 2051,
+    "synchronousCryptoSpans": [
+      {
+        "issuer": "7bf4073c19c9d5a5b53724ce06ea2f8a445517881a0ba338b47cb6c412237f4c",
+        "phase": "synchronousCrypto",
+        "startedAt": "2026-09-12T10:46:05.680Z",
+        "result": true,
+        "call": 33,
+        "durationMs": 146,
+        "outcome": "success",
+        "offsetMs": 1731
+      },
+      {
+        "issuer": "7bf4073c19c9d5a5b53724ce06ea2f8a445517881a0ba338b47cb6c412237f4c",
+        "phase": "synchronousCrypto",
+        "startedAt": "2026-09-12T10:46:05.826Z",
+        "result": true,
+        "call": 34,
+        "durationMs": 120,
+        "outcome": "success",
+        "offsetMs": 1877
+      },
+      {
+        "issuer": "7bf4073c19c9d5a5b53724ce06ea2f8a445517881a0ba338b47cb6c412237f4c",
+        "phase": "synchronousCrypto",
+        "startedAt": "2026-09-12T10:46:05.948Z",
+        "result": true,
+        "call": 35,
+        "durationMs": 155,
+        "outcome": "success",
+        "offsetMs": 1999
+      },
+      {
+        "issuer": "283b86c46e686508e0bcbd55ae93d66166b7aa1ee8c4fac6a38523d3204da632",
+        "phase": "synchronousCrypto",
+        "startedAt": "2026-09-12T10:46:06.104Z",
+        "result": true,
+        "call": 36,
+        "durationMs": 140,
+        "outcome": "success",
+        "offsetMs": 2155
+      },
+      {
+        "issuer": "3aeee5b7833b30a8d248b7ff872fd294681495284091f69671aaaf7bcaeb5063",
+        "phase": "synchronousCrypto",
+        "startedAt": "2026-09-12T10:46:06.245Z",
+        "result": true,
+        "call": 37,
+        "durationMs": 127,
+        "outcome": "success",
+        "offsetMs": 2296
+      },
+      {
+        "issuer": "ee2d45c07b441af38451589dabd79381d1e39d1cae1a82d5bd8addffe5fb44e7",
+        "phase": "synchronousCrypto",
+        "startedAt": "2026-09-12T10:46:06.374Z",
+        "result": true,
+        "call": 38,
+        "durationMs": 125,
+        "outcome": "success",
+        "offsetMs": 2425
+      },
+      {
+        "issuer": "283b86c46e686508e0bcbd55ae93d66166b7aa1ee8c4fac6a38523d3204da632",
+        "phase": "synchronousCrypto",
+        "startedAt": "2026-09-12T10:46:06.500Z",
+        "result": true,
+        "call": 39,
+        "durationMs": 107,
+        "outcome": "success",
+        "offsetMs": 2551
+      },
+      {
+        "issuer": "ee2d45c07b441af38451589dabd79381d1e39d1cae1a82d5bd8addffe5fb44e7",
+        "phase": "synchronousCrypto",
+        "startedAt": "2026-09-12T10:46:06.608Z",
+        "result": true,
+        "call": 40,
+        "durationMs": 106,
+        "outcome": "success",
+        "offsetMs": 2659
+      },
+      {
+        "issuer": "ee2d45c07b441af38451589dabd79381d1e39d1cae1a82d5bd8addffe5fb44e7",
+        "phase": "synchronousCrypto",
+        "startedAt": "2026-09-12T10:46:06.714Z",
+        "result": true,
+        "call": 41,
+        "durationMs": 107,
+        "outcome": "success",
+        "offsetMs": 2765
+      },
+      {
+        "issuer": "ee2d45c07b441af38451589dabd79381d1e39d1cae1a82d5bd8addffe5fb44e7",
+        "phase": "synchronousCrypto",
+        "startedAt": "2026-09-12T10:46:06.821Z",
+        "result": true,
+        "call": 42,
+        "durationMs": 121,
+        "outcome": "success",
+        "offsetMs": 2872
+      },
+      {
+        "issuer": "ee2d45c07b441af38451589dabd79381d1e39d1cae1a82d5bd8addffe5fb44e7",
+        "phase": "synchronousCrypto",
+        "startedAt": "2026-09-12T10:46:06.943Z",
+        "result": true,
+        "call": 43,
+        "durationMs": 115,
+        "outcome": "success",
+        "offsetMs": 2994
+      },
+      {
+        "issuer": "ee2d45c07b441af38451589dabd79381d1e39d1cae1a82d5bd8addffe5fb44e7",
+        "phase": "synchronousCrypto",
+        "startedAt": "2026-09-12T10:46:07.058Z",
+        "result": true,
+        "call": 44,
+        "durationMs": 157,
+        "outcome": "success",
+        "offsetMs": 3109
+      },
+      {
+        "issuer": "ee2d45c07b441af38451589dabd79381d1e39d1cae1a82d5bd8addffe5fb44e7",
+        "phase": "synchronousCrypto",
+        "startedAt": "2026-09-12T10:46:07.216Z",
+        "result": true,
+        "call": 45,
+        "durationMs": 151,
+        "outcome": "success",
+        "offsetMs": 3267
+      },
+      {
+        "issuer": "ee2d45c07b441af38451589dabd79381d1e39d1cae1a82d5bd8addffe5fb44e7",
+        "phase": "synchronousCrypto",
+        "startedAt": "2026-09-12T10:46:07.367Z",
+        "result": true,
+        "call": 46,
+        "durationMs": 102,
+        "outcome": "success",
+        "offsetMs": 3418
+      },
+      {
+        "issuer": "3aeee5b7833b30a8d248b7ff872fd294681495284091f69671aaaf7bcaeb5063",
+        "phase": "synchronousCrypto",
+        "startedAt": "2026-09-12T10:46:07.470Z",
+        "result": true,
+        "call": 47,
+        "durationMs": 98,
+        "outcome": "success",
+        "offsetMs": 3521
+      },
+      {
+        "issuer": "ee2d45c07b441af38451589dabd79381d1e39d1cae1a82d5bd8addffe5fb44e7",
+        "phase": "synchronousCrypto",
+        "startedAt": "2026-09-12T10:46:07.568Z",
+        "result": true,
+        "call": 48,
+        "durationMs": 91,
+        "outcome": "success",
+        "offsetMs": 3619
+      },
+      {
+        "issuer": "ee2d45c07b441af38451589dabd79381d1e39d1cae1a82d5bd8addffe5fb44e7",
+        "phase": "synchronousCrypto",
+        "startedAt": "2026-09-12T10:46:07.770Z",
+        "result": true,
+        "call": 49,
+        "durationMs": 83,
+        "outcome": "success",
+        "offsetMs": 3821
+      }
+    ],
+    "barrierTotalMs": 1,
+    "refreshCachesCountDelta": 0,
+    "refreshProfileCountDelta": 0,
+    "invalidations": [
+      {
+        "cause": "unversioned:Signature",
+        "at": "2026-09-12T10:46:05.664Z",
+        "trustChanged": true,
+        "offsetMs": 1715
+      },
+      {
+        "cause": "versioned:FotosShareCertificateChain",
+        "at": "2026-09-12T10:46:07.762Z",
+        "trustChanged": false,
+        "offsetMs": 3813
+      },
+      {
+        "cause": "chum:BLOB",
+        "at": "2026-09-12T10:46:08.987Z",
+        "trustChanged": false,
+        "offsetMs": 5038
+      },
+      {
+        "cause": "chum:BLOB",
+        "at": "2026-09-12T10:46:08.987Z",
+        "trustChanged": false,
+        "offsetMs": 5038
+      },
+      {
+        "cause": "chum:BLOB",
+        "at": "2026-09-12T10:46:09.019Z",
+        "trustChanged": false,
+        "offsetMs": 5070
+      },
+      {
+        "cause": "chum:BLOB",
+        "at": "2026-09-12T10:46:09.019Z",
+        "trustChanged": false,
+        "offsetMs": 5070
+      },
+      {
+        "cause": "chum:BLOB",
+        "at": "2026-09-12T10:46:09.020Z",
+        "trustChanged": false,
+        "offsetMs": 5071
+      },
+      {
+        "cause": "versioned:FotosShareManifest",
+        "at": "2026-09-12T10:46:09.216Z",
+        "trustChanged": false,
+        "offsetMs": 5267
+      }
+    ]
+  },
+  "unauthorizedCharlie": {
+    "stateRevision": 2,
+    "shares": []
+  },
+  "originalRunStatus": "failed",
+  "finderRecovery": {
+    "path": "/Users/gecko/Library/CloudStorage/OneFiler-FilerQA/Fotos/648baba2-99c2-458f-b411-937be9ee0d35 (ee2d45c07b441af38451589dabd79381d1e39d1cae1a82d5bd8addffe5fb44e7)/qa-share-trace-951aa719.png",
+    "bytes": 196992,
+    "sha256": "5e768ac19f2b5cc885003ae51db52afa8d370bfb907c35678132ece7edff657d",
+    "exactFixtureMatch": true,
+    "checkedAt": 1789210435.784725,
+    "registrationRepair": "Re-registered /Applications/OneFiler.app and installed extension; --refresh-domain Filer QA succeeded.",
+    "registeredExtension": "+    one.filer.extension(1.0.1)\tCF3C067B-CC72-4DBF-A300-64A7F26366BA\t2026-09-12 10:50:00 +0000\t/Applications/OneFiler.app/Contents/PlugIns/OneFilerExtension.appex\n (1 plug-in)"
+  },
+  "runtimeProvenance": {
+    "purpose": "Timing probes on the existing installed storage-format generation; canonical reference-codec migration is intentionally not part of this diagnostic artifact.",
+    "sourceRuntime": "/Applications/OneFiler.app/Contents/Resources/runtime",
+    "core": "/tmp/filer-sharing-trace/installed-runtime/packages/3c9f8a95af967731",
+    "models": "/tmp/filer-sharing-trace/installed-runtime/packages/d6c892dad514cd8d",
+    "overlays": [
+      {
+        "source": "/Users/gecko/src/one/packages/one.models/lib/models/Leute/TrustedKeysManager.js",
+        "target": "/tmp/filer-sharing-trace/installed-runtime/packages/d6c892dad514cd8d/lib/models/Leute/TrustedKeysManager.js",
+        "sha256": "45afad4c8309bb2b5cda93518aac793413c6833caccfe483e8e43515f4c6ccf1"
+      },
+      {
+        "source": "/Users/gecko/src/one/packages/refinio.api/dist/src/filer/FilerRuntime.js",
+        "target": "/tmp/filer-sharing-trace/installed-runtime/packages/a396c3079f43df0a/dist/src/filer/FilerRuntime.js",
+        "sha256": "8fab66ce3262b6346f215efddd7ec180de6e23344bbe07577d97c894875dcab8"
+      }
+    ],
+    "coreMicrodataParserSha256": "66791d469c63b34ca9c43579b7bd6eb9b274d59737ca027505986bffcd4f4cc1"
+  }
+}

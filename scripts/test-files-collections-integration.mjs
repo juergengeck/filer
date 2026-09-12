@@ -13,6 +13,25 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const temporary = await mkdtemp(path.join(os.tmpdir(), 'filer-files-collections-'));
 const workers = [];
 const server = new CommunicationServer();
+const traceOrigin = process.hrtime.bigint();
+const workerNode = process.env.FILER_TEST_NODE ?? process.execPath;
+const workerExecArgv = process.env.FILER_TEST_NODE_ARGS === undefined
+  ? process.execArgv
+  : JSON.parse(process.env.FILER_TEST_NODE_ARGS);
+if (!Array.isArray(workerExecArgv) || !workerExecArgv.every(value => typeof value === 'string')) {
+  throw new Error('FILER_TEST_NODE_ARGS must be a JSON array of Node arguments');
+}
+
+/** Timestamp one cross-process observation on the driver's monotonic clock. */
+function tracePoint() {
+  return {at: new Date().toISOString(), elapsedMs: Number(process.hrtime.bigint() - traceOrigin) / 1e6};
+}
+
+/** Compute a duration between two driver trace points. */
+function traceDuration(start, end) { return end.elapsedMs - start.elapsedMs; }
+
+/** Emit machine-readable evidence without coupling the test to a report writer. */
+function trace(name, evidence) { console.log(`TRACE ${name} ${JSON.stringify(evidence)}`); }
 
 /** Wait on an owning process event, with a deadline solely to fail a stuck test. */
 function waitMessage(child, predicate) {
@@ -46,7 +65,8 @@ async function startWorker(name, commServerUrl, previous) {
   const log = createWriteStream(logPath);
   const child = fork(path.join(root, 'scripts/files-collections-integration-worker.mjs'), [], {
     cwd: root, stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
-    env: {...process.env, FILER_COLLECTIONS_CONFIG: JSON.stringify(config)}
+    env: {...process.env, FILER_COLLECTIONS_CONFIG: JSON.stringify(config)},
+    execPath: workerNode, execArgv: workerExecArgv
   });
   child.stdout.pipe(log); child.stderr.pipe(log);
   let requestId = 0;
@@ -74,6 +94,12 @@ async function rpc(worker, method, params) {
   const result = await worker.command('rpc', {method, params});
   if (result.error) throw new Error(result.error.message);
   return result.result;
+}
+
+/** Capture a filesystem probe as evidence without making today's projection gap an expected contract. */
+async function rpcOutcome(worker, method, params) {
+  try { return {ok: true, result: await rpc(worker, method, params)}; }
+  catch (error) { return {ok: false, error: error instanceof Error ? error.message : String(error)}; }
 }
 
 try {
@@ -115,13 +141,107 @@ try {
   const contactHtml = (await rpc(recipient, 'readFile', {path: `/contacts/${contactNames[0]}/index.html`})).content;
   const objectPath = '/objects/document.bin';
   assert.equal((await rpc(recipient, 'stat', {path: objectPath})).mode & 0o170000, 0o40000);
-  const objectReceived = waitMessage(source.child, message => message.event === 'FilerObjectRoot');
+  const grantStarted = tracePoint();
+  const receiptStored = waitMessage(source.child, message => message.event === 'FilerReceivedObjectsRoot')
+    .then(message => ({message, observed: tracePoint()}));
+  const accessGranted = waitMessage(recipient.child, message =>
+    message.event === 'IdAccess' && message.recipients?.includes(source.ready.person))
+    .then(message => ({message, observed: tracePoint()}));
+  const objectReceived = waitMessage(source.child, message => message.event === 'FilerObjectRoot')
+    .then(message => ({message, observed: tracePoint()}));
   const imported = await rpc(recipient, 'writeFile', {path: `${objectPath}/Shared with/index.html`, content: contactHtml});
+  const grantReturned = tracePoint();
   assert.equal(imported.path, `${objectPath}/Shared with/${contactNames[0]}`);
   const sharedObject = await objectReceived;
-  assert.deepEqual(Buffer.from(await source.command('objectBytes', {idHash: sharedObject.idHash}), 'base64'), bytes);
+  const storedGrant = await accessGranted;
+  const storedReceipt = await receiptStored;
+  assert.equal(storedGrant.message.accessId, sharedObject.message.idHash);
+  const blobReadStarted = tracePoint();
+  const receiverRead = await source.command('objectReadEvidence', {idHash: sharedObject.message.idHash});
+  const blobReadCompleted = tracePoint();
+  assert.deepEqual(Buffer.from(receiverRead.content, 'base64'), bytes);
+  assert.equal(receiverRead.byteLength, bytes.length);
+  assert.equal(receiverRead.blobHash, createHash('sha256').update(bytes).digest('hex'));
+  const receivedFiles = await rpc(source, 'readDir', {path: '/Files'});
+  const receivedObjects = await rpc(source, 'readDir', {path: '/objects'});
+  const projectedRead = await rpcOutcome(source, 'readFile', {path: `${objectPath}/document.bin`});
+  const receivedRecords = await source.command('receivedObjectRecords');
+  const journalPath = '/ONE/System/journal';
+  const journalEntries = (await rpc(source, 'readDir', {path: journalPath})).children;
+  assert.equal(journalEntries.length, 1);
+  const journalRecord = JSON.parse(Buffer.from((await rpc(source, 'readFile', {
+    path: `${journalPath}/${journalEntries[0]}`})).content, 'base64').toString('utf8'));
+  await assert.rejects(rpc(source, 'unlink', {path: `${journalPath}/${journalEntries[0]}`}), /read-only/);
+  assert.deepEqual(receivedFiles.children, []);
+  assert.deepEqual(receivedObjects.children, ['document.bin']);
+  assert.equal(projectedRead.ok, true);
+  assert.deepEqual(Buffer.from(projectedRead.result.content, 'base64'), bytes);
+  assert.deepEqual(receivedRecords.map(record => ({source: record.source, rootIdHash: record.rootIdHash,
+    rootHash: record.rootHash, path: record.path, size: record.size})), [{source: recipient.ready.person,
+    rootIdHash: sharedObject.message.idHash, rootHash: sharedObject.message.hash,
+    path: '/document.bin', size: bytes.length}]);
+  assert.deepEqual({source: journalRecord.source, rootIdHash: journalRecord.rootIdHash,
+    rootHash: journalRecord.rootHash, path: journalRecord.path, size: journalRecord.size},
+  {source: recipient.ready.person, rootIdHash: sharedObject.message.idHash,
+    rootHash: sharedObject.message.hash, path: '/document.bin', size: bytes.length});
+  const accessBeforeRevoke = await recipient.command('objectAccessEvidence', {
+    idHash: sharedObject.message.idHash, person: source.ready.person
+  });
+  assert.equal(accessBeforeRevoke.idGranted, true);
+  assert.equal(accessBeforeRevoke.idAccessible, true);
+  trace('generic-object-transfer', {surface: 'FileProviderOperations.handle over test child-process IPC',
+    nativeFinderExercised: false, grantor: recipient.config.instanceName, grantee: source.config.instanceName,
+    workerRuntime: {grantor: recipient.ready.runtime, grantee: source.ready.runtime},
+    grantRpc: {started: grantStarted, returned: grantReturned,
+      durationMs: traceDuration(grantStarted, grantReturned)},
+    authoritativeIdAccessStored: {workerObservedAt: storedGrant.message.observedAt,
+      driverObserved: storedGrant.observed, afterGrantStartMs: traceDuration(grantStarted, storedGrant.observed)},
+    chumRootArrival: {idHash: sharedObject.message.idHash, hash: sharedObject.message.hash,
+      workerObservedAt: sharedObject.message.observedAt, driverObserved: sharedObject.observed,
+      afterGrantStartMs: traceDuration(grantStarted, sharedObject.observed),
+      afterGrantRpcReturnMs: traceDuration(grantReturned, sharedObject.observed)},
+    receiverReceiptStored: {workerObservedAt: storedReceipt.message.observedAt,
+      driverObserved: storedReceipt.observed,
+      afterGrantStartMs: traceDuration(grantStarted, storedReceipt.observed)},
+    receiverStorageRead: {started: blobReadStarted, completed: blobReadCompleted,
+      roundTripMs: traceDuration(blobReadStarted, blobReadCompleted), ...receiverRead.timing,
+      rootHash: receiverRead.rootHash, entryHash: receiverRead.entryHash,
+      blobHash: receiverRead.blobHash, byteLength: receiverRead.byteLength,
+      sha256: createHash('sha256').update(bytes).digest('hex')},
+    receiverFilesystemProjection: {files: receivedFiles.children, objects: receivedObjects.children,
+      projectedObjectReadable: projectedRead.ok,
+      ...(projectedRead.ok ? {} : {readError: projectedRead.error})},
+    receiverJournal: {path: journalPath, entries: journalEntries, record: journalRecord}, accessBeforeRevoke});
+  const revokeStarted = tracePoint();
+  const accessRevoked = waitMessage(recipient.child, message => message.event === 'IdAccess' &&
+    message.accessId === sharedObject.message.idHash && !message.recipients?.includes(source.ready.person))
+    .then(message => ({message, observed: tracePoint()}));
   await rpc(recipient, 'rmdir', {path: imported.path});
+  const revokeReturned = tracePoint();
+  const storedRevocation = await accessRevoked;
+  const accessCheckStarted = tracePoint();
+  const accessAfterRevoke = await recipient.command('objectAccessEvidence', {
+    idHash: sharedObject.message.idHash, person: source.ready.person
+  });
+  const accessCheckCompleted = tracePoint();
+  assert.equal(accessAfterRevoke.idGranted, false);
+  assert.equal(accessAfterRevoke.idAccessible, false);
+  assert.equal(accessAfterRevoke.rootAccessible, false);
+  assert.equal(accessAfterRevoke.entryAccessible, false);
+  assert.equal(accessAfterRevoke.blobAccessible, false);
   assert.deepEqual((await rpc(recipient, 'readDir', {path: `${objectPath}/Shared with`})).children, []);
+  assert.deepEqual((await rpc(source, 'readDir', {path: '/objects'})).children, ['document.bin']);
+  assert.deepEqual(Buffer.from((await rpc(source, 'readFile', {path: `${objectPath}/document.bin`})).content, 'base64'), bytes);
+  trace('generic-object-revocation', {surface: 'FileProviderOperations.handle over test child-process IPC',
+    nativeFinderExercised: false, revokeRpc: {started: revokeStarted, returned: revokeReturned,
+      durationMs: traceDuration(revokeStarted, revokeReturned)},
+    authoritativeIdAccessStored: {workerObservedAt: storedRevocation.message.observedAt,
+      driverObserved: storedRevocation.observed,
+      afterRevokeStartMs: traceDuration(revokeStarted, storedRevocation.observed),
+      recipients: storedRevocation.message.recipients},
+    effectiveAccessCheck: {started: accessCheckStarted, completed: accessCheckCompleted,
+      roundTripMs: traceDuration(accessCheckStarted, accessCheckCompleted), ...accessAfterRevoke},
+    retainedCopyGuarantee: 'Previously received immutable objects remain in receiver storage; future root versions are no longer id-accessible'});
   await rpc(recipient, 'writeFile', {path: `${objectPath}/People in photo/index.html`, content: contactHtml});
   assert.deepEqual((await rpc(recipient, 'readDir', {path: `${objectPath}/Shared with`})).children, []);
   assert.deepEqual((await rpc(recipient, 'readDir', {path: `${objectPath}/People in photo`})).children, contactNames);
@@ -166,7 +286,14 @@ try {
   await revoked;
   assert.deepEqual((await rpc(reopened, 'readDir', {path: '/Fotos'})).children, []);
   await assert.rejects(rpc(reopened, 'readFile', {path: photoPath}), /does not exist/);
-  console.log('PASS: Files imports; contact HTML object sharing and revocation; independent persisted photo associations; signed collection sharing, updates, and restart');
+  console.log('Generic received object remains projected after recipient restart');
+  await source.stop();
+  const sourceReopened = await startWorker('source-reopened', commServerUrl, source.config);
+  assert.deepEqual((await rpc(sourceReopened, 'readDir', {path: '/objects'})).children, ['document.bin']);
+  assert.deepEqual(Buffer.from((await rpc(sourceReopened, 'readFile', {path: `${objectPath}/document.bin`})).content, 'base64'), bytes);
+  assert.equal((await sourceReopened.command('receivedObjectRecords')).length, 1);
+  assert.deepEqual((await rpc(sourceReopened, 'readDir', {path: journalPath})).children, journalEntries);
+  console.log('PASS: Files imports; projected received generic objects; contact HTML object sharing and revocation; independent persisted photo associations; signed collection sharing, updates, and restart');
 } catch (error) {
   for (const worker of workers) console.error(`${worker.logPath}\n${(await readFile(worker.logPath, 'utf8')).slice(-12000)}`);
   throw error;

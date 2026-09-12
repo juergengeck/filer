@@ -1,0 +1,139 @@
+{
+  "status": "passed",
+  "traceId": "23b823dd-2cf6-41aa-83a0-432300ad9f3f",
+  "fixture": {
+    "name": "qa-share-trace-23b823dd.png",
+    "size": 196992,
+    "sha256": "be7db0cefd94930374a3fa1fa4815546f72014d9c96de29cae0de2d7afc7fcff",
+    "generationSeed": "23b823dd-2cf6-41aa-83a0-432300ad9f3f"
+  },
+  "throughProjectionMs": 2760.0,
+  "throughNativeBytesMs": 5599.22,
+  "calls": [
+    {
+      "label": "alice.importPhotoFixture",
+      "startedAtEpochMs": 1789212559938,
+      "durationMs": 878.52
+    },
+    {
+      "label": "alice.createCollection",
+      "startedAtEpochMs": 1789212560817,
+      "durationMs": 55.04
+    },
+    {
+      "label": "alice.setCollectionRecipients",
+      "startedAtEpochMs": 1789212561244,
+      "durationMs": 1242.61
+    },
+    {
+      "label": "bob.waitForFotos",
+      "startedAtEpochMs": 1789212562487,
+      "durationMs": 1517.27
+    },
+    {
+      "label": "finder.verifyOriginal",
+      "startedAtEpochMs": 1789212564004,
+      "durationMs": 2838.98
+    },
+    {
+      "label": "charlie.getReceivedShareSnapshot",
+      "startedAtEpochMs": 1789212566957,
+      "durationMs": 15.2
+    }
+  ],
+  "native": {
+    "path": "/Users/gecko/Library/CloudStorage/OneFiler-FilerQA/Fotos/97f3e09c-e87f-450a-9271-f1af9cfe6d77 (ee2d45c07b441af38451589dabd79381d1e39d1cae1a82d5bd8addffe5fb44e7)/qa-share-trace-23b823dd.png",
+    "size": 196992,
+    "sha256": "be7db0cefd94930374a3fa1fa4815546f72014d9c96de29cae0de2d7afc7fcff"
+  },
+  "signatureVerificationCountDelta": 1,
+  "synchronousCryptoTotalMsDelta": 72,
+  "signatureInvalidation": {
+    "cause": "unversioned:Signature",
+    "at": "2026-09-12T11:29:23.024Z",
+    "trustChanged": false
+  },
+  "unauthorizedCharlie": {
+    "stateRevision": 2,
+    "shares": []
+  },
+  "runtimeProvenance": {
+    "purpose": "Sharing fixes and system journal on retained installed storage-format generation; no codec migration",
+    "base": {
+      "purpose": "Timing probes on the existing installed storage-format generation; canonical reference-codec migration is intentionally not part of this diagnostic artifact.",
+      "sourceRuntime": "/Applications/OneFiler.app/Contents/Resources/runtime",
+      "core": "/tmp/filer-sharing-trace/installed-runtime/packages/3c9f8a95af967731",
+      "models": "/tmp/filer-sharing-trace/installed-runtime/packages/d6c892dad514cd8d",
+      "overlays": [
+        {
+          "source": "/Users/gecko/src/one/packages/one.models/lib/models/Leute/TrustedKeysManager.js",
+          "target": "/tmp/filer-sharing-trace/installed-runtime/packages/d6c892dad514cd8d/lib/models/Leute/TrustedKeysManager.js",
+          "sha256": "45afad4c8309bb2b5cda93518aac793413c6833caccfe483e8e43515f4c6ccf1"
+        },
+        {
+          "source": "/Users/gecko/src/one/packages/refinio.api/dist/src/filer/FilerRuntime.js",
+          "target": "/tmp/filer-sharing-trace/installed-runtime/packages/a396c3079f43df0a/dist/src/filer/FilerRuntime.js",
+          "sha256": "8fab66ce3262b6346f215efddd7ec180de6e23344bbe07577d97c894875dcab8"
+        }
+      ],
+      "coreMicrodataParserSha256": "66791d469c63b34ca9c43579b7bd6eb9b274d59737ca027505986bffcd4f4cc1"
+    },
+    "overlays": [
+      {
+        "source": "/Users/gecko/src/one/packages/one.models/lib/models/Leute/TrustedKeysManager.js",
+        "target": "/tmp/filer-sharing-fix/runtime/packages/d6c892dad514cd8d/lib/models/Leute/TrustedKeysManager.js",
+        "sha256": "17eae21727e3f6512b5e031809bd33f7f45504a2c8f28e455b46db2b203ee046"
+      },
+      {
+        "source": "/Users/gecko/src/one/packages/filer.core/dist/index.js",
+        "target": "/tmp/filer-sharing-fix/runtime/packages/7a140a6b8564d9f8/dist/index.js",
+        "sha256": "e25f5401f2733cc4e295a90a7c606b05c99f04edab2e5560ee5d84880e575bc1"
+      },
+      {
+        "source": "/Users/gecko/src/one/packages/filer.core/dist/FilesFileSystem.js",
+        "target": "/tmp/filer-sharing-fix/runtime/packages/7a140a6b8564d9f8/dist/FilesFileSystem.js",
+        "sha256": "889abab3fd8727d15ea2ea84a64e31b428897dfea0fcd4f0eac8513fd9376b75"
+      },
+      {
+        "source": "/Users/gecko/src/one/packages/filer.core/dist/FilesObjectPlan.js",
+        "target": "/tmp/filer-sharing-fix/runtime/packages/7a140a6b8564d9f8/dist/FilesObjectPlan.js",
+        "sha256": "a4ccd30aa6230d846fcf3b7befcd80db2ddf12c9bf67f9160fd877f2e5facc9e"
+      },
+      {
+        "source": "/Users/gecko/src/one/packages/filer.core/dist/ObjectFolderFileSystem.js",
+        "target": "/tmp/filer-sharing-fix/runtime/packages/7a140a6b8564d9f8/dist/ObjectFolderFileSystem.js",
+        "sha256": "2cffbe11c6a7e95356b5fac71f252bd3c5adf0cd5cc8f4d338f5e10208899b6a"
+      },
+      {
+        "source": "/Users/gecko/src/one/packages/filer.core/dist/SharingJournalFileSystem.js",
+        "target": "/tmp/filer-sharing-fix/runtime/packages/7a140a6b8564d9f8/dist/SharingJournalFileSystem.js",
+        "sha256": "6cde8b31b4efab57e10b7c8040a26cec941c3a49c7ddc14a621431616a02211b"
+      },
+      {
+        "source": "/Users/gecko/src/one/packages/refinio.api/dist/src/filer/FilerRuntime.js",
+        "target": "/tmp/filer-sharing-fix/runtime/packages/a396c3079f43df0a/dist/src/filer/FilerRuntime.js",
+        "sha256": "7ae58e970ced3f142acd6b3bfd71aec0bb91843f19c1f85ca343d6a217fcbaa1"
+      },
+      {
+        "source": "/Users/gecko/src/one/packages/refinio.api/dist/src/filer/FotosProjectionInvalidation.js",
+        "target": "/tmp/filer-sharing-fix/runtime/packages/a396c3079f43df0a/dist/src/filer/FotosProjectionInvalidation.js",
+        "sha256": "e6b009c42071f024fe164802d5a694d106c204d4d76c67c1af197a45db22e6f9"
+      },
+      {
+        "source": "/Users/gecko/src/one/packages/refinio.api/dist/src/filer/QAReportStore.js",
+        "target": "/tmp/filer-sharing-fix/runtime/packages/a396c3079f43df0a/dist/src/filer/QAReportStore.js",
+        "sha256": "dae157396f11b9550c4f88286f7c54c417642a06464d6021864175b4f3bb4d11"
+      },
+      {
+        "source": "/Users/gecko/src/one/packages/refinio.api/dist/src/filer/stdio-main.js",
+        "target": "/tmp/filer-sharing-fix/runtime/packages/a396c3079f43df0a/dist/src/filer/stdio-main.js",
+        "sha256": "d2660b350298c202ff6bb07c4df7a0359894af56d8530ee69b1d5e9e878a068e"
+      },
+      {
+        "source": "/Users/gecko/src/one/packages/refinio.api/dist/src/filer/createFilerWithPairing.js",
+        "target": "/tmp/filer-sharing-fix/runtime/packages/a396c3079f43df0a/dist/src/filer/createFilerWithPairing.js",
+        "sha256": "9c9ce47a858eed83b84111f83ea297d0cb21fd80e472dcfa7ed7d9522bfccacb"
+      }
+    ]
+  }
+}

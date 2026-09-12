@@ -1,0 +1,16 @@
+{
+  "runId": "1257e03c-636d-4dee-b9f8-285a421ef614",
+  "path": "/Users/gecko/Library/CloudStorage/OneFiler-FilerQA/ONE/System/Journal/qa-1257e03c-636d-4dee-b9f8-285a421ef614.json",
+  "exactReportMatch": true,
+  "size": 146079,
+  "protocolStatus": "passed",
+  "assertionCount": 52,
+  "stepCount": 11,
+  "protocolDurationMs": 29245,
+  "receivedFileAfterProtocolRestart": {
+    "path": "/Users/gecko/Library/CloudStorage/OneFiler-FilerQA/Objekte/qa-native-file-9b4fefeb.bin/qa-native-file-9b4fefeb.bin",
+    "size": 220000,
+    "sha256": "cf66fda24eca1b0e82b1503975fa4d87063b42349942d3b7b60b408680c824f6"
+  },
+  "receiptSurvivedProtocolRestart": true
+}

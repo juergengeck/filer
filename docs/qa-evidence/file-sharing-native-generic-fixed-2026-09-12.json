@@ -1,0 +1,36 @@
+{
+  "runId": "9b4fefeb-c342-4139-a52b-cbc62ba3d89f",
+  "nativeFinderExercised": true,
+  "runtime": "Frozen retained-store generation with reviewed sharing fixes",
+  "startedAt": "2026-09-12T11:29:59.077Z",
+  "sender": "3dc1401527fc116717804fad77a61a6c1d6614176a0a5ac55ec59d825068933c",
+  "receiver": "a855d8d94355a8117f9824bd0413a266eff3510b58bc5b3b41c6ac2d5aadf035",
+  "fixture": {
+    "name": "qa-native-file-9b4fefeb.bin",
+    "size": 220000,
+    "sha256": "cf66fda24eca1b0e82b1503975fa4d87063b42349942d3b7b60b408680c824f6"
+  },
+  "grantRpcMs": 1331.1939160000002,
+  "native": {
+    "path": "/Users/gecko/Library/CloudStorage/OneFiler-FilerQA/Objekte/qa-native-file-9b4fefeb.bin/qa-native-file-9b4fefeb.bin",
+    "size": 220000,
+    "sha256": "cf66fda24eca1b0e82b1503975fa4d87063b42349942d3b7b60b408680c824f6",
+    "throughBytesMs": 8252.994791000001
+  },
+  "journalReceipt": {
+    "path": "/Users/gecko/Library/CloudStorage/OneFiler-FilerQA/ONE/System/Journal/received-8379c2510251a1dc019e0ebb0572548b44c77283f7e349e6d630bca6ac755b51.json",
+    "record": {
+      "receiptHash": "8379c2510251a1dc019e0ebb0572548b44c77283f7e349e6d630bca6ac755b51",
+      "source": "3dc1401527fc116717804fad77a61a6c1d6614176a0a5ac55ec59d825068933c",
+      "rootIdHash": "927e6ee24350b1d8b7bd234e8b523f80a02ffc1b392e05e0ff8a9f943d0052ba",
+      "rootHash": "4b04c399cd4b7c6d499bb86ffc984795a5316ad57a4cf13307e0bcbc8c1c2d48",
+      "path": "/qa-native-file-9b4fefeb.bin",
+      "size": 220000
+    }
+  },
+  "journalQAReports": [
+    "/Users/gecko/Library/CloudStorage/OneFiler-FilerQA/ONE/System/Journal/qa-d8193ce4-aebb-416d-8269-54f073b37461.json"
+  ],
+  "status": "passed",
+  "finishedAt": "2026-09-12T11:30:17.728Z"
+}
