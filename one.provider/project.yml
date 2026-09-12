@@ -79,6 +79,8 @@ targets:
           - "**/*.md"
       - path: Resources/Assets.xcassets
         buildPhase: resources
+      - path: Resources/ProviderIcon.icns
+        buildPhase: resources
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: one.filer.extension
       INFOPLIST_FILE: Resources/ExtensionInfo.plist

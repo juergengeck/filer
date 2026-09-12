@@ -121,6 +121,16 @@ Regenerate the SVG copies with `swift scripts/generate-app-icons.swift`. The
 Composer copy omits the SVG's invisible artboard rectangle so layer coloring
 applies only to the olive path. The original path and transforms stay unchanged.
 
+The File Provider extension declares `ProviderIcon.icns` through
+`CFBundleIconFile` and `CFBundleIcons/CFBundlePrimaryIcon/CFBundleIconFile`.
+This is the provider's root icon, separate from the host application icon and
+the sidebar symbol. Keep the file in the extension's resource build phase:
+shipping an icon only in the host does not supply this extension resource.
+`swift scripts/generate-app-icons.swift` generates it from `../olive.svg` with
+a transparent background and cutout, black in light mode and white in dark mode.
+The ICNS includes the native dark variant used by macOS system icons; an ordinary
+macOS appiconset discards dark appearance entries.
+
 Finder's sidebar uses the separate `FilerSidebar.symbolset`, declared through
 `CFBundleIcons/CFBundlePrimaryIcon/CFBundleSymbolName` in the extension's plist.
 The extension must also compile the asset catalog. Its monochrome symbol preserves
