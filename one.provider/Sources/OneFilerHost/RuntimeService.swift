@@ -1,3 +1,4 @@
+import os.log
 import Foundation
 import Darwin
 import FileProvider
@@ -152,6 +153,8 @@ final class RuntimeService {
         let child = NodeRuntimeProcess(node: executable.deletingLastPathComponent().appendingPathComponent("node"),
             entry: root.appendingPathComponent("node_modules/@refinio/api/dist/src/filer/stdio-main.js"),
             preload: root.appendingPathComponent("console-to-stderr.cjs"), onChange: { containers in
+                let traceStarted = ProcessInfo.processInfo.systemUptime
+                os_log("[FilerShareTrace] notification.received storage=%{public}@ containers=%{public}@", config.storageId.uuidString, containers.joined(separator: ","))
                 Task {
                     do {
                         // A storage owner may back more than one configured domain.
@@ -165,7 +168,11 @@ final class RuntimeService {
                             // The runtime's validated containers describe the change source.
                             guard !containers.isEmpty,
                                   try DomainManager().listDomains()[name]?.storageId == config.storageId else { continue }
+                            os_log("[FilerShareTrace] signal.begin domain=%{public}@ queuedMs=%{public}.3f", name,
+                                  (ProcessInfo.processInfo.systemUptime - traceStarted) * 1000)
                             try await manager.signalEnumerator(for: .workingSet)
+                            os_log("[FilerShareTrace] signal.end domain=%{public}@ elapsedMs=%{public}.3f", name,
+                                  (ProcessInfo.processInfo.systemUptime - traceStarted) * 1000)
                         }
                     } catch { NSLog("Filer change signaling failed: %@", error.localizedDescription) }
                 }

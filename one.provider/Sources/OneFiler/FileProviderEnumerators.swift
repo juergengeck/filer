@@ -1,3 +1,4 @@
+import os.log
 import FileProvider
 
 /// Enumerate owner-produced snapshots and resumable changes for one stable container.
@@ -31,7 +32,11 @@ final class FilerEnumerator: NSObject, NSFileProviderEnumerator {
     }
 
     func enumerateItems(for observer: NSFileProviderEnumerationObserver, startingAt page: NSFileProviderPage) {
+        let traceStarted = ProcessInfo.processInfo.systemUptime
+        os_log("[FilerShareTrace] enumerateItems.begin container=%{public}@", container)
         start { [self] in
+            defer { os_log("[FilerShareTrace] enumerateItems.end container=%{public}@ durationMs=%{public}.3f", container,
+                          (ProcessInfo.processInfo.systemUptime - traceStarted) * 1000) }
             do {
                 let client = try await bridge()
                 let initial = page.rawValue == (NSFileProviderPage.initialPageSortedByName as Data) ||
@@ -39,14 +44,22 @@ final class FilerEnumerator: NSObject, NSFileProviderEnumerator {
                 let token = initial ? nil : page.rawValue
                 let result = try await client.enumerateItems(container: container, page: token)
                 try Task.checkCancellation()
+                os_log("[FilerShareTrace] enumerateItems.result container=%{public}@ count=%{public}ld more=%{public}d", container, result.items.count, result.nextPage != nil)
                 observer.didEnumerate(result.items.map { FileProviderItem(oneObject: $0, languages: [folderLanguage]) })
                 observer.finishEnumerating(upTo: result.nextPage.map { NSFileProviderPage($0) })
-            } catch { observer.finishEnumeratingWithError(error) }
+            } catch {
+                os_log("[FilerShareTrace] enumeration.error container=%{public}@ code=%{public}ld", container, (error as NSError).code)
+                observer.finishEnumeratingWithError(error)
+            }
         }
     }
 
     func enumerateChanges(for observer: NSFileProviderChangeObserver, from anchor: NSFileProviderSyncAnchor) {
+        let traceStarted = ProcessInfo.processInfo.systemUptime
+        os_log("[FilerShareTrace] enumerateChanges.begin container=%{public}@", container)
         start { [self] in
+            defer { os_log("[FilerShareTrace] enumerateChanges.end container=%{public}@ durationMs=%{public}.3f", container,
+                          (ProcessInfo.processInfo.systemUptime - traceStarted) * 1000) }
             do {
                 let client = try await bridge()
                 let sourceAnchor = try sourceAnchor(anchor.rawValue)
@@ -55,7 +68,10 @@ final class FilerEnumerator: NSObject, NSFileProviderEnumerator {
                 observer.didDeleteItems(withIdentifiers: result.deleted.map { NSFileProviderItemIdentifier($0) })
                 observer.didUpdate(result.updated.map { FileProviderItem(oneObject: $0, languages: [folderLanguage]) })
                 observer.finishEnumeratingChanges(upTo: NSFileProviderSyncAnchor(displayAnchor(result.newAnchor)), moreComing: result.moreComing)
-            } catch { observer.finishEnumeratingWithError(error) }
+            } catch {
+                os_log("[FilerShareTrace] enumeration.error container=%{public}@ code=%{public}ld", container, (error as NSError).code)
+                observer.finishEnumeratingWithError(error)
+            }
         }
     }
 

@@ -17,5 +17,10 @@ DESTINATION="${FILER_INSTALL_PATH:-/Applications/OneFiler.app}"
 case "$DESTINATION" in /*.app) ;; *) echo "FILER_INSTALL_PATH must be an absolute .app path" >&2; exit 1 ;; esac
 rm -rf "$DESTINATION"
 ditto "$APP_PATH" "$DESTINATION"
+# Register the installed bundle: Xcode or a moved backup may otherwise remain
+# the selected File Provider extension, causing enumerator signals to fail.
+/System/Library/Frameworks/CoreServices.framework/Versions/Current/Frameworks/LaunchServices.framework/Versions/Current/Support/lsregister -u "$APP_PATH"
+/System/Library/Frameworks/CoreServices.framework/Versions/Current/Frameworks/LaunchServices.framework/Versions/Current/Support/lsregister -f -R -trusted "$DESTINATION"
+pluginkit -a "$DESTINATION/Contents/PlugIns/OneFilerExtension.appex"
 open "$DESTINATION"
 echo "Installed $DESTINATION. Register domains from its menu; legacy configurations require explicit migration."

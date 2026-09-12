@@ -118,6 +118,10 @@ public actor ONEBridge {
     private func sendRequest(method: String, params: [String: Any]) async throws -> [String: Any] {
         requestId += 1
         let id = requestId
+        let traceStarted = ProcessInfo.processInfo.systemUptime
+        os_log("[FilerShareTrace] rpc.begin id=%{public}ld method=%{public}@ container=%{public}@", id, method, params["container"] as? String ?? "")
+        defer { os_log("[FilerShareTrace] rpc.end id=%{public}ld method=%{public}@ durationMs=%{public}.3f", id, method,
+                      (ProcessInfo.processInfo.systemUptime - traceStarted) * 1000) }
 
         let request: [String: Any] = [
             "operation": "filer:\(method)", "request": params, "requestId": String(id)

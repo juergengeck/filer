@@ -51,7 +51,7 @@ final class ONEBridgeRpcTests: XCTestCase {
             workingItems.append(contentsOf: result.items)
             page = result.nextPage
         } while page != nil
-        for mount in ["/Files", "/Fotos", "/Gesundheit", "/objects", "/contacts", "/ONE/System/models"] {
+        for mount in ["/Files", "/Fotos", "/Gesundheit", "/objects", "/contacts", "/ONE/System/models", "/ONE/System/journal"] {
             XCTAssertTrue(workingItems.contains { $0.path == mount }, mount)
         }
         XCTAssertTrue(workingItems.first { $0.path == "/Files" }?.canAddChildren == true)
@@ -125,10 +125,10 @@ final class ONEBridgeRpcTests: XCTestCase {
 
     /// Mounted publication paths remain bounded even when their roots expand.
     func testPublishedNotificationPathsRejectTraversal() {
-        for path in ["/Gesundheit", "/Files", "/Fotos", "/objects", "/contacts", "/Gesundheit/Patient/Temperatur", "/Files/folder", "/Fotos/collection", "/objects/object-1/Shared with/Alice", "/contacts/Alice"] {
+        for path in ["/Gesundheit", "/Files", "/Fotos", "/objects", "/contacts", "/Gesundheit/Patient/Temperatur", "/Files/folder", "/Fotos/collection", "/objects/object-1/Shared with/Alice", "/contacts/Alice", "/ONE", "/ONE/System", "/ONE/System/journal", "/ONE/System/journal/qa-report.json"] {
             XCTAssertTrue(NodeRuntimeProcess.isPublishedDirectory(path), path)
         }
-        for path in ["/arbitrary/path", "/FilesOther", "/Fotos/../ONE", "/Files/./item", "/Files//item", "/Gesundheit/", "/Files/a\\b", "/Fotos/a\0b"] {
+        for path in ["/arbitrary/path", "/FilesOther", "/Fotos/../ONE", "/Files/./item", "/Files//item", "/Gesundheit/", "/Files/a\\b", "/Fotos/a\0b", "/ONE/arbitrary", "/ONE/System/other", "/ONE/System/journal/../objects", "/ONE/System/journalOther"] {
             XCTAssertFalse(NodeRuntimeProcess.isPublishedDirectory(path), path)
         }
     }
