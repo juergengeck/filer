@@ -294,7 +294,7 @@ std::string SyncStorage::ReadFirst100Bytes(const std::string& objectPath) {
 
 std::string SyncStorage::ExtractTypeFromMicrodata(const std::string& microdata) {
     // Look for itemtype in microdata
-    static const std::regex typePattern("itemtype=\"//refin\\\\.io/([^\"]+)\"");
+    static const std::regex typePattern(R"one(itemtype="([^"/:]+)")one");
     std::smatch match;
     
     if (std::regex_search(microdata, match, typePattern)) {
