@@ -4,8 +4,10 @@ import UniformTypeIdentifiers
 class FileProviderItem: NSObject, NSFileProviderItem {
     
     private let oneObject: ONEObject
+    private let folderLanguage: String
     
-    init(oneObject: ONEObject) {
+    init(oneObject: ONEObject, languages: [String] = Locale.preferredLanguages) {
+        self.folderLanguage = FilerFolderNames.language(for: languages)
         self.oneObject = oneObject
         super.init()
     }
@@ -20,44 +22,6 @@ class FileProviderItem: NSObject, NSFileProviderItem {
             modified: nil
         )
         return FileProviderItem(oneObject: rootObject)
-    }
-    
-    // Create standard folder items (must match refinio.api mounted filesystems)
-    static func standardFolders() -> [FileProviderItem] {
-        return [
-            FileProviderItem(oneObject: ONEObject(
-                id: "Files", name: "Files", type: .folder,
-                parentId: NSFileProviderItemIdentifier.rootContainer.rawValue
-            )),
-            FileProviderItem(oneObject: ONEObject(
-                id: "Fotos", name: "Fotos", type: .folder,
-                parentId: NSFileProviderItemIdentifier.rootContainer.rawValue
-            )),
-            FileProviderItem(oneObject: ONEObject(
-                id: "chats",
-                name: "Chats",
-                type: .folder,
-                parentId: NSFileProviderItemIdentifier.rootContainer.rawValue
-            )),
-            FileProviderItem(oneObject: ONEObject(
-                id: "ONE",
-                name: "ONE",
-                type: .folder,
-                parentId: NSFileProviderItemIdentifier.rootContainer.rawValue
-            )),
-            FileProviderItem(oneObject: ONEObject(
-                id: "profiles",
-                name: "Profiles",
-                type: .folder,
-                parentId: NSFileProviderItemIdentifier.rootContainer.rawValue
-            )),
-            FileProviderItem(oneObject: ONEObject(
-                id: "questionnaires",
-                name: "Questionnaires",
-                type: .folder,
-                parentId: NSFileProviderItemIdentifier.rootContainer.rawValue
-            ))
-        ]
     }
     
     // MARK: - Required Properties
@@ -77,7 +41,8 @@ class FileProviderItem: NSObject, NSFileProviderItem {
     }
     
     var filename: String {
-        oneObject.name
+        guard oneObject.type == .folder else { return oneObject.name }
+        return FilerFolderNames.name(for: oneObject.path ?? "/\(oneObject.id)", language: folderLanguage) ?? oneObject.name
     }
     
     var contentType: UTType {
@@ -132,7 +97,8 @@ class FileProviderItem: NSObject, NSFileProviderItem {
         // For metadata version, use id + name
         let metadataString = oneObject.metadataHash.isEmpty
             ? "\(oneObject.id):\(oneObject.name)" : oneObject.metadataHash
-        let metadataData = metadataString.data(using: .utf8) ?? Data()
+        let displayedMetadata = filename == oneObject.name ? metadataString : "\(metadataString):\(filename)"
+        let metadataData = displayedMetadata.data(using: .utf8) ?? Data()
 
         return NSFileProviderItemVersion(
             contentVersion: contentData,

@@ -52,33 +52,6 @@ final class FileProviderItemTests: XCTestCase {
         XCTAssertEqual(rootItem.contentType, .folder)
     }
 
-    // MARK: - Standard Folders
-
-    func testStandardFolders() {
-        let folders = FileProviderItem.standardFolders()
-
-        XCTAssertEqual(folders.count, 6)
-
-        let folderNames = Set(folders.map { $0.filename })
-        XCTAssertTrue(folderNames.contains("Chats"))
-        XCTAssertTrue(folderNames.contains("ONE"))
-
-        // All should be folders under root
-        for folder in folders {
-            XCTAssertEqual(folder.contentType, .folder)
-            XCTAssertEqual(folder.parentItemIdentifier, .rootContainer)
-        }
-    }
-
-    func testONEFolderExists() {
-        let folders = FileProviderItem.standardFolders()
-        let oneFolder = folders.first { $0.filename == "ONE" }
-
-        XCTAssertNotNil(oneFolder, "ONE folder should exist in standard folders")
-        XCTAssertEqual(oneFolder?.itemIdentifier.rawValue, "ONE")
-        XCTAssertEqual(oneFolder?.parentItemIdentifier, .rootContainer)
-    }
-
     // MARK: - Content Types
 
     func testFileExtensionDetection() {

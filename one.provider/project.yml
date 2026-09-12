@@ -27,11 +27,11 @@ targets:
       - path: Sources/OneFilerHost
       - path: Resources/Assets.xcassets
         buildPhase: resources
-      - path: Resources/Olive.icns
+      - path: Resources/AppIcon.icon
+        type: file
         buildPhase: resources
     settings:
-      # Use the appearance-aware ICNS file; XcodeGen otherwise defaults to AppIcon.
-      ASSETCATALOG_COMPILER_APPICON_NAME: ""
+      ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
       PRODUCT_BUNDLE_IDENTIFIER: one.filer
       INFOPLIST_FILE: Resources/Info.plist
       COMBINE_HIDPI_IMAGES: YES
@@ -56,6 +56,12 @@ targets:
           if [ "${CODE_SIGNING_ALLOWED:-YES}" != "NO" ]; then
             codesign --force --sign "$EXPANDED_CODE_SIGN_IDENTITY" --options runtime --entitlements "$SRCROOT/Resources/Node.entitlements" "$TARGET_BUILD_DIR/$EXECUTABLE_FOLDER_PATH/node"
           fi
+        inputFiles:
+          - $(SRCROOT)/build/native-runtime/node
+          - $(SRCROOT)/build/native-runtime/runtime/manifest.json
+        outputFiles:
+          - $(TARGET_BUILD_DIR)/$(EXECUTABLE_FOLDER_PATH)/node
+          - $(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Resources/runtime
         basedOnDependencyAnalysis: false
     dependencies:
       - target: OneFilerExtension

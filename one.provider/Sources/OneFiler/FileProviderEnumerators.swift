@@ -3,6 +3,7 @@ import FileProvider
 /// Enumerate owner-produced snapshots and resumable changes for one stable container.
 final class FilerEnumerator: NSObject, NSFileProviderEnumerator {
     private let container: String
+    private let folderLanguage = FilerFolderNames.language(for: Locale.preferredLanguages)
     private let bridge: () async throws -> ONEBridge
     private let state = NSLock()
     private var tasks: [UUID: Task<Void, Never>] = [:]
@@ -38,7 +39,7 @@ final class FilerEnumerator: NSObject, NSFileProviderEnumerator {
                 let token = initial ? nil : page.rawValue
                 let result = try await client.enumerateItems(container: container, page: token)
                 try Task.checkCancellation()
-                observer.didEnumerate(result.items.map { FileProviderItem(oneObject: $0) })
+                observer.didEnumerate(result.items.map { FileProviderItem(oneObject: $0, languages: [folderLanguage]) })
                 observer.finishEnumerating(upTo: result.nextPage.map { NSFileProviderPage($0) })
             } catch { observer.finishEnumeratingWithError(error) }
         }
@@ -48,13 +49,31 @@ final class FilerEnumerator: NSObject, NSFileProviderEnumerator {
         start { [self] in
             do {
                 let client = try await bridge()
-                let result = try await client.getChanges(container: container, since: anchor.rawValue)
+                let sourceAnchor = try sourceAnchor(anchor.rawValue)
+                let result = try await client.getChanges(container: container, since: sourceAnchor)
                 try Task.checkCancellation()
                 observer.didDeleteItems(withIdentifiers: result.deleted.map { NSFileProviderItemIdentifier($0) })
-                observer.didUpdate(result.updated.map { FileProviderItem(oneObject: $0) })
-                observer.finishEnumeratingChanges(upTo: NSFileProviderSyncAnchor(result.newAnchor), moreComing: result.moreComing)
+                observer.didUpdate(result.updated.map { FileProviderItem(oneObject: $0, languages: [folderLanguage]) })
+                observer.finishEnumeratingChanges(upTo: NSFileProviderSyncAnchor(displayAnchor(result.newAnchor)), moreComing: result.moreComing)
             } catch { observer.finishEnumeratingWithError(error) }
         }
+    }
+
+    /// Include display language in anchors for containers that enumerate owned folder labels.
+    private var anchorPrefix: Data {
+        ["root", "workingSet", "ONE", "/ONE", "ONE/System", "/ONE/System"].contains(container)
+            ? Data("filer-folders-v1:\(folderLanguage):".utf8) : Data()
+    }
+
+    private func displayAnchor(_ source: Data) -> Data {
+        anchorPrefix + source
+    }
+
+    /// Expire older or differently localized snapshots so Finder rebuilds its cached names.
+    private func sourceAnchor(_ displayed: Data) throws -> Data {
+        let prefix = anchorPrefix
+        guard displayed.starts(with: prefix) else { throw NSFileProviderError(.syncAnchorExpired) }
+        return Data(displayed.dropFirst(prefix.count))
     }
 
     func currentSyncAnchor(completionHandler: @escaping (NSFileProviderSyncAnchor?) -> Void) {
@@ -63,7 +82,7 @@ final class FilerEnumerator: NSObject, NSFileProviderEnumerator {
                 let client = try await bridge()
                 let anchor = try await client.getCurrentAnchor(container: container)
                 try Task.checkCancellation()
-                completionHandler(NSFileProviderSyncAnchor(anchor))
+                completionHandler(NSFileProviderSyncAnchor(displayAnchor(anchor)))
             } catch { completionHandler(nil) }
         }
     }

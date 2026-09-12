@@ -69,6 +69,17 @@ Legacy `path` or `endpoint`/`token` configurations are rejected without being
 rewritten. Existing installations need an explicit storage/identity migration;
 creating a new UUID domain does not adopt an existing external ONE instance.
 
+## Folder language
+
+Finder uses the macOS preferred language (English or German) for OneFiler's
+mounted folder names: Contacts/Kontakte, Files/Dateien, Photos/Fotos,
+Health/Gesundheit, and the folders under ONE. Other languages use English.
+Restart OneFiler after changing the preferred language. Localized names have
+language-aware enumeration anchors so Finder refreshes cached folder labels.
+Internal RPC paths and item identifiers remain stable; user-created folder and
+file names are preserved. Contacts is the single contact view; there is no
+separate Profiles root.
+
 ## Pair with Cube or another ONE device
 
 Register a domain with the same identity email as Cube for device enrollment.
@@ -97,19 +108,18 @@ The menu bar uses the SVG template at
 `../olive.svg`. Keep these in sync. AppKit supplies its tint; connection status
 changes the tooltip.
 
-Finder's path bar needs the named asset declared by `CFBundleIconName`:
-`FilerIcon.imageset`. It supplies original-color SVG renditions for light (black)
-and dark (white) appearance, rather than depending on template tinting. Both
-preserve the transparent background and cutout of `../olive.svg`, without a stroke.
-`CFBundleIconFile` separately points to `Resources/Olive.icns` for icon-file
-consumers. Regenerate the image-set renditions and that file together with
-`swift scripts/generate-app-icons.swift`.
+The application icon is `Resources/AppIcon.icon`, an Icon Composer document with
+black/light and white/dark olive renditions. Xcode 26 or later compiles it using
+`ASSETCATALOG_COMPILER_APPICON_NAME=AppIcon` and generates the bundle's icon keys,
+including the compatibility ICNS for older macOS releases. Do not point those keys
+at an ordinary image set or copy the document as an uncompiled folder. See
+[Apple's Icon Composer integration](https://developer.apple.com/documentation/xcode/creating-your-app-icon-using-icon-composer).
 
-Keep `ASSETCATALOG_COMPILER_APPICON_NAME` explicitly empty: XcodeGen otherwise
-defaults it to `AppIcon` and overrides the explicit `CFBundleIconName=FilerIcon`.
-Keep both icon plist keys: removing the named asset leaves Finder's path bar with
-a generic package icon. Xcode must compile the asset catalog for the named icon,
-menu-bar template, and sidebar symbol.
+Dialogs explicitly use `FilerIcon.imageset`, whose light and dark SVG renditions
+preserve the transparent background and cutout without the system app-icon plate.
+Regenerate the SVG copies with `swift scripts/generate-app-icons.swift`. The
+Composer copy omits the SVG's invisible artboard rectangle so layer coloring
+applies only to the olive path. The original path and transforms stay unchanged.
 
 Finder's sidebar uses the separate `FilerSidebar.symbolset`, declared through
 `CFBundleIcons/CFBundlePrimaryIcon/CFBundleSymbolName` in the extension's plist.
