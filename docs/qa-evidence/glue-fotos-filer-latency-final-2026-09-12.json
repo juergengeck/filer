@@ -1,0 +1,79 @@
+{
+  "description": "Both fixes loaded after explicitly restarting Fotos QA servers; same retained collection and native domain. Additional regression collection retained from the preceding full run. End-to-end timing starts before sender operation, waits on native projection events, then verifies File Provider original bytes. --jitless retained.",
+  "runs": [
+    {
+      "operation": "add",
+      "startedAtEpoch": 1789206005.652283,
+      "mutationMs": 40.72,
+      "nativeProjectionMs": 708.38,
+      "nativeHydrationMs": 710.1,
+      "finder": [
+        {
+          "path": "/Users/gecko/Library/CloudStorage/OneFiler-FilerQA/Fotos/81df7677-a6fc-45f6-b06f-dba6ac3d63a6 (ee2d45c07b441af38451589dabd79381d1e39d1cae1a82d5bd8addffe5fb44e7)/qa-original.png",
+          "sha256": "54e03354b79f7be4a94e01a86c2bbe6dada494bf16600b93aef62235a597b27e"
+        },
+        {
+          "path": "/Users/gecko/Library/CloudStorage/OneFiler-FilerQA/Fotos/81df7677-a6fc-45f6-b06f-dba6ac3d63a6 (ee2d45c07b441af38451589dabd79381d1e39d1cae1a82d5bd8addffe5fb44e7)/qa-second.jpg",
+          "sha256": "999995dd02c0823a6e445958693c9c1604b0f545a0eb27f8cb38520f04ae0097"
+        }
+      ],
+      "projectionBefore": {
+        "invalidationCount": 5,
+        "signatureVerificationCacheHitCount": 11,
+        "cacheHitCount": 64,
+        "maxBuildMs": 3602,
+        "signatureVerificationCount": 36,
+        "totalBuildMs": 6231,
+        "buildCount": 4,
+        "totalSignatureVerificationMs": 30652,
+        "maxSignatureVerificationMs": 3587
+      },
+      "projectionAfter": {
+        "invalidationCount": 6,
+        "signatureVerificationCacheHitCount": 24,
+        "cacheHitCount": 85,
+        "maxBuildMs": 3602,
+        "signatureVerificationCount": 36,
+        "totalBuildMs": 6299,
+        "buildCount": 5,
+        "totalSignatureVerificationMs": 30652,
+        "maxSignatureVerificationMs": 3587
+      }
+    },
+    {
+      "operation": "remove",
+      "startedAtEpoch": 1789206006.644979,
+      "mutationMs": 33.56,
+      "nativeProjectionMs": 504.32,
+      "nativeHydrationMs": 504.77,
+      "finder": [
+        {
+          "path": "/Users/gecko/Library/CloudStorage/OneFiler-FilerQA/Fotos/81df7677-a6fc-45f6-b06f-dba6ac3d63a6 (ee2d45c07b441af38451589dabd79381d1e39d1cae1a82d5bd8addffe5fb44e7)/qa-second.jpg",
+          "sha256": "999995dd02c0823a6e445958693c9c1604b0f545a0eb27f8cb38520f04ae0097"
+        }
+      ],
+      "projectionBefore": {
+        "invalidationCount": 6,
+        "signatureVerificationCacheHitCount": 24,
+        "cacheHitCount": 85,
+        "maxBuildMs": 3602,
+        "signatureVerificationCount": 36,
+        "totalBuildMs": 6299,
+        "buildCount": 5,
+        "totalSignatureVerificationMs": 30652,
+        "maxSignatureVerificationMs": 3587
+      },
+      "projectionAfter": {
+        "invalidationCount": 7,
+        "signatureVerificationCacheHitCount": 37,
+        "cacheHitCount": 106,
+        "maxBuildMs": 3602,
+        "signatureVerificationCount": 36,
+        "totalBuildMs": 6327,
+        "buildCount": 6,
+        "totalSignatureVerificationMs": 30652,
+        "maxSignatureVerificationMs": 3587
+      }
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "runId": "dd6de3ca-ec4b-442c-b4a6-54e55de3ae05",
+  "protocolStatus": "passed",
+  "path": "/Users/gecko/Library/CloudStorage/OneFiler-FilerQA/Fotos/81df7677-a6fc-45f6-b06f-dba6ac3d63a6 (ee2d45c07b441af38451589dabd79381d1e39d1cae1a82d5bd8addffe5fb44e7)/qa-second.jpg",
+  "size": 2688,
+  "sha256": "999995dd02c0823a6e445958693c9c1604b0f545a0eb27f8cb38520f04ae0097",
+  "verifiedAt": "2026-09-12T09:02:26Z",
+  "source": "native File Provider mount enumeration and original-byte read",
+  "shareRestoredAfterPassingRevocation": true
+}

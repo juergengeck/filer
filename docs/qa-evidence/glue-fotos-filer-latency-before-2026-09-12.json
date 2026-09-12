@@ -1,0 +1,91 @@
+{
+  "description": "Same retained Fotos collection and installed native Filer domain; member operations followed by event-backed signed wait and Finder byte verification. Before latency fixes.",
+  "measurementScript": "/tmp/filer-latency/measure.py",
+  "runs": [
+    {
+      "operation": "remove-before",
+      "startedAtEpoch": 1789205168.053011,
+      "mutationMs": 26.96,
+      "nativeProjectionMs": 6821.98,
+      "nativeHydrationMs": 6822.5,
+      "finder": [
+        {
+          "path": "/Users/gecko/Library/CloudStorage/OneFiler-FilerQA/Fotos/81df7677-a6fc-45f6-b06f-dba6ac3d63a6 (ee2d45c07b441af38451589dabd79381d1e39d1cae1a82d5bd8addffe5fb44e7)/qa-second.jpg",
+          "sha256": "999995dd02c0823a6e445958693c9c1604b0f545a0eb27f8cb38520f04ae0097"
+        }
+      ],
+      "projectionBefore": {
+        "totalBuildMs": 34842,
+        "maxBuildMs": 8427,
+        "buildCount": 6,
+        "cacheHitCount": 119,
+        "invalidationCount": 5
+      },
+      "projectionAfter": {
+        "totalBuildMs": 41291,
+        "maxBuildMs": 8427,
+        "buildCount": 7,
+        "cacheHitCount": 134,
+        "invalidationCount": 6
+      }
+    },
+    {
+      "operation": "add",
+      "startedAtEpoch": 1789205175.067774,
+      "mutationMs": 16.73,
+      "nativeProjectionMs": 6606.67,
+      "nativeHydrationMs": 7340.31,
+      "finder": [
+        {
+          "path": "/Users/gecko/Library/CloudStorage/OneFiler-FilerQA/Fotos/81df7677-a6fc-45f6-b06f-dba6ac3d63a6 (ee2d45c07b441af38451589dabd79381d1e39d1cae1a82d5bd8addffe5fb44e7)/qa-original.png",
+          "sha256": "54e03354b79f7be4a94e01a86c2bbe6dada494bf16600b93aef62235a597b27e"
+        },
+        {
+          "path": "/Users/gecko/Library/CloudStorage/OneFiler-FilerQA/Fotos/81df7677-a6fc-45f6-b06f-dba6ac3d63a6 (ee2d45c07b441af38451589dabd79381d1e39d1cae1a82d5bd8addffe5fb44e7)/qa-second.jpg",
+          "sha256": "999995dd02c0823a6e445958693c9c1604b0f545a0eb27f8cb38520f04ae0097"
+        }
+      ],
+      "projectionBefore": {
+        "totalBuildMs": 41291,
+        "maxBuildMs": 8427,
+        "buildCount": 7,
+        "cacheHitCount": 134,
+        "invalidationCount": 6
+      },
+      "projectionAfter": {
+        "totalBuildMs": 47508,
+        "maxBuildMs": 8427,
+        "buildCount": 8,
+        "cacheHitCount": 153,
+        "invalidationCount": 7
+      }
+    },
+    {
+      "operation": "remove",
+      "startedAtEpoch": 1789205182.588553,
+      "mutationMs": 17.52,
+      "nativeProjectionMs": 6678.35,
+      "nativeHydrationMs": 6679.21,
+      "finder": [
+        {
+          "path": "/Users/gecko/Library/CloudStorage/OneFiler-FilerQA/Fotos/81df7677-a6fc-45f6-b06f-dba6ac3d63a6 (ee2d45c07b441af38451589dabd79381d1e39d1cae1a82d5bd8addffe5fb44e7)/qa-second.jpg",
+          "sha256": "999995dd02c0823a6e445958693c9c1604b0f545a0eb27f8cb38520f04ae0097"
+        }
+      ],
+      "projectionBefore": {
+        "totalBuildMs": 47508,
+        "maxBuildMs": 8427,
+        "buildCount": 8,
+        "cacheHitCount": 153,
+        "invalidationCount": 7
+      },
+      "projectionAfter": {
+        "totalBuildMs": 53925,
+        "maxBuildMs": 8427,
+        "buildCount": 9,
+        "cacheHitCount": 168,
+        "invalidationCount": 8
+      }
+    }
+  ]
+}

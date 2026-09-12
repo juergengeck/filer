@@ -1,0 +1,114 @@
+{
+  "description": "Receiver optimization only; same retained collection and native domain as before. Reconnected after installing native app, restored second-only membership, then measured add/remove. Original bytes verified through File Provider. --jitless retained.",
+  "runs": [
+    {
+      "operation": "restore-before",
+      "startedAtEpoch": 1789205871.654058,
+      "mutationMs": 29.15,
+      "nativeProjectionMs": 1409.14,
+      "nativeHydrationMs": 1410.02,
+      "finder": [
+        {
+          "path": "/Users/gecko/Library/CloudStorage/OneFiler-FilerQA/Fotos/81df7677-a6fc-45f6-b06f-dba6ac3d63a6 (ee2d45c07b441af38451589dabd79381d1e39d1cae1a82d5bd8addffe5fb44e7)/qa-second.jpg",
+          "sha256": "999995dd02c0823a6e445958693c9c1604b0f545a0eb27f8cb38520f04ae0097"
+        }
+      ],
+      "projectionBefore": {
+        "invalidationCount": 3,
+        "signatureVerificationCacheHitCount": 0,
+        "cacheHitCount": 13,
+        "maxBuildMs": 1178,
+        "signatureVerificationCount": 10,
+        "totalBuildMs": 1178,
+        "buildCount": 1,
+        "totalSignatureVerificationMs": 6447,
+        "maxSignatureVerificationMs": 1136
+      },
+      "projectionAfter": {
+        "invalidationCount": 4,
+        "signatureVerificationCacheHitCount": 10,
+        "cacheHitCount": 27,
+        "maxBuildMs": 1178,
+        "signatureVerificationCount": 20,
+        "totalBuildMs": 2356,
+        "buildCount": 3,
+        "totalSignatureVerificationMs": 13728,
+        "maxSignatureVerificationMs": 1136
+      }
+    },
+    {
+      "operation": "add",
+      "startedAtEpoch": 1789205873.2149582,
+      "mutationMs": 26.77,
+      "nativeProjectionMs": 349.32,
+      "nativeHydrationMs": 350.57,
+      "finder": [
+        {
+          "path": "/Users/gecko/Library/CloudStorage/OneFiler-FilerQA/Fotos/81df7677-a6fc-45f6-b06f-dba6ac3d63a6 (ee2d45c07b441af38451589dabd79381d1e39d1cae1a82d5bd8addffe5fb44e7)/qa-original.png",
+          "sha256": "54e03354b79f7be4a94e01a86c2bbe6dada494bf16600b93aef62235a597b27e"
+        },
+        {
+          "path": "/Users/gecko/Library/CloudStorage/OneFiler-FilerQA/Fotos/81df7677-a6fc-45f6-b06f-dba6ac3d63a6 (ee2d45c07b441af38451589dabd79381d1e39d1cae1a82d5bd8addffe5fb44e7)/qa-second.jpg",
+          "sha256": "999995dd02c0823a6e445958693c9c1604b0f545a0eb27f8cb38520f04ae0097"
+        }
+      ],
+      "projectionBefore": {
+        "invalidationCount": 4,
+        "signatureVerificationCacheHitCount": 10,
+        "cacheHitCount": 27,
+        "maxBuildMs": 1178,
+        "signatureVerificationCount": 20,
+        "totalBuildMs": 2356,
+        "buildCount": 3,
+        "totalSignatureVerificationMs": 13728,
+        "maxSignatureVerificationMs": 1136
+      },
+      "projectionAfter": {
+        "invalidationCount": 5,
+        "signatureVerificationCacheHitCount": 20,
+        "cacheHitCount": 42,
+        "maxBuildMs": 1178,
+        "signatureVerificationCount": 20,
+        "totalBuildMs": 2366,
+        "buildCount": 4,
+        "totalSignatureVerificationMs": 13728,
+        "maxSignatureVerificationMs": 1136
+      }
+    },
+    {
+      "operation": "remove",
+      "startedAtEpoch": 1789205873.7417011,
+      "mutationMs": 19.81,
+      "nativeProjectionMs": 356.32,
+      "nativeHydrationMs": 356.63,
+      "finder": [
+        {
+          "path": "/Users/gecko/Library/CloudStorage/OneFiler-FilerQA/Fotos/81df7677-a6fc-45f6-b06f-dba6ac3d63a6 (ee2d45c07b441af38451589dabd79381d1e39d1cae1a82d5bd8addffe5fb44e7)/qa-second.jpg",
+          "sha256": "999995dd02c0823a6e445958693c9c1604b0f545a0eb27f8cb38520f04ae0097"
+        }
+      ],
+      "projectionBefore": {
+        "invalidationCount": 5,
+        "signatureVerificationCacheHitCount": 20,
+        "cacheHitCount": 42,
+        "maxBuildMs": 1178,
+        "signatureVerificationCount": 20,
+        "totalBuildMs": 2366,
+        "buildCount": 4,
+        "totalSignatureVerificationMs": 13728,
+        "maxSignatureVerificationMs": 1136
+      },
+      "projectionAfter": {
+        "invalidationCount": 6,
+        "signatureVerificationCacheHitCount": 30,
+        "cacheHitCount": 57,
+        "maxBuildMs": 1178,
+        "signatureVerificationCount": 20,
+        "totalBuildMs": 2376,
+        "buildCount": 5,
+        "totalSignatureVerificationMs": 13728,
+        "maxSignatureVerificationMs": 1136
+      }
+    }
+  ]
+}

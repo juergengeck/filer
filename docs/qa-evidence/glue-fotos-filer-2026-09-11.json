@@ -1,0 +1,3129 @@
+{
+  "assertions": [
+    {
+      "message": "Alice and Charlie application handlers are initialized",
+      "step": 1
+    },
+    {
+      "message": "Alice and Charlie expose fotos-qa on their explicit browser client IDs",
+      "step": 1
+    },
+    {
+      "message": "Fotos identities are prepared by their owning applications",
+      "step": 2
+    },
+    {
+      "message": "charlie reloaded into the prepared identity on the same exact browser client",
+      "step": 2
+    },
+    {
+      "message": "alice reloaded into the prepared identity on the same exact browser client",
+      "step": 2
+    },
+    {
+      "message": "Alice active publication identity matches its Glue registration",
+      "step": 2
+    },
+    {
+      "message": "Alice Glue certificate binds the publication signing key",
+      "step": 2
+    },
+    {
+      "message": "Alice device instance identity is independent from its Person owners",
+      "step": 2
+    },
+    {
+      "message": "Charlie active publication identity matches its Glue registration",
+      "step": 2
+    },
+    {
+      "message": "Charlie Glue certificate binds the publication signing key",
+      "step": 2
+    },
+    {
+      "message": "Charlie device instance identity is independent from its Person owners",
+      "step": 2
+    },
+    {
+      "message": "Filer uses the Glue-registered Bob identity",
+      "step": 2
+    },
+    {
+      "message": "Alice, Bob, and Charlie have distinct person identities",
+      "step": 2
+    },
+    {
+      "message": "Bob accepted Alice's application-owned pairing invitation",
+      "step": 3
+    },
+    {
+      "message": "Charlie paired with Alice through their application-owned pairing operations",
+      "step": 3
+    },
+    {
+      "message": "Pairing alone did not change Bob's Fotos projection",
+      "step": 3
+    },
+    {
+      "message": "Charlie has no verified active projection of Alice's collection",
+      "step": 3
+    },
+    {
+      "message": "The two imported fixtures have distinct content hashes",
+      "step": 4
+    },
+    {
+      "message": "Alice collection contains only the first of two imported photos",
+      "step": 4
+    },
+    {
+      "message": "Charlie has no verified active projection of Alice's collection",
+      "step": 4
+    },
+    {
+      "message": "Alice activated the collection share for Bob",
+      "step": 5
+    },
+    {
+      "message": "Bob exposes /Fotos/9c593b10-0124-4602-b3bd-b55f8b925d39 (de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7)",
+      "step": 5
+    },
+    {
+      "message": "qa-original.png has the exact receiver byte digest",
+      "step": 5
+    },
+    {
+      "message": "qa-original.png bytes match Alice's imported fixture exactly",
+      "step": 5
+    },
+    {
+      "message": "Charlie has no verified active projection of Alice's collection",
+      "step": 5
+    },
+    {
+      "message": "Bob exposes /Fotos/9c593b10-0124-4602-b3bd-b55f8b925d39 (de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7)",
+      "step": 6
+    },
+    {
+      "message": "qa-original.png has the exact receiver byte digest",
+      "step": 6
+    },
+    {
+      "message": "qa-original.png bytes match Alice's imported fixture exactly",
+      "step": 6
+    },
+    {
+      "message": "qa-second.jpg has the exact receiver byte digest",
+      "step": 6
+    },
+    {
+      "message": "qa-second.jpg bytes match Alice's imported fixture exactly",
+      "step": 6
+    },
+    {
+      "message": "Charlie has no verified active projection of Alice's collection",
+      "step": 6
+    },
+    {
+      "message": "Bob exposes /Fotos/9c593b10-0124-4602-b3bd-b55f8b925d39 (de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7)",
+      "step": 7
+    },
+    {
+      "message": "qa-second.jpg has the exact receiver byte digest",
+      "step": 7
+    },
+    {
+      "message": "qa-second.jpg bytes match Alice's imported fixture exactly",
+      "step": 7
+    },
+    {
+      "message": "Charlie has no verified active projection of Alice's collection",
+      "step": 7
+    },
+    {
+      "message": "Offline Filer restart preserved Bob's exact identity and keys",
+      "step": 8
+    },
+    {
+      "message": "Bob exposes /Fotos/9c593b10-0124-4602-b3bd-b55f8b925d39 (de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7)",
+      "step": 8
+    },
+    {
+      "message": "qa-second.jpg has the exact receiver byte digest",
+      "step": 8
+    },
+    {
+      "message": "qa-second.jpg bytes match Alice's imported fixture exactly",
+      "step": 8
+    },
+    {
+      "message": "Offline Filer restart preserved the received collection",
+      "step": 8
+    },
+    {
+      "message": "Bob exposes /Fotos/9c593b10-0124-4602-b3bd-b55f8b925d39 (de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7)",
+      "step": 9
+    },
+    {
+      "message": "qa-second.jpg has the exact receiver byte digest",
+      "step": 9
+    },
+    {
+      "message": "qa-second.jpg bytes match Alice's imported fixture exactly",
+      "step": 9
+    },
+    {
+      "message": "Charlie has no verified active projection of Alice's collection",
+      "step": 9
+    },
+    {
+      "message": "Alice recorded Bob's recipient revocation",
+      "step": 10
+    },
+    {
+      "message": "Revocation removed the collection from Bob's Filer projection",
+      "step": 10
+    },
+    {
+      "message": "Charlie has no verified active projection of Alice's collection",
+      "step": 10
+    }
+  ],
+  "collection": {
+    "finalPhotoHashes": [
+      "fd0f384be98adedd4a1bd47d68e84db36f73a14cc594ca722391a832dd0f0818"
+    ],
+    "id": "9c593b10-0124-4602-b3bd-b55f8b925d39",
+    "name": "Filer QA da6c370c",
+    "path": "/Fotos/9c593b10-0124-4602-b3bd-b55f8b925d39 (de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7)"
+  },
+  "durationMs": 29350,
+  "finishedAt": "2026-09-11T14:30:57.562Z",
+  "roles": {
+    "alice": {
+      "apiBase": "http://127.0.0.1:5381",
+      "certRef": "filerqaaliceda6c370c@glue.one",
+      "certSubjectPublicKey": "0039aff3877fb5175deea44ddf552ef20d310542ec3db3be8f3156f3799d2eaa",
+      "clientId": "6b1cfdf0-86c7-468e-a3d2-65c9b2ec3bbc",
+      "deviceInstanceId": "fdbb1388503db33ad1b848cc2ad799bf7bb4a7ad43be9ed1500674f233ce18ca",
+      "identity": "filerqaaliceda6c370c@glue.one",
+      "personId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7"
+    },
+    "bob": {
+      "instanceId": "0e92dd75b3aab2cad39629ab2ac86d001335426e843d20ed8600ab0c75eefcda",
+      "ownerId": "ed94df007b39a82e65e93a200988b38a69a88c549ba37aa7a8352babe973a4a3",
+      "personId": "ed94df007b39a82e65e93a200988b38a69a88c549ba37aa7a8352babe973a4a3"
+    },
+    "charlie": {
+      "apiBase": "http://127.0.0.1:5382",
+      "certRef": "filerqacharlieda6c370c@glue.one",
+      "certSubjectPublicKey": "7ea8bef49841347fc023f1b7a41162fba9e29aa857f763f5e179ef2f55b04b7a",
+      "clientId": "996e4cc2-cee9-43b6-bf7f-89508ee7ca03",
+      "deviceInstanceId": "8bd9d87b51951263c6bb3f7556cffbe23dc50c2345dd10ef926568a89c521827",
+      "identity": "filerqacharlieda6c370c@glue.one",
+      "personId": "dcdbbb49b2653822f7a7ee9a0b2a890149506bd4986aab0879abec20bb864bd5"
+    },
+    "glueApiBase": "http://127.0.0.1:19101"
+  },
+  "runId": "da6c370c-b65f-49ec-a003-baf8308989d4",
+  "runtimeDiagnostics": {
+    "chum": {
+      "activeChums": [
+        {
+          "AtoBBlob": 0,
+          "AtoBClob": 0,
+          "AtoBIdObjects": 0,
+          "AtoBObjects": 0,
+          "BtoABlob": 0,
+          "BtoAClob": 0,
+          "BtoAIdObjects": 0,
+          "BtoAObjects": 4,
+          "connId": 8,
+          "errorCount": 0,
+          "errors": []
+        }
+      ],
+      "activeExporters": [
+        {
+          "connId": 8,
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7"
+        }
+      ],
+      "activePeerSessions": [
+        {
+          "connId": 8,
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7"
+        }
+      ],
+      "traceEvents": [
+        {
+          "elapsedMs": 1989,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "b0c6ea1ae037c6c46975f7fdcf5bcada226ded164f33edf425ec8cec3f3095ab",
+          "idHash": "1e1c657d7d863c440a979e8f85f4bad25c382a6818d1ca9e9956f18c3b15db34",
+          "objectType": "Recipe",
+          "rootSource": "stored-version",
+          "seq": 102,
+          "time": "2026-09-11T14:30:26.269Z"
+        },
+        {
+          "elapsedMs": 1989,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "58f57f79ab4de8c7b8ad7f6fa05e7cfe936d13a581506bbcd96434ca43c43d67",
+          "idHash": "cf284232f76ed9e188306fd0104e688c10567d0d91f68499787d4051ac81c2e0",
+          "objectType": "Recipe",
+          "rootSource": "stored-version",
+          "seq": 103,
+          "time": "2026-09-11T14:30:26.269Z"
+        },
+        {
+          "elapsedMs": 1989,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "3c7043be5e080aca64d8394f865b3e049a524e114b128d78f9ea57b475d8b7ba",
+          "idHash": "4fa8ce50dae9edd85a80db9144e6f66a36077ffa6c47de929db730c412fa23b6",
+          "objectType": "Recipe",
+          "rootSource": "stored-version",
+          "seq": 104,
+          "time": "2026-09-11T14:30:26.269Z"
+        },
+        {
+          "elapsedMs": 1989,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "44a545709e5f699b8ad4a2451ecda9156f1977a7598290d70881ddf3774dc276",
+          "idHash": "8734d55a823fb6635668df6e88bddeb1ae6cd16f1971e6db8b76598875d51dec",
+          "objectType": "Recipe",
+          "rootSource": "stored-version",
+          "seq": 105,
+          "time": "2026-09-11T14:30:26.269Z"
+        },
+        {
+          "elapsedMs": 1989,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "6068fd2a933ffd817b8a64dec870bb40c71da4664e5a0dd68e26cbd8d4c1ba66",
+          "idHash": "190701e94836c60680d2763177da832a6890b09f8bb0de39e451a41328ddf864",
+          "objectType": "Recipe",
+          "rootSource": "stored-version",
+          "seq": 106,
+          "time": "2026-09-11T14:30:26.269Z"
+        },
+        {
+          "elapsedMs": 1989,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "073f0c1819253f8964c4f610f114757cab22c45ea2ab39c009016647e085f189",
+          "idHash": "4d2d0531c62f182a03ab8172a6a9b8cc88cdfcc356fd3fa768741e637a734a66",
+          "objectType": "Recipe",
+          "rootSource": "stored-version",
+          "seq": 107,
+          "time": "2026-09-11T14:30:26.269Z"
+        },
+        {
+          "elapsedMs": 1989,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "5027f2e39cd8baa985bf368a07d1f34517f62214590d5cfaa92fe4ed5d163bcc",
+          "idHash": "13ee3f3718b328ad1b92f9de2e05cac3ef141787045f6914ff02aa17039c82b7",
+          "objectType": "Recipe",
+          "rootSource": "stored-version",
+          "seq": 108,
+          "time": "2026-09-11T14:30:26.269Z"
+        },
+        {
+          "elapsedMs": 1989,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "536a157139106deadd291de98fed06aaf0d14f29d563ce37cb3ea148ff11b058",
+          "idHash": "31478368d01122f884e393dd3a53440729be322e2df129dbcd1e728fc85496d4",
+          "objectType": "Recipe",
+          "rootSource": "stored-version",
+          "seq": 109,
+          "time": "2026-09-11T14:30:26.269Z"
+        },
+        {
+          "elapsedMs": 1989,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "9f7ede0ac081edd20344596f353cc4e9fbb0b3e9e61dbcd0608bf6bad006a57b",
+          "idHash": "80f5403242099e4a4fa822d0ca2e8edb04c61408990dbb15d06baa59aacd9bf0",
+          "objectType": "Recipe",
+          "rootSource": "stored-version",
+          "seq": 110,
+          "time": "2026-09-11T14:30:26.269Z"
+        },
+        {
+          "elapsedMs": 1989,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "fc4ac2433dff797de487e392d3122d44e69bd264128085d3e8676c25674028e4",
+          "idHash": "e79c3203c97ad7a36684cf3f65c06a619eac64fe8b05fea6df6652a7e696d00d",
+          "objectType": "Recipe",
+          "rootSource": "stored-version",
+          "seq": 111,
+          "time": "2026-09-11T14:30:26.269Z"
+        },
+        {
+          "elapsedMs": 1989,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "f6ca0cc8f7bb69c362b8003efd661051c74333059992fa38ce1b19696bbe72b7",
+          "idHash": "46b57e1c2faf6308c0e5c08000eccb7fe27d54a427d9fa7bc782fad378e2ba0e",
+          "objectType": "Recipe",
+          "rootSource": "stored-version",
+          "seq": 112,
+          "time": "2026-09-11T14:30:26.269Z"
+        },
+        {
+          "elapsedMs": 1989,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "7e3e35b77bf02e4dfb18ee394cc7bdf3a62114e8e9a7f61d9d2d6cf15473a68a",
+          "idHash": "c1847cf0db83176b498b1090badb5a0d62f0493981b3e27308e533b301a34155",
+          "objectType": "Recipe",
+          "rootSource": "stored-version",
+          "seq": 113,
+          "time": "2026-09-11T14:30:26.269Z"
+        },
+        {
+          "elapsedMs": 1989,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "03449d781b39c3cfb92ab5a48240d99554abc677c75772e555e50e1a8ac5dc06",
+          "idHash": "45ec4e1ae78f05399961444d07f4ee6634970c933eb1c59c3b406ae42f136ffa",
+          "objectType": "Recipe",
+          "rootSource": "stored-version",
+          "seq": 114,
+          "time": "2026-09-11T14:30:26.269Z"
+        },
+        {
+          "elapsedMs": 1989,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "a00df0322965527d12fec16df156c205b00a20dce87f321e6eb87c905dbaf1e3",
+          "idHash": "c2a19d5df325b49649805e2fbe4d3ebffab4544908f33eb04d3c7a50c69ca181",
+          "objectType": "Recipe",
+          "rootSource": "stored-version",
+          "seq": 115,
+          "time": "2026-09-11T14:30:26.269Z"
+        },
+        {
+          "elapsedMs": 2002,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "afaccdc132052cb6f10b0772fd7800ac2288c6e18ae7a8afeeecfaec0f9559a2",
+          "idHash": "f5f48f07cd88e361492c9200be908e1a7ef01d9674168591ad23b93ba6ff0019",
+          "objectType": "Recipe",
+          "rootSource": "stored-version",
+          "seq": 116,
+          "time": "2026-09-11T14:30:26.282Z"
+        },
+        {
+          "elapsedMs": 2002,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "8afccf871569a9ef9c89411c2180a1286470094c41870655edad7a59ced67058",
+          "idHash": "e8c9cc7dbef9f2ecae372e92a31fffca5fde8520b3751dde6954d5808b9eda13",
+          "objectType": "Recipe",
+          "rootSource": "stored-version",
+          "seq": 117,
+          "time": "2026-09-11T14:30:26.282Z"
+        },
+        {
+          "elapsedMs": 2002,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "7ecfa978170208208b7bf5b9184e4d27c298c5503bb7979dff91799d36130381",
+          "idHash": "eda861fb1602dd3ed7e2a3a95bf7bb33a26e360b27ade46dd81e8c2dc70e827c",
+          "objectType": "Recipe",
+          "rootSource": "stored-version",
+          "seq": 118,
+          "time": "2026-09-11T14:30:26.282Z"
+        },
+        {
+          "elapsedMs": 2002,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "f817b80ac931ff4e896efcd190be2385ee4b0434fe18a4348fafbbec2e518239",
+          "idHash": "a7c9aff34af1508ae2b6c17c99777a51eb9846fbebe6a38abaf12989fddaf0ab",
+          "objectType": "Recipe",
+          "rootSource": "stored-version",
+          "seq": 119,
+          "time": "2026-09-11T14:30:26.282Z"
+        },
+        {
+          "elapsedMs": 2002,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "9c0cb18ab762e31ec72dde787c7e89bb170a49bbbe49edc43ebb72f63a8fc45f",
+          "idHash": "651fef47caeaeddc13f34b8148ee2921326f873acab87d8eff92f982dec2df45",
+          "objectType": "Recipe",
+          "rootSource": "stored-version",
+          "seq": 120,
+          "time": "2026-09-11T14:30:26.282Z"
+        },
+        {
+          "elapsedMs": 2002,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "c168bd55add0d2c537119270e6dc3d17154b03a4822071608006ae189633eddd",
+          "idHash": "c1096d13c5dbd1629eb47298c2343932e6078a80e861c0acb441a13b8d719f4a",
+          "objectType": "Recipe",
+          "rootSource": "stored-version",
+          "seq": 121,
+          "time": "2026-09-11T14:30:26.282Z"
+        },
+        {
+          "elapsedMs": 2002,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "649163cc4d5df1cc9eed35ec56f54d344dae4e2a232b41c175abde67510e1cc3",
+          "idHash": "410186d8c7a11ca64049cde6ced10b5f480f1b4621d6f1200e20d83286a649b0",
+          "objectType": "Recipe",
+          "rootSource": "stored-version",
+          "seq": 122,
+          "time": "2026-09-11T14:30:26.282Z"
+        },
+        {
+          "elapsedMs": 2007,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "45c14f671e3f57b29d23dba04104b378ff0e86e67c79dccf4a34b283862f3ef5",
+          "idHash": "14e9f0689407e81d638adbff402836e8c2acaa010942eb01456f6dd1a37d262d",
+          "objectType": "Recipe",
+          "rootSource": "stored-version",
+          "seq": 123,
+          "time": "2026-09-11T14:30:26.287Z"
+        },
+        {
+          "elapsedMs": 2013,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "c8a15ac2ad3c44962aeacaf62629e1731b1b3e74df484d9c3b5c9ad2184e5f38",
+          "idHash": "eb4eeb84f437dcf6784de4c29d302398b0185447ccad541300694a3b5290854d",
+          "objectType": "Recipe",
+          "rootSource": "stored-version",
+          "seq": 124,
+          "time": "2026-09-11T14:30:26.293Z"
+        },
+        {
+          "elapsedMs": 2063,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "5ebcefa3991f2052d8fd1c45f2abd759eb39c9e7686bb920cb7b7a8ee9898eab",
+          "idHash": "0e92dd75b3aab2cad39629ab2ac86d001335426e843d20ed8600ab0c75eefcda",
+          "objectType": "Instance",
+          "rootSource": "stored-version",
+          "seq": 125,
+          "time": "2026-09-11T14:30:26.343Z"
+        },
+        {
+          "elapsedMs": 2362,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "f577541178dd3541b63847107634074722671550fb94509d3d42a651f1f2bd65",
+          "idHash": "8925d1ea3ba15adfb3d616ef034ef81212d9759bf7e150525025926130ab8956",
+          "objectType": "Profile",
+          "rootSource": "stored-version",
+          "seq": 126,
+          "time": "2026-09-11T14:30:26.642Z"
+        },
+        {
+          "elapsedMs": 2417,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "f72a129f794ac70d07a4534c5b60f149a74b26b8533c3c1aa4ab69ea80926d77",
+          "idHash": "c90cbdaf590de403da87f9f5a4464938aab006675fd0dae021ab632ec0105722",
+          "objectType": "Someone",
+          "rootSource": "stored-version",
+          "seq": 127,
+          "time": "2026-09-11T14:30:26.697Z"
+        },
+        {
+          "elapsedMs": 2472,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "9a717f045b99ff14842801a904785312a66c0cd719ccaec74e28ea03ac1f9a09",
+          "idHash": "8a5d94827a6f1f6ea5615c3301a0ca054461ea4af57c64a866e12a103fb5de4e",
+          "objectType": "Leute",
+          "rootSource": "stored-version",
+          "seq": 128,
+          "time": "2026-09-11T14:30:26.752Z"
+        },
+        {
+          "elapsedMs": 2684,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "0d0cfd91751c75754651eb4af35cd80661741034cd5cf86cd64eaa1b70e3453c",
+          "idHash": "be00ff45f35830d91dc1cba3bbefcae9728b906d9783f00d45b9ef9f29d9562a",
+          "objectType": "Group",
+          "rootSource": "stored-version",
+          "seq": 129,
+          "time": "2026-09-11T14:30:26.964Z"
+        },
+        {
+          "elapsedMs": 2734,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "c1e12ace7eaf3f75e8fbc4232febedf36329d42421e76d5904b25e6bcc2d3a18",
+          "idHash": "8a45f1b882f2ab15ce4c2d75de2a5048af8ae18f1dbfb46042f7f11f725f5c9c",
+          "objectType": "GroupProfile",
+          "rootSource": "stored-version",
+          "seq": 130,
+          "time": "2026-09-11T14:30:27.014Z"
+        },
+        {
+          "elapsedMs": 2773,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "54e3c90df569d3feec6482b07ae7f503ee5e2e281c62a0af99b4585a741aaa6f",
+          "idHash": "8a5d94827a6f1f6ea5615c3301a0ca054461ea4af57c64a866e12a103fb5de4e",
+          "objectType": "Leute",
+          "rootSource": "stored-version",
+          "seq": 131,
+          "time": "2026-09-11T14:30:27.053Z"
+        },
+        {
+          "elapsedMs": 2825,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "4ab816ed0bc35d8e071265f0d1cbd41b3a877708d0a9efc6b44c6494f2e1de50",
+          "idHash": "be00ff45f35830d91dc1cba3bbefcae9728b906d9783f00d45b9ef9f29d9562a",
+          "objectType": "Group",
+          "rootSource": "stored-version",
+          "seq": 132,
+          "time": "2026-09-11T14:30:27.105Z"
+        },
+        {
+          "elapsedMs": 3126,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "1d9ba0cefe225bceb8c590a2d9e11b048d081b515903835e2f34c1020e31e516",
+          "idHash": "fa3b9bb91daf4091d80ae95ae1ec19a62bd8654f4c0ad725a27326af3c14a235",
+          "objectType": "Group",
+          "rootSource": "stored-version",
+          "seq": 133,
+          "time": "2026-09-11T14:30:27.406Z"
+        },
+        {
+          "elapsedMs": 3177,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "32841cdc24db4feb2f1580813930e6fdf8beaad8a1c54b1eef28adbaf54004d0",
+          "idHash": "bb496934bf18b5d682ae32437d15df7710a0d77845bf9862c03822a965d79bf3",
+          "objectType": "GroupProfile",
+          "rootSource": "stored-version",
+          "seq": 134,
+          "time": "2026-09-11T14:30:27.457Z"
+        },
+        {
+          "elapsedMs": 3254,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "f79d6d705135bd397b76cb7d4d365bc0821f8527b5eab4a31d4e3bf8fa1eb6a3",
+          "idHash": "fa3b9bb91daf4091d80ae95ae1ec19a62bd8654f4c0ad725a27326af3c14a235",
+          "objectType": "Group",
+          "rootSource": "stored-version",
+          "seq": 135,
+          "time": "2026-09-11T14:30:27.534Z"
+        },
+        {
+          "elapsedMs": 3303,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "9dcc136e42c0a8031c0bd49351f097e253250335d637678bfd3e8c0a6d2b341b",
+          "idHash": "5cf546909e62cf95343c86a6fac58649ac6eb6f700023a11b2a8514318d5d438",
+          "objectType": "IoMRequestsRegistry",
+          "rootSource": "stored-version",
+          "seq": 136,
+          "time": "2026-09-11T14:30:27.583Z"
+        },
+        {
+          "elapsedMs": 3361,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "1653efbfe797a0f47a13b00566738490c0dd334fa749123cb1538e5956d98de3",
+          "idHash": "7a3671bf2d87733bba75b8c26d86f5dc4aa787da5336993884958ef993254734",
+          "objectType": "TopicAppRegistry",
+          "rootSource": "stored-version",
+          "seq": 137,
+          "time": "2026-09-11T14:30:27.641Z"
+        },
+        {
+          "elapsedMs": 3428,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "2b2ee58dacfa8cbe07644dc9163289aa5750f4c6126d483738750e79840bbebe",
+          "idHash": "641cdbdd0c6b0a030b8358c58fe48c2e2e5430ce47ce1310b5c5c2ee9b27e750",
+          "objectType": "FilerItem",
+          "rootSource": "stored-version",
+          "seq": 138,
+          "time": "2026-09-11T14:30:27.708Z"
+        },
+        {
+          "elapsedMs": 3526,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "706c6a0fd40f06c3816458e3e09c9969cba2c98228c490a921ad4504be546fed",
+          "idHash": "baf2cbccbe6151f4a33994bda903ebc888358f2321467ce45ea8755eeb50a1a5",
+          "objectType": "ModelWeightLibrary",
+          "rootSource": "stored-version",
+          "seq": 139,
+          "time": "2026-09-11T14:30:27.806Z"
+        },
+        {
+          "elapsedMs": 3619,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "e5847578f3ebaaef50de998b4940979dd6777ce7e7e4ccf7d178b261d6ac836f",
+          "idHash": "9f1f29fdbbfa59f55c8c028a6f92c1f8dd19876dd2c965254f6b9f08169e5964",
+          "objectType": "FilerFilesRoot",
+          "rootSource": "stored-version",
+          "seq": 140,
+          "time": "2026-09-11T14:30:27.899Z"
+        },
+        {
+          "elapsedMs": 3683,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "fe9b04f5556a88eb2a8f131fdfcdd0241079dd131da33c780d4afc90ca580525",
+          "idHash": "ab43e6ce857be9cf65d64fc72056707b63860b38c290352cd734b532e1b910f9",
+          "objectType": "Group",
+          "rootSource": "stored-version",
+          "seq": 141,
+          "time": "2026-09-11T14:30:27.963Z"
+        },
+        {
+          "elapsedMs": 3766,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "33ddfa95edbbc71af61a99d5e520164842c1d40c5fe6070892d29cddc0311266",
+          "idHash": "2a5a8cf211ffa245b327cbbf04ca90cdd693dd3b48d7f102b015ab1861eaaecc",
+          "objectType": "GroupProfile",
+          "rootSource": "stored-version",
+          "seq": 142,
+          "time": "2026-09-11T14:30:28.046Z"
+        },
+        {
+          "elapsedMs": 3825,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "59349d542279bdd3b6bcb7e1347f5165b7019eaa63c7322b801403fe0460dba1",
+          "idHash": "64df39f31476eacb1af93c5b7befd2236e7b1c960cac2646a07695828f87483e",
+          "objectType": "OneInstanceInfo",
+          "rootSource": "stored-version",
+          "seq": 143,
+          "time": "2026-09-11T14:30:28.105Z"
+        },
+        {
+          "elapsedMs": 3888,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "3dfff395a7e86eef486d32a41c28532fc279d3f935c6e581062f3e988c2404ef",
+          "idHash": "3c628905db0cbde12ff63756bd5559c52e20711ba87d7cf8fd94736511ca6a8b",
+          "objectType": "Device",
+          "rootSource": "stored-version",
+          "seq": 144,
+          "time": "2026-09-11T14:30:28.168Z"
+        },
+        {
+          "elapsedMs": 3927,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "ce5c2389a8e551f24bc0d47d9472df555352829c432f069fec74ab54c97319eb",
+          "idHash": "3c628905db0cbde12ff63756bd5559c52e20711ba87d7cf8fd94736511ca6a8b",
+          "objectType": "Device",
+          "rootSource": "stored-version",
+          "seq": 145,
+          "time": "2026-09-11T14:30:28.207Z"
+        },
+        {
+          "elapsedMs": 7353,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "701c75d6e26d6caa3db49a9bb3fba30dc98db48b0ae51becfb80fc6b58611cf8",
+          "idHash": "9cece299ff80d3132c279f3d092eb15c9036367cc74ed56c3d999a9f516dd4af",
+          "objectType": "Profile",
+          "rootSource": "stored-version",
+          "seq": 146,
+          "time": "2026-09-11T14:30:31.633Z"
+        },
+        {
+          "elapsedMs": 7482,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "980978887a774ac3cf7a1a78bb76b26d09d66ed9577cae80b577167468dbd40b",
+          "idHash": "72f6375c90832b527b208154051864f7f50a6694308210cb308296138ebb9149",
+          "objectType": "Someone",
+          "rootSource": "stored-version",
+          "seq": 147,
+          "time": "2026-09-11T14:30:31.762Z"
+        },
+        {
+          "elapsedMs": 7665,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "a18ff12c3f38ed71c72d33067e1e7f8623b10a99f6ad2d3d045b3d4fdea99996",
+          "idHash": "8a5d94827a6f1f6ea5615c3301a0ca054461ea4af57c64a866e12a103fb5de4e",
+          "objectType": "Leute",
+          "rootSource": "stored-version",
+          "seq": 148,
+          "time": "2026-09-11T14:30:31.945Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 8450,
+          "event": "importer.protocol.ready",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 149,
+          "time": "2026-09-11T14:30:32.730Z"
+        },
+        {
+          "connId": 5,
+          "durationMs": 0,
+          "elapsedMs": 8450,
+          "event": "importer.protocol.ready.done",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 150,
+          "time": "2026-09-11T14:30:32.730Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 8453,
+          "event": "exporter.roots.sent",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "rootCount": 0,
+          "rootTypes": {},
+          "seq": 151,
+          "time": "2026-09-11T14:30:32.733Z"
+        },
+        {
+          "connId": 5,
+          "direction": "remote-to-local",
+          "elapsedMs": 8496,
+          "event": "importer.object.saved",
+          "hash": "bbe116c6127a91735511f14980568678b331e8cb5de5fceab12ff299eba6ae0d",
+          "kind": "object",
+          "objectType": "HashGroup",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 152,
+          "time": "2026-09-11T14:30:32.776Z"
+        },
+        {
+          "elapsedMs": 8605,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "3cc184ecfe94e9304d420a59e155621989b2a966ce6890242d3f856d3ce38175",
+          "idHash": "415e41beeb86afe760dee550c028c34f5e2154faa7b19265d8dd2f3d3c76ab17",
+          "objectType": "Access",
+          "rootSource": "stored-version",
+          "seq": 153,
+          "time": "2026-09-11T14:30:32.885Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 8605,
+          "event": "importer.recipient-access.projected",
+          "hash": "bbe116c6127a91735511f14980568678b331e8cb5de5fceab12ff299eba6ae0d",
+          "objectType": "HashGroup",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 154,
+          "time": "2026-09-11T14:30:32.885Z"
+        },
+        {
+          "elapsedMs": 8654,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "ea1d7895a852ee9875003b05eb1acd7cbdd60e648ad40713760f9f83f7ff8f0d",
+          "idHash": "6e6cc119a9bcdd37cd145e50481d711e8b21a6d23d9c6b25483d5b8f0790ef8e",
+          "objectType": "IdAccess",
+          "rootSource": "stored-version",
+          "seq": 155,
+          "time": "2026-09-11T14:30:32.934Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 8654,
+          "event": "importer.recipient-access.projected",
+          "hash": "c134a374c7178b73d398ce7b4f3267c887c897eadef80379285a8888d799e134",
+          "objectType": "Topic",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 156,
+          "time": "2026-09-11T14:30:32.934Z"
+        },
+        {
+          "elapsedMs": 8706,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "f5b6f99b8b2f036d477a50fc1369b59c5db0a4358c6271b9ba057bfc50b928ba",
+          "idHash": "63fafafe7bce19d73fc05f989e451cdf9266ddc47e708c16af61d5ec385d359e",
+          "objectType": "IdAccess",
+          "rootSource": "stored-version",
+          "seq": 157,
+          "time": "2026-09-11T14:30:32.986Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 8707,
+          "event": "importer.recipient-access.projected",
+          "hash": "edfb8769cf7ad9c0152fe7001af92f5e7108db6a01fb822d138306768fe95329",
+          "objectType": "Profile",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 158,
+          "time": "2026-09-11T14:30:32.987Z"
+        },
+        {
+          "elapsedMs": 8760,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "d2242ebffbf25ce860914b3e65d391bdfd07251310428da189627c5ffd61a661",
+          "idHash": "c5d691ae3e7fcff34f4a6ae14feec875434cebf76571f55a798da8256eedaf5e",
+          "objectType": "IdAccess",
+          "rootSource": "stored-version",
+          "seq": 159,
+          "time": "2026-09-11T14:30:33.040Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 8760,
+          "event": "importer.recipient-access.projected",
+          "hash": "8925d1ea3ba15adfb3d616ef034ef81212d9759bf7e150525025926130ab8956",
+          "objectType": "Profile",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 160,
+          "time": "2026-09-11T14:30:33.040Z"
+        },
+        {
+          "elapsedMs": 8865,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "81436cfb4f74ea02c107b17b38e32ac0bae4f7f8eb51fafcf667e414497e5fc2",
+          "idHash": "0c6cd52aad9b5949fd0be87dc301da3ce4137bb39b59e150ceb08e346eb7e524",
+          "objectType": "IdAccess",
+          "rootSource": "stored-version",
+          "seq": 161,
+          "time": "2026-09-11T14:30:33.145Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 8865,
+          "event": "importer.recipient-access.projected",
+          "hash": "9cece299ff80d3132c279f3d092eb15c9036367cc74ed56c3d999a9f516dd4af",
+          "objectType": "Profile",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 162,
+          "time": "2026-09-11T14:30:33.145Z"
+        },
+        {
+          "connId": 5,
+          "direction": "remote-to-local",
+          "elapsedMs": 9999,
+          "event": "importer.object.saved",
+          "hash": "391953b6b8fdb7e625291d0113aa6ce37bc435b0848833c4b69414c2044d750b",
+          "kind": "object",
+          "objectType": "VersionNodeEdge",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 163,
+          "time": "2026-09-11T14:30:34.279Z"
+        },
+        {
+          "elapsedMs": 10010,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "c1632f748b469c6f461eb9baec08a68b03ac000a28247651ce35313b49788f74",
+          "idHash": "c134a374c7178b73d398ce7b4f3267c887c897eadef80379285a8888d799e134",
+          "objectType": "Topic",
+          "rootSource": "stored-version",
+          "seq": 164,
+          "time": "2026-09-11T14:30:34.290Z"
+        },
+        {
+          "elapsedMs": 10084,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "f35b1b19d5ec4cd9066fc61048619458bf7fc4940b4469a6cee34b309650770d",
+          "idHash": "7a3671bf2d87733bba75b8c26d86f5dc4aa787da5336993884958ef993254734",
+          "objectType": "TopicAppRegistry",
+          "rootSource": "stored-version",
+          "seq": 165,
+          "time": "2026-09-11T14:30:34.364Z"
+        },
+        {
+          "elapsedMs": 10099,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "998b33af8af1130819ddd4aadf5fbff4206053ef3fc5509d41771e5d90619e84",
+          "idHash": "4e16584c23eb0eb7930e275e8ea31096f4c4d6ed559a70273cab0be8deae5d24",
+          "objectType": "Access",
+          "rootSource": "stored-version",
+          "seq": 166,
+          "time": "2026-09-11T14:30:34.379Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 10099,
+          "event": "importer.recipient-access.projected",
+          "hash": "c134a374c7178b73d398ce7b4f3267c887c897eadef80379285a8888d799e134",
+          "objectType": "Topic",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 167,
+          "time": "2026-09-11T14:30:34.379Z"
+        },
+        {
+          "elapsedMs": 10213,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "ef9d07eb0e164f468c95471a5b3caae589e738523b1936b5f25468051a15e956",
+          "idHash": "415e41beeb86afe760dee550c028c34f5e2154faa7b19265d8dd2f3d3c76ab17",
+          "objectType": "Access",
+          "rootSource": "stored-version",
+          "seq": 168,
+          "time": "2026-09-11T14:30:34.493Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 10215,
+          "event": "storage.wakeup.queued",
+          "hash": "bbe116c6127a91735511f14980568678b331e8cb5de5fceab12ff299eba6ae0d",
+          "queued": true,
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "rootSource": "access-grant",
+          "seq": 169,
+          "time": "2026-09-11T14:30:34.495Z"
+        },
+        {
+          "elapsedMs": 10267,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "0d5860cf5ab3861c37376a91ec8cd73f84eb01415315831e9d5c5a45260cdbec",
+          "idHash": "6e6cc119a9bcdd37cd145e50481d711e8b21a6d23d9c6b25483d5b8f0790ef8e",
+          "objectType": "IdAccess",
+          "rootSource": "stored-version",
+          "seq": 170,
+          "time": "2026-09-11T14:30:34.547Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 10268,
+          "event": "storage.wakeup.queued",
+          "idHash": "c134a374c7178b73d398ce7b4f3267c887c897eadef80379285a8888d799e134",
+          "queued": true,
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "rootSource": "access-grant",
+          "seq": 171,
+          "time": "2026-09-11T14:30:34.548Z"
+        },
+        {
+          "connId": 5,
+          "count": 1,
+          "elapsedMs": 10281,
+          "event": "storage.wakeup.sent",
+          "queued": false,
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "rootSource": "new-content-notification",
+          "seq": 172,
+          "time": "2026-09-11T14:30:34.561Z"
+        },
+        {
+          "connId": 5,
+          "count": 1,
+          "elapsedMs": 10283,
+          "event": "storage.wakeup.sent",
+          "queued": false,
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "rootSource": "new-content-notification",
+          "seq": 173,
+          "time": "2026-09-11T14:30:34.563Z"
+        },
+        {
+          "connId": 5,
+          "direction": "remote-to-local",
+          "elapsedMs": 10319,
+          "event": "importer.object.saved",
+          "hash": "d1d72c90536118aa8740aa398ad3b48d33b18d3f812470358e37e647b7d5079f",
+          "kind": "object",
+          "objectType": "VersionNodeEdge",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 174,
+          "time": "2026-09-11T14:30:34.599Z"
+        },
+        {
+          "connId": 5,
+          "direction": "remote-to-local",
+          "elapsedMs": 10334,
+          "event": "importer.object.saved",
+          "hash": "e188da1f374092293e04fb85cbb4f112192c9b8efbf4ac1f38e3c429d654d93b",
+          "kind": "object",
+          "objectType": "VersionNodeChange",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 175,
+          "time": "2026-09-11T14:30:34.614Z"
+        },
+        {
+          "elapsedMs": 10344,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "633ecd4bf85163c1d6a96fd77f3b803775b186d9f3ad32687a40f72456f9da51",
+          "idHash": "edfb8769cf7ad9c0152fe7001af92f5e7108db6a01fb822d138306768fe95329",
+          "objectType": "Profile",
+          "rootSource": "stored-version",
+          "seq": 176,
+          "time": "2026-09-11T14:30:34.624Z"
+        },
+        {
+          "elapsedMs": 10422,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "008256e227c18eb160c68a120cc68bad9428ad86398272ebb74975168320f80d",
+          "idHash": "1eaacb4c173d043ad05ba7bc975ae6e5036e10fa52bbdf5e52ede25d6aafcf78",
+          "objectType": "Someone",
+          "rootSource": "stored-version",
+          "seq": 177,
+          "time": "2026-09-11T14:30:34.702Z"
+        },
+        {
+          "elapsedMs": 10427,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "802c5f6f50c216811e60ce44f5ddc4b6a0605fa460ba7d3a62a798383d2baddc",
+          "idHash": "24de01fa8037c644dc249e5adab56d09449a9e812ed1473401f09cffae6bbb2a",
+          "objectType": "Access",
+          "rootSource": "stored-version",
+          "seq": 178,
+          "time": "2026-09-11T14:30:34.707Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 10428,
+          "event": "importer.recipient-access.projected",
+          "hash": "edfb8769cf7ad9c0152fe7001af92f5e7108db6a01fb822d138306768fe95329",
+          "objectType": "Profile",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 179,
+          "time": "2026-09-11T14:30:34.708Z"
+        },
+        {
+          "elapsedMs": 10481,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "6bbb263f77c57d849e078d991ed51ffa9c8613cd26fd113293614a8e7f85acfe",
+          "idHash": "8a5d94827a6f1f6ea5615c3301a0ca054461ea4af57c64a866e12a103fb5de4e",
+          "objectType": "Leute",
+          "rootSource": "stored-version",
+          "seq": 180,
+          "time": "2026-09-11T14:30:34.760Z"
+        },
+        {
+          "connId": 5,
+          "direction": "remote-to-local",
+          "elapsedMs": 10496,
+          "event": "importer.object.saved",
+          "hash": "edec3e399a31e1695fabf62238c956968f0bacbbbb44bcb837f7b003eca1e060",
+          "kind": "object",
+          "objectType": "VersionNodeEdge",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 181,
+          "time": "2026-09-11T14:30:34.776Z"
+        },
+        {
+          "elapsedMs": 10543,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "3f3714572bc3f7f9a7a5ad757c9e8c9387a8f27c045eaba364e81b5e5725fc23",
+          "idHash": "8925d1ea3ba15adfb3d616ef034ef81212d9759bf7e150525025926130ab8956",
+          "objectType": "Profile",
+          "rootSource": "stored-version",
+          "seq": 182,
+          "time": "2026-09-11T14:30:34.823Z"
+        },
+        {
+          "elapsedMs": 10584,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "e33125530cef1394450802cd76eddb86c14e97d8817678e1308027f5c1d1d940",
+          "idHash": "3ce2e4d00ee28b757b9fd98d193ae9606c274ef4ec5ba002ad7d675d618906ea",
+          "objectType": "Access",
+          "rootSource": "stored-version",
+          "seq": 183,
+          "time": "2026-09-11T14:30:34.864Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 10585,
+          "event": "importer.recipient-access.projected",
+          "hash": "8925d1ea3ba15adfb3d616ef034ef81212d9759bf7e150525025926130ab8956",
+          "objectType": "Profile",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 184,
+          "time": "2026-09-11T14:30:34.865Z"
+        },
+        {
+          "connId": 5,
+          "direction": "remote-to-local",
+          "elapsedMs": 10630,
+          "event": "importer.object.saved",
+          "hash": "ff578adbd63454c52c07aa1bf359eed956c7741f9cf7461eb8c295c987559c80",
+          "kind": "object",
+          "objectType": "VersionNodeEdge",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 185,
+          "time": "2026-09-11T14:30:34.910Z"
+        },
+        {
+          "connId": 5,
+          "direction": "remote-to-local",
+          "elapsedMs": 10643,
+          "event": "importer.object.saved",
+          "hash": "782a5d8f8f74a20fb3d56a43f962b894dcd31915b4f29ffc41743518ef44a7ba",
+          "kind": "object",
+          "objectType": "VersionNodeChange",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 186,
+          "time": "2026-09-11T14:30:34.923Z"
+        },
+        {
+          "elapsedMs": 10681,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "701c75d6e26d6caa3db49a9bb3fba30dc98db48b0ae51becfb80fc6b58611cf8",
+          "idHash": "9cece299ff80d3132c279f3d092eb15c9036367cc74ed56c3d999a9f516dd4af",
+          "objectType": "Profile",
+          "rootSource": "stored-version",
+          "seq": 187,
+          "time": "2026-09-11T14:30:34.961Z"
+        },
+        {
+          "elapsedMs": 10853,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "e43a84cbbdd08b7942b808be4ef3ef454db78a0e51101ef0b6e73962c29b19fb",
+          "idHash": "104fe5ee47c6a4dd90658b0de58b55f272545266213f67822b36e3327820cdfe",
+          "objectType": "Access",
+          "rootSource": "stored-version",
+          "seq": 188,
+          "time": "2026-09-11T14:30:35.133Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 10853,
+          "event": "importer.recipient-access.projected",
+          "hash": "9cece299ff80d3132c279f3d092eb15c9036367cc74ed56c3d999a9f516dd4af",
+          "objectType": "Profile",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 189,
+          "time": "2026-09-11T14:30:35.133Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 10854,
+          "event": "importer.recipient-access.projected",
+          "hash": "c134a374c7178b73d398ce7b4f3267c887c897eadef80379285a8888d799e134",
+          "objectType": "Topic",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 190,
+          "time": "2026-09-11T14:30:35.134Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 10855,
+          "event": "importer.recipient-access.projected",
+          "hash": "edfb8769cf7ad9c0152fe7001af92f5e7108db6a01fb822d138306768fe95329",
+          "objectType": "Profile",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 191,
+          "time": "2026-09-11T14:30:35.135Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 10856,
+          "event": "importer.recipient-access.projected",
+          "hash": "8925d1ea3ba15adfb3d616ef034ef81212d9759bf7e150525025926130ab8956",
+          "objectType": "Profile",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 192,
+          "time": "2026-09-11T14:30:35.136Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 10856,
+          "event": "importer.recipient-access.projected",
+          "hash": "9cece299ff80d3132c279f3d092eb15c9036367cc74ed56c3d999a9f516dd4af",
+          "objectType": "Profile",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 193,
+          "time": "2026-09-11T14:30:35.136Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 10857,
+          "event": "importer.recipient-access.projected",
+          "hash": "9cece299ff80d3132c279f3d092eb15c9036367cc74ed56c3d999a9f516dd4af",
+          "objectType": "Profile",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 194,
+          "time": "2026-09-11T14:30:35.137Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 10858,
+          "event": "importer.recipient-access.projected",
+          "hash": "c134a374c7178b73d398ce7b4f3267c887c897eadef80379285a8888d799e134",
+          "objectType": "Topic",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 195,
+          "time": "2026-09-11T14:30:35.138Z"
+        },
+        {
+          "connId": 5,
+          "direction": "remote-to-local",
+          "elapsedMs": 10877,
+          "event": "importer.object.saved",
+          "hash": "5b4a4b5bcae59249dd902f7bd85d8d73ebc118e7e68885969eca27aa02ebfb3d",
+          "kind": "object",
+          "objectType": "VersionNodeEdge",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 196,
+          "time": "2026-09-11T14:30:35.157Z"
+        },
+        {
+          "connId": 5,
+          "direction": "remote-to-local",
+          "elapsedMs": 10888,
+          "event": "importer.object.saved",
+          "hash": "e1b2e0fc95364a974a82d5cd074d1e038ee471a85b94d7f263f426c7489e7820",
+          "kind": "object",
+          "objectType": "VersionNodeMerge",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 197,
+          "time": "2026-09-11T14:30:35.168Z"
+        },
+        {
+          "elapsedMs": 10902,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "701c75d6e26d6caa3db49a9bb3fba30dc98db48b0ae51becfb80fc6b58611cf8",
+          "idHash": "9cece299ff80d3132c279f3d092eb15c9036367cc74ed56c3d999a9f516dd4af",
+          "objectType": "Profile",
+          "rootSource": "stored-version",
+          "seq": 198,
+          "time": "2026-09-11T14:30:35.182Z"
+        },
+        {
+          "elapsedMs": 11072,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "b8e0a350c5623ee8b4ca358498c0f9dbb61e949a65260e97494fff82e8022ff8",
+          "idHash": "690305090c15b3a1317cfcc8bb5243630215620a44cdc427ffd08ed956251c36",
+          "objectType": "Access",
+          "rootSource": "stored-version",
+          "seq": 199,
+          "time": "2026-09-11T14:30:35.352Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 11073,
+          "event": "importer.recipient-access.projected",
+          "hash": "9cece299ff80d3132c279f3d092eb15c9036367cc74ed56c3d999a9f516dd4af",
+          "objectType": "Profile",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 200,
+          "time": "2026-09-11T14:30:35.353Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 11079,
+          "event": "importer.recipient-access.projected",
+          "hash": "c134a374c7178b73d398ce7b4f3267c887c897eadef80379285a8888d799e134",
+          "objectType": "Topic",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 201,
+          "time": "2026-09-11T14:30:35.359Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 11080,
+          "event": "importer.recipient-access.projected",
+          "hash": "9cece299ff80d3132c279f3d092eb15c9036367cc74ed56c3d999a9f516dd4af",
+          "objectType": "Profile",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 202,
+          "time": "2026-09-11T14:30:35.360Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 11081,
+          "event": "importer.recipient-access.projected",
+          "hash": "c134a374c7178b73d398ce7b4f3267c887c897eadef80379285a8888d799e134",
+          "objectType": "Topic",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 203,
+          "time": "2026-09-11T14:30:35.361Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 11134,
+          "event": "importer.recipient-access.projected",
+          "hash": "bbe116c6127a91735511f14980568678b331e8cb5de5fceab12ff299eba6ae0d",
+          "objectType": "HashGroup",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 204,
+          "time": "2026-09-11T14:30:35.414Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 11136,
+          "event": "importer.recipient-access.projected",
+          "hash": "9cece299ff80d3132c279f3d092eb15c9036367cc74ed56c3d999a9f516dd4af",
+          "objectType": "Profile",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 205,
+          "time": "2026-09-11T14:30:35.416Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 11137,
+          "event": "importer.recipient-access.projected",
+          "hash": "c134a374c7178b73d398ce7b4f3267c887c897eadef80379285a8888d799e134",
+          "objectType": "Topic",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 206,
+          "time": "2026-09-11T14:30:35.417Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 11138,
+          "event": "importer.recipient-access.projected",
+          "hash": "edfb8769cf7ad9c0152fe7001af92f5e7108db6a01fb822d138306768fe95329",
+          "objectType": "Profile",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 207,
+          "time": "2026-09-11T14:30:35.418Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 11139,
+          "event": "importer.recipient-access.projected",
+          "hash": "8925d1ea3ba15adfb3d616ef034ef81212d9759bf7e150525025926130ab8956",
+          "objectType": "Profile",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 208,
+          "time": "2026-09-11T14:30:35.419Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 11145,
+          "event": "importer.recipient-access.projected",
+          "hash": "c134a374c7178b73d398ce7b4f3267c887c897eadef80379285a8888d799e134",
+          "objectType": "Topic",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 209,
+          "time": "2026-09-11T14:30:35.425Z"
+        },
+        {
+          "elapsedMs": 11166,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "3f3714572bc3f7f9a7a5ad757c9e8c9387a8f27c045eaba364e81b5e5725fc23",
+          "idHash": "8925d1ea3ba15adfb3d616ef034ef81212d9759bf7e150525025926130ab8956",
+          "objectType": "Profile",
+          "rootSource": "stored-version",
+          "seq": 210,
+          "time": "2026-09-11T14:30:35.446Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 11168,
+          "event": "importer.recipient-access.projected",
+          "hash": "8925d1ea3ba15adfb3d616ef034ef81212d9759bf7e150525025926130ab8956",
+          "objectType": "Profile",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 211,
+          "time": "2026-09-11T14:30:35.448Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 11181,
+          "event": "importer.recipient-access.projected",
+          "hash": "edfb8769cf7ad9c0152fe7001af92f5e7108db6a01fb822d138306768fe95329",
+          "objectType": "Profile",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 212,
+          "time": "2026-09-11T14:30:35.461Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 11187,
+          "event": "importer.recipient-access.projected",
+          "hash": "9cece299ff80d3132c279f3d092eb15c9036367cc74ed56c3d999a9f516dd4af",
+          "objectType": "Profile",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 213,
+          "time": "2026-09-11T14:30:35.467Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 11189,
+          "event": "importer.recipient-access.projected",
+          "hash": "9cece299ff80d3132c279f3d092eb15c9036367cc74ed56c3d999a9f516dd4af",
+          "objectType": "Profile",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 214,
+          "time": "2026-09-11T14:30:35.469Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 11191,
+          "event": "importer.recipient-access.projected",
+          "hash": "c134a374c7178b73d398ce7b4f3267c887c897eadef80379285a8888d799e134",
+          "objectType": "Topic",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 215,
+          "time": "2026-09-11T14:30:35.471Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 11192,
+          "event": "importer.recipient-access.projected",
+          "hash": "edfb8769cf7ad9c0152fe7001af92f5e7108db6a01fb822d138306768fe95329",
+          "objectType": "Profile",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 216,
+          "time": "2026-09-11T14:30:35.472Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 11199,
+          "event": "importer.recipient-access.projected",
+          "hash": "8925d1ea3ba15adfb3d616ef034ef81212d9759bf7e150525025926130ab8956",
+          "objectType": "Profile",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 217,
+          "time": "2026-09-11T14:30:35.479Z"
+        },
+        {
+          "connId": 5,
+          "direction": "remote-to-local",
+          "elapsedMs": 11294,
+          "event": "importer.object.saved",
+          "hash": "c09ef3b226ef8906f5ff96ec9a9fc66dd336267ec359d49f4e830a4e5164d6fc",
+          "kind": "id",
+          "objectType": "FotosShareCertificateChain",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 218,
+          "time": "2026-09-11T14:30:35.574Z"
+        },
+        {
+          "elapsedMs": 11351,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "9ecc8be136a757aaa7c30eac03aa139f4a031f8633a1b8ae0f25cfb0757195d0",
+          "idHash": "ff509bf95d5d9fbda564c021578d90dae35e89c6bb776e3f2dc5a070cc9eead8",
+          "objectType": "IdAccess",
+          "rootSource": "stored-version",
+          "seq": 219,
+          "time": "2026-09-11T14:30:35.631Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 11351,
+          "event": "importer.recipient-access.projected",
+          "hash": "c09ef3b226ef8906f5ff96ec9a9fc66dd336267ec359d49f4e830a4e5164d6fc",
+          "objectType": "FotosShareCertificateChain",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 220,
+          "time": "2026-09-11T14:30:35.631Z"
+        },
+        {
+          "connId": 5,
+          "direction": "remote-to-local",
+          "elapsedMs": 11400,
+          "event": "importer.object.saved",
+          "hash": "75306988d76f57b7ee9b21406c2a5a2a533efa690c9b2e0585e1ed92dbba4936",
+          "kind": "object",
+          "objectType": "FotosShareCertificate",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 221,
+          "time": "2026-09-11T14:30:35.680Z"
+        },
+        {
+          "connId": 5,
+          "direction": "remote-to-local",
+          "elapsedMs": 11400,
+          "event": "importer.object.saved",
+          "hash": "75306988d76f57b7ee9b21406c2a5a2a533efa690c9b2e0585e1ed92dbba4936",
+          "kind": "object",
+          "objectType": "FotosShareCertificate",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 222,
+          "time": "2026-09-11T14:30:35.680Z"
+        },
+        {
+          "connId": 5,
+          "direction": "remote-to-local",
+          "elapsedMs": 11427,
+          "event": "importer.object.saved",
+          "hash": "c8bfb5e50845a6a48e245cd7155423d013692e7842f75a831f7759400814c2dd",
+          "kind": "object",
+          "objectType": "FotosShareCertificateChain",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 223,
+          "time": "2026-09-11T14:30:35.707Z"
+        },
+        {
+          "connId": 5,
+          "direction": "remote-to-local",
+          "elapsedMs": 11444,
+          "event": "importer.object.saved",
+          "hash": "f2e1a7b95811472c05e769a6cc0739279ff37157cee157608e91eddcc55cc080",
+          "kind": "object",
+          "objectType": "VersionNodeEdge",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 224,
+          "time": "2026-09-11T14:30:35.724Z"
+        },
+        {
+          "elapsedMs": 11456,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "c8bfb5e50845a6a48e245cd7155423d013692e7842f75a831f7759400814c2dd",
+          "idHash": "c09ef3b226ef8906f5ff96ec9a9fc66dd336267ec359d49f4e830a4e5164d6fc",
+          "objectType": "FotosShareCertificateChain",
+          "rootSource": "stored-version",
+          "seq": 225,
+          "time": "2026-09-11T14:30:35.736Z"
+        },
+        {
+          "elapsedMs": 11968,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "b9bb1c05ce0f7415a930cde77e27b349b29dff27cd0b9d004ac723df4b26f288",
+          "idHash": "c770d07f58df9fd2910c55918a917a30f92d8ca26453688a717fe6c1931808f1",
+          "objectType": "Access",
+          "rootSource": "stored-version",
+          "seq": 226,
+          "time": "2026-09-11T14:30:36.248Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 11969,
+          "event": "importer.recipient-access.projected",
+          "hash": "c09ef3b226ef8906f5ff96ec9a9fc66dd336267ec359d49f4e830a4e5164d6fc",
+          "objectType": "FotosShareCertificateChain",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 227,
+          "time": "2026-09-11T14:30:36.249Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 11970,
+          "event": "importer.recipient-access.projected",
+          "hash": "c09ef3b226ef8906f5ff96ec9a9fc66dd336267ec359d49f4e830a4e5164d6fc",
+          "objectType": "FotosShareCertificateChain",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 228,
+          "time": "2026-09-11T14:30:36.250Z"
+        },
+        {
+          "connId": 5,
+          "direction": "remote-to-local",
+          "elapsedMs": 11987,
+          "event": "importer.object.saved",
+          "hash": "3704c357b4f42e594e3cfad137ae54f518b5b79a23eac53be3113171db6dcfc8",
+          "kind": "id",
+          "objectType": "FotosShareManifest",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 229,
+          "time": "2026-09-11T14:30:36.267Z"
+        },
+        {
+          "elapsedMs": 12031,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "bc46e28fe9157d704e432829c9a0deb17c8681af29b741a9418156a056e43762",
+          "idHash": "42e481b7495d9563a34e205a88e3354e78a3fc4b0b626dd3fb7ce93c69bbba74",
+          "objectType": "IdAccess",
+          "rootSource": "stored-version",
+          "seq": 230,
+          "time": "2026-09-11T14:30:36.311Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 12031,
+          "event": "importer.recipient-access.projected",
+          "hash": "3704c357b4f42e594e3cfad137ae54f518b5b79a23eac53be3113171db6dcfc8",
+          "objectType": "FotosShareManifest",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 231,
+          "time": "2026-09-11T14:30:36.311Z"
+        },
+        {
+          "connId": 5,
+          "direction": "remote-to-local",
+          "elapsedMs": 12196,
+          "event": "importer.object.saved",
+          "hash": "d97ed198bcad4e1a41d89dcbd2cb0c710d552cb730ac32df9e2a477845369bc4",
+          "kind": "object",
+          "objectType": "FotosShareManifest",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 232,
+          "time": "2026-09-11T14:30:36.476Z"
+        },
+        {
+          "connId": 5,
+          "direction": "remote-to-local",
+          "elapsedMs": 12253,
+          "event": "importer.object.saved",
+          "hash": "507dd4a9fcdb5f954a8bbdbcc97b7d9182b04d260f9835f30c61c71f7ceb4b5d",
+          "kind": "object",
+          "objectType": "VersionNodeEdge",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 233,
+          "time": "2026-09-11T14:30:36.533Z"
+        },
+        {
+          "elapsedMs": 12266,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "d97ed198bcad4e1a41d89dcbd2cb0c710d552cb730ac32df9e2a477845369bc4",
+          "idHash": "3704c357b4f42e594e3cfad137ae54f518b5b79a23eac53be3113171db6dcfc8",
+          "objectType": "FotosShareManifest",
+          "rootSource": "stored-version",
+          "seq": 234,
+          "time": "2026-09-11T14:30:36.546Z"
+        },
+        {
+          "elapsedMs": 12786,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "54f126614366d459214518459c989025d39f7181df17216d2d54bdd1f1cf5e85",
+          "idHash": "35e950d7bce3fb29996565d4329cceb8b5ace84cd370ad2cd73559f39919f056",
+          "objectType": "Access",
+          "rootSource": "stored-version",
+          "seq": 235,
+          "time": "2026-09-11T14:30:37.066Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 12787,
+          "event": "importer.recipient-access.projected",
+          "hash": "3704c357b4f42e594e3cfad137ae54f518b5b79a23eac53be3113171db6dcfc8",
+          "objectType": "FotosShareManifest",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 236,
+          "time": "2026-09-11T14:30:37.067Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 12788,
+          "event": "importer.recipient-access.projected",
+          "hash": "3704c357b4f42e594e3cfad137ae54f518b5b79a23eac53be3113171db6dcfc8",
+          "objectType": "FotosShareManifest",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 237,
+          "time": "2026-09-11T14:30:37.068Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 12851,
+          "event": "importer.recipient-access.projected",
+          "hash": "3704c357b4f42e594e3cfad137ae54f518b5b79a23eac53be3113171db6dcfc8",
+          "objectType": "FotosShareManifest",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 238,
+          "time": "2026-09-11T14:30:37.131Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 14863,
+          "event": "importer.recipient-access.projected",
+          "hash": "3704c357b4f42e594e3cfad137ae54f518b5b79a23eac53be3113171db6dcfc8",
+          "objectType": "FotosShareManifest",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 239,
+          "time": "2026-09-11T14:30:39.143Z"
+        },
+        {
+          "connId": 5,
+          "direction": "remote-to-local",
+          "elapsedMs": 15712,
+          "event": "importer.object.saved",
+          "hash": "8fa37f99281a5a7cd3b8df21d46137e01422c7a0d71e4ac455bbf234b9c34504",
+          "kind": "object",
+          "objectType": "FotosShareManifest",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 240,
+          "time": "2026-09-11T14:30:39.992Z"
+        },
+        {
+          "connId": 5,
+          "direction": "remote-to-local",
+          "elapsedMs": 15902,
+          "event": "importer.object.saved",
+          "hash": "fd4aa6983819dce02848f02b36cd9227a904779408644f182d445a2a6ccdcfc1",
+          "kind": "object",
+          "objectType": "VersionNodeChange",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 241,
+          "time": "2026-09-11T14:30:40.182Z"
+        },
+        {
+          "elapsedMs": 16156,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "8fa37f99281a5a7cd3b8df21d46137e01422c7a0d71e4ac455bbf234b9c34504",
+          "idHash": "3704c357b4f42e594e3cfad137ae54f518b5b79a23eac53be3113171db6dcfc8",
+          "objectType": "FotosShareManifest",
+          "rootSource": "stored-version",
+          "seq": 242,
+          "time": "2026-09-11T14:30:40.436Z"
+        },
+        {
+          "elapsedMs": 16723,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "de258a512635527ceb7e1593f0e81b91b59059b3a55e70ed958a1f648402df46",
+          "idHash": "76bd8eaaad6b5f17739034aafef4fed5088bc45d6b314be4c5fc9e2001e75128",
+          "objectType": "Access",
+          "rootSource": "stored-version",
+          "seq": 243,
+          "time": "2026-09-11T14:30:41.002Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 16723,
+          "event": "importer.recipient-access.projected",
+          "hash": "3704c357b4f42e594e3cfad137ae54f518b5b79a23eac53be3113171db6dcfc8",
+          "objectType": "FotosShareManifest",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 244,
+          "time": "2026-09-11T14:30:41.003Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 16724,
+          "event": "importer.recipient-access.projected",
+          "hash": "3704c357b4f42e594e3cfad137ae54f518b5b79a23eac53be3113171db6dcfc8",
+          "objectType": "FotosShareManifest",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 245,
+          "time": "2026-09-11T14:30:41.004Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 16787,
+          "event": "importer.recipient-access.projected",
+          "hash": "3704c357b4f42e594e3cfad137ae54f518b5b79a23eac53be3113171db6dcfc8",
+          "objectType": "FotosShareManifest",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 246,
+          "time": "2026-09-11T14:30:41.067Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 16921,
+          "event": "importer.recipient-access.projected",
+          "hash": "3704c357b4f42e594e3cfad137ae54f518b5b79a23eac53be3113171db6dcfc8",
+          "objectType": "FotosShareManifest",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 247,
+          "time": "2026-09-11T14:30:41.201Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 16984,
+          "event": "importer.recipient-access.projected",
+          "hash": "3704c357b4f42e594e3cfad137ae54f518b5b79a23eac53be3113171db6dcfc8",
+          "objectType": "FotosShareManifest",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 248,
+          "time": "2026-09-11T14:30:41.264Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 16986,
+          "event": "importer.recipient-access.projected",
+          "hash": "3704c357b4f42e594e3cfad137ae54f518b5b79a23eac53be3113171db6dcfc8",
+          "objectType": "FotosShareManifest",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 249,
+          "time": "2026-09-11T14:30:41.266Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 16988,
+          "event": "importer.recipient-access.projected",
+          "hash": "3704c357b4f42e594e3cfad137ae54f518b5b79a23eac53be3113171db6dcfc8",
+          "objectType": "FotosShareManifest",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 250,
+          "time": "2026-09-11T14:30:41.268Z"
+        },
+        {
+          "elapsedMs": 19327,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "09814a80e7dca94d48f3fafc1d8de28a0704d8715c3a6b7af875be86fb1713a2",
+          "idHash": "be00ff45f35830d91dc1cba3bbefcae9728b906d9783f00d45b9ef9f29d9562a",
+          "objectType": "Group",
+          "rootSource": "stored-version",
+          "seq": 251,
+          "time": "2026-09-11T14:30:43.607Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 20325,
+          "event": "importer.recipient-access.projected",
+          "hash": "3704c357b4f42e594e3cfad137ae54f518b5b79a23eac53be3113171db6dcfc8",
+          "objectType": "FotosShareManifest",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 252,
+          "time": "2026-09-11T14:30:44.605Z"
+        },
+        {
+          "connId": 5,
+          "direction": "remote-to-local",
+          "elapsedMs": 20648,
+          "event": "importer.object.saved",
+          "hash": "39b531e76a0d2d0dffe1306e67b4f583732f47ad1a0c50cbcfd43d604d7dbf75",
+          "kind": "object",
+          "objectType": "FotosShareManifest",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 253,
+          "time": "2026-09-11T14:30:44.928Z"
+        },
+        {
+          "connId": 5,
+          "direction": "remote-to-local",
+          "elapsedMs": 20838,
+          "event": "importer.object.saved",
+          "hash": "33af0bb869873c6b5c76f5ac00383bc564574f5ebb7bd290b4ec88db8195676d",
+          "kind": "object",
+          "objectType": "VersionNodeChange",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 254,
+          "time": "2026-09-11T14:30:45.118Z"
+        },
+        {
+          "elapsedMs": 21096,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "39b531e76a0d2d0dffe1306e67b4f583732f47ad1a0c50cbcfd43d604d7dbf75",
+          "idHash": "3704c357b4f42e594e3cfad137ae54f518b5b79a23eac53be3113171db6dcfc8",
+          "objectType": "FotosShareManifest",
+          "rootSource": "stored-version",
+          "seq": 255,
+          "time": "2026-09-11T14:30:45.376Z"
+        },
+        {
+          "elapsedMs": 21664,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "c808a730d0eaa1d773ed97fd834500a050806b248bba68afff73860a55ac6d01",
+          "idHash": "d526f14fcea90f01fa728e64c2c73fef5706b0d55af50f9314a1326654146625",
+          "objectType": "Access",
+          "rootSource": "stored-version",
+          "seq": 256,
+          "time": "2026-09-11T14:30:45.944Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 21664,
+          "event": "importer.recipient-access.projected",
+          "hash": "3704c357b4f42e594e3cfad137ae54f518b5b79a23eac53be3113171db6dcfc8",
+          "objectType": "FotosShareManifest",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 257,
+          "time": "2026-09-11T14:30:45.944Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 21666,
+          "event": "importer.recipient-access.projected",
+          "hash": "3704c357b4f42e594e3cfad137ae54f518b5b79a23eac53be3113171db6dcfc8",
+          "objectType": "FotosShareManifest",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 258,
+          "time": "2026-09-11T14:30:45.946Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 21728,
+          "event": "importer.recipient-access.projected",
+          "hash": "3704c357b4f42e594e3cfad137ae54f518b5b79a23eac53be3113171db6dcfc8",
+          "objectType": "FotosShareManifest",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 259,
+          "time": "2026-09-11T14:30:46.008Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 21860,
+          "event": "importer.recipient-access.projected",
+          "hash": "3704c357b4f42e594e3cfad137ae54f518b5b79a23eac53be3113171db6dcfc8",
+          "objectType": "FotosShareManifest",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 260,
+          "time": "2026-09-11T14:30:46.140Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 21861,
+          "event": "importer.recipient-access.projected",
+          "hash": "3704c357b4f42e594e3cfad137ae54f518b5b79a23eac53be3113171db6dcfc8",
+          "objectType": "FotosShareManifest",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 261,
+          "time": "2026-09-11T14:30:46.141Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 21923,
+          "event": "importer.recipient-access.projected",
+          "hash": "3704c357b4f42e594e3cfad137ae54f518b5b79a23eac53be3113171db6dcfc8",
+          "objectType": "FotosShareManifest",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 262,
+          "time": "2026-09-11T14:30:46.203Z"
+        },
+        {
+          "connId": 5,
+          "elapsedMs": 21925,
+          "event": "importer.recipient-access.projected",
+          "hash": "3704c357b4f42e594e3cfad137ae54f518b5b79a23eac53be3113171db6dcfc8",
+          "objectType": "FotosShareManifest",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 263,
+          "time": "2026-09-11T14:30:46.205Z"
+        },
+        {
+          "elapsedMs": 24186,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "02133ecbb621b7bd46acf6442bf80710f0ccaeab07a6d7adcdb1e40c9e7c6e43",
+          "idHash": "a71545bfb2e2cf31356b6e4f577db09dc1ff000e348fcebd51d523ef25746d15",
+          "objectType": "Chum",
+          "rootSource": "stored-version",
+          "seq": 264,
+          "time": "2026-09-11T14:30:48.466Z"
+        },
+        {
+          "connId": 8,
+          "elapsedMs": 27199,
+          "event": "importer.protocol.ready",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 265,
+          "time": "2026-09-11T14:30:51.479Z"
+        },
+        {
+          "connId": 8,
+          "durationMs": 0,
+          "elapsedMs": 27199,
+          "event": "importer.protocol.ready.done",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 266,
+          "time": "2026-09-11T14:30:51.479Z"
+        },
+        {
+          "connId": 8,
+          "elapsedMs": 27269,
+          "event": "importer.recipient-access.projected",
+          "hash": "c09ef3b226ef8906f5ff96ec9a9fc66dd336267ec359d49f4e830a4e5164d6fc",
+          "objectType": "FotosShareCertificateChain",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 267,
+          "time": "2026-09-11T14:30:51.549Z"
+        },
+        {
+          "connId": 8,
+          "elapsedMs": 27349,
+          "event": "exporter.roots.sent",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "rootCount": 3,
+          "rootTypes": {
+            "HashGroup": 1,
+            "Topic": 2
+          },
+          "seq": 268,
+          "time": "2026-09-11T14:30:51.629Z"
+        },
+        {
+          "connId": 8,
+          "elapsedMs": 27415,
+          "event": "importer.recipient-access.projected",
+          "hash": "c09ef3b226ef8906f5ff96ec9a9fc66dd336267ec359d49f4e830a4e5164d6fc",
+          "objectType": "FotosShareCertificateChain",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 269,
+          "time": "2026-09-11T14:30:51.695Z"
+        },
+        {
+          "connId": 8,
+          "elapsedMs": 27478,
+          "event": "importer.recipient-access.projected",
+          "hash": "c09ef3b226ef8906f5ff96ec9a9fc66dd336267ec359d49f4e830a4e5164d6fc",
+          "objectType": "FotosShareCertificateChain",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 270,
+          "time": "2026-09-11T14:30:51.758Z"
+        },
+        {
+          "connId": 8,
+          "elapsedMs": 27612,
+          "event": "importer.recipient-access.projected",
+          "hash": "bbe116c6127a91735511f14980568678b331e8cb5de5fceab12ff299eba6ae0d",
+          "objectType": "HashGroup",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 271,
+          "time": "2026-09-11T14:30:51.892Z"
+        },
+        {
+          "connId": 8,
+          "elapsedMs": 27613,
+          "event": "importer.recipient-access.projected",
+          "hash": "d97ed198bcad4e1a41d89dcbd2cb0c710d552cb730ac32df9e2a477845369bc4",
+          "objectType": "FotosShareManifest",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 272,
+          "time": "2026-09-11T14:30:51.893Z"
+        },
+        {
+          "connId": 8,
+          "elapsedMs": 27615,
+          "event": "importer.recipient-access.projected",
+          "hash": "8fa37f99281a5a7cd3b8df21d46137e01422c7a0d71e4ac455bbf234b9c34504",
+          "objectType": "FotosShareManifest",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 273,
+          "time": "2026-09-11T14:30:51.895Z"
+        },
+        {
+          "connId": 8,
+          "elapsedMs": 27677,
+          "event": "importer.recipient-access.projected",
+          "hash": "39b531e76a0d2d0dffe1306e67b4f583732f47ad1a0c50cbcfd43d604d7dbf75",
+          "objectType": "FotosShareManifest",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 274,
+          "time": "2026-09-11T14:30:51.957Z"
+        },
+        {
+          "connId": 8,
+          "elapsedMs": 27679,
+          "event": "importer.recipient-access.projected",
+          "hash": "edfb8769cf7ad9c0152fe7001af92f5e7108db6a01fb822d138306768fe95329",
+          "objectType": "Profile",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 275,
+          "time": "2026-09-11T14:30:51.959Z"
+        },
+        {
+          "connId": 8,
+          "elapsedMs": 27680,
+          "event": "importer.recipient-access.projected",
+          "hash": "9cece299ff80d3132c279f3d092eb15c9036367cc74ed56c3d999a9f516dd4af",
+          "objectType": "Profile",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 276,
+          "time": "2026-09-11T14:30:51.960Z"
+        },
+        {
+          "connId": 8,
+          "elapsedMs": 27742,
+          "event": "importer.recipient-access.projected",
+          "hash": "c134a374c7178b73d398ce7b4f3267c887c897eadef80379285a8888d799e134",
+          "objectType": "Topic",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 277,
+          "time": "2026-09-11T14:30:52.022Z"
+        },
+        {
+          "connId": 8,
+          "elapsedMs": 27805,
+          "event": "importer.recipient-access.projected",
+          "hash": "c09ef3b226ef8906f5ff96ec9a9fc66dd336267ec359d49f4e830a4e5164d6fc",
+          "objectType": "FotosShareCertificateChain",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 278,
+          "time": "2026-09-11T14:30:52.085Z"
+        },
+        {
+          "connId": 8,
+          "elapsedMs": 27806,
+          "event": "importer.recipient-access.projected",
+          "hash": "3704c357b4f42e594e3cfad137ae54f518b5b79a23eac53be3113171db6dcfc8",
+          "objectType": "FotosShareManifest",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 279,
+          "time": "2026-09-11T14:30:52.086Z"
+        },
+        {
+          "connId": 8,
+          "elapsedMs": 27868,
+          "event": "importer.recipient-access.projected",
+          "hash": "8925d1ea3ba15adfb3d616ef034ef81212d9759bf7e150525025926130ab8956",
+          "objectType": "Profile",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 280,
+          "time": "2026-09-11T14:30:52.148Z"
+        },
+        {
+          "connId": 8,
+          "elapsedMs": 28056,
+          "event": "importer.recipient-access.projected",
+          "hash": "c134a374c7178b73d398ce7b4f3267c887c897eadef80379285a8888d799e134",
+          "objectType": "Topic",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 281,
+          "time": "2026-09-11T14:30:52.336Z"
+        },
+        {
+          "connId": 8,
+          "elapsedMs": 28063,
+          "event": "importer.recipient-access.projected",
+          "hash": "c09ef3b226ef8906f5ff96ec9a9fc66dd336267ec359d49f4e830a4e5164d6fc",
+          "objectType": "FotosShareCertificateChain",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 282,
+          "time": "2026-09-11T14:30:52.343Z"
+        },
+        {
+          "connId": 8,
+          "elapsedMs": 28068,
+          "event": "importer.recipient-access.projected",
+          "hash": "8925d1ea3ba15adfb3d616ef034ef81212d9759bf7e150525025926130ab8956",
+          "objectType": "Profile",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 283,
+          "time": "2026-09-11T14:30:52.348Z"
+        },
+        {
+          "connId": 8,
+          "elapsedMs": 28194,
+          "event": "importer.recipient-access.projected",
+          "hash": "edfb8769cf7ad9c0152fe7001af92f5e7108db6a01fb822d138306768fe95329",
+          "objectType": "Profile",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 284,
+          "time": "2026-09-11T14:30:52.474Z"
+        },
+        {
+          "connId": 8,
+          "elapsedMs": 28323,
+          "event": "importer.recipient-access.projected",
+          "hash": "3704c357b4f42e594e3cfad137ae54f518b5b79a23eac53be3113171db6dcfc8",
+          "objectType": "FotosShareManifest",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 285,
+          "time": "2026-09-11T14:30:52.603Z"
+        },
+        {
+          "connId": 8,
+          "elapsedMs": 28514,
+          "event": "importer.recipient-access.projected",
+          "hash": "9cece299ff80d3132c279f3d092eb15c9036367cc74ed56c3d999a9f516dd4af",
+          "objectType": "Profile",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 286,
+          "time": "2026-09-11T14:30:52.794Z"
+        },
+        {
+          "connId": 8,
+          "elapsedMs": 28515,
+          "event": "importer.recipient-access.projected",
+          "hash": "edfb8769cf7ad9c0152fe7001af92f5e7108db6a01fb822d138306768fe95329",
+          "objectType": "Profile",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 287,
+          "time": "2026-09-11T14:30:52.795Z"
+        },
+        {
+          "connId": 8,
+          "elapsedMs": 28516,
+          "event": "importer.recipient-access.projected",
+          "hash": "9cece299ff80d3132c279f3d092eb15c9036367cc74ed56c3d999a9f516dd4af",
+          "objectType": "Profile",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 288,
+          "time": "2026-09-11T14:30:52.796Z"
+        },
+        {
+          "connId": 8,
+          "elapsedMs": 28518,
+          "event": "importer.recipient-access.projected",
+          "hash": "c134a374c7178b73d398ce7b4f3267c887c897eadef80379285a8888d799e134",
+          "objectType": "Topic",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 289,
+          "time": "2026-09-11T14:30:52.798Z"
+        },
+        {
+          "connId": 8,
+          "elapsedMs": 28520,
+          "event": "importer.recipient-access.projected",
+          "hash": "c09ef3b226ef8906f5ff96ec9a9fc66dd336267ec359d49f4e830a4e5164d6fc",
+          "objectType": "FotosShareCertificateChain",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 290,
+          "time": "2026-09-11T14:30:52.800Z"
+        },
+        {
+          "connId": 8,
+          "elapsedMs": 28582,
+          "event": "importer.recipient-access.projected",
+          "hash": "3704c357b4f42e594e3cfad137ae54f518b5b79a23eac53be3113171db6dcfc8",
+          "objectType": "FotosShareManifest",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 291,
+          "time": "2026-09-11T14:30:52.862Z"
+        },
+        {
+          "connId": 8,
+          "elapsedMs": 28584,
+          "event": "importer.recipient-access.projected",
+          "hash": "8925d1ea3ba15adfb3d616ef034ef81212d9759bf7e150525025926130ab8956",
+          "objectType": "Profile",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 292,
+          "time": "2026-09-11T14:30:52.864Z"
+        },
+        {
+          "connId": 8,
+          "elapsedMs": 29519,
+          "event": "importer.recipient-access.projected",
+          "hash": "c09ef3b226ef8906f5ff96ec9a9fc66dd336267ec359d49f4e830a4e5164d6fc",
+          "objectType": "FotosShareCertificateChain",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 293,
+          "time": "2026-09-11T14:30:53.799Z"
+        },
+        {
+          "connId": 8,
+          "direction": "remote-to-local",
+          "elapsedMs": 29702,
+          "event": "importer.object.saved",
+          "hash": "ef8fc08ee6cd4dfbee1739540a6edee086d6a6685de4e2dc2e82727932a2ce57",
+          "kind": "object",
+          "objectType": "FotosShareCertificate",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 294,
+          "time": "2026-09-11T14:30:53.982Z"
+        },
+        {
+          "connId": 8,
+          "direction": "remote-to-local",
+          "elapsedMs": 29702,
+          "event": "importer.object.saved",
+          "hash": "ef8fc08ee6cd4dfbee1739540a6edee086d6a6685de4e2dc2e82727932a2ce57",
+          "kind": "object",
+          "objectType": "FotosShareCertificate",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 295,
+          "time": "2026-09-11T14:30:53.982Z"
+        },
+        {
+          "connId": 8,
+          "direction": "remote-to-local",
+          "elapsedMs": 30015,
+          "event": "importer.object.saved",
+          "hash": "1cd2d4d0ea441cff1e4dc3cde9d3e742e2f759e55465a3cefc8d04d064403831",
+          "kind": "object",
+          "objectType": "FotosShareCertificateChain",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 296,
+          "time": "2026-09-11T14:30:54.295Z"
+        },
+        {
+          "connId": 8,
+          "direction": "remote-to-local",
+          "elapsedMs": 30279,
+          "event": "importer.object.saved",
+          "hash": "2d95dd19aed7f52b63eed5381a505e70fd6950c34081a2dfdc298f9b24c57445",
+          "kind": "object",
+          "objectType": "VersionNodeChange",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 297,
+          "time": "2026-09-11T14:30:54.559Z"
+        },
+        {
+          "elapsedMs": 30592,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "1cd2d4d0ea441cff1e4dc3cde9d3e742e2f759e55465a3cefc8d04d064403831",
+          "idHash": "c09ef3b226ef8906f5ff96ec9a9fc66dd336267ec359d49f4e830a4e5164d6fc",
+          "objectType": "FotosShareCertificateChain",
+          "rootSource": "stored-version",
+          "seq": 298,
+          "time": "2026-09-11T14:30:54.872Z"
+        },
+        {
+          "elapsedMs": 31409,
+          "event": "storage.wakeup.partial-inaccessible",
+          "hash": "f45122571839a6f078e2039a5316f918cd340b32e063b0d059a31755a208cb11",
+          "idHash": "85b298a373cef7efabb81aa4ee084c609df3542d9d8beb0bfec2248349ba63b1",
+          "objectType": "Access",
+          "rootSource": "stored-version",
+          "seq": 299,
+          "time": "2026-09-11T14:30:55.689Z"
+        },
+        {
+          "connId": 8,
+          "elapsedMs": 31470,
+          "event": "importer.recipient-access.projected",
+          "hash": "c09ef3b226ef8906f5ff96ec9a9fc66dd336267ec359d49f4e830a4e5164d6fc",
+          "objectType": "FotosShareCertificateChain",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 300,
+          "time": "2026-09-11T14:30:55.750Z"
+        },
+        {
+          "connId": 8,
+          "elapsedMs": 31652,
+          "event": "importer.recipient-access.projected",
+          "hash": "c09ef3b226ef8906f5ff96ec9a9fc66dd336267ec359d49f4e830a4e5164d6fc",
+          "objectType": "FotosShareCertificateChain",
+          "remotePersonId": "de35717948cadc1743a41c2c8378e817c59572be9847c6667a3cab93584d04b7",
+          "seq": 301,
+          "time": "2026-09-11T14:30:55.932Z"
+        }
+      ]
+    }
+  },
+  "slowTimings": [
+    {
+      "durationMs": 5471,
+      "kind": "step",
+      "label": "Add the second member and verify live propagation",
+      "step": 6,
+      "stepTitle": "Add the second member and verify live propagation"
+    },
+    {
+      "durationMs": 4571,
+      "kind": "wait",
+      "label": "Bob Fotos projection change",
+      "step": 6,
+      "stepTitle": "Add the second member and verify live propagation"
+    },
+    {
+      "durationMs": 4571,
+      "kind": "call",
+      "label": "Bob Fotos projection change",
+      "step": 6,
+      "stepTitle": "Add the second member and verify live propagation"
+    },
+    {
+      "durationMs": 4050,
+      "kind": "step",
+      "label": "Remove the first member and verify live propagation",
+      "step": 7,
+      "stepTitle": "Remove the first member and verify live propagation"
+    },
+    {
+      "durationMs": 3884,
+      "kind": "step",
+      "label": "Revoke Bob and remove the received collection",
+      "step": 10,
+      "stepTitle": "Revoke Bob and remove the received collection"
+    },
+    {
+      "durationMs": 3484,
+      "kind": "step",
+      "label": "Share the first photo with Bob and verify exact bytes",
+      "step": 5,
+      "stepTitle": "Share the first photo with Bob and verify exact bytes"
+    },
+    {
+      "durationMs": 3157,
+      "kind": "wait",
+      "label": "Bob Fotos projection change",
+      "step": 7,
+      "stepTitle": "Remove the first member and verify live propagation"
+    },
+    {
+      "durationMs": 3157,
+      "kind": "call",
+      "label": "Bob Fotos projection change",
+      "step": 7,
+      "stepTitle": "Remove the first member and verify live propagation"
+    },
+    {
+      "durationMs": 2857,
+      "kind": "step",
+      "label": "Register all application identities with Glue",
+      "step": 2,
+      "stepTitle": "Register all application identities with Glue"
+    },
+    {
+      "durationMs": 2805,
+      "kind": "wait",
+      "label": "Bob Fotos projection change",
+      "step": 5,
+      "stepTitle": "Share the first photo with Bob and verify exact bytes"
+    },
+    {
+      "durationMs": 2805,
+      "kind": "call",
+      "label": "Bob Fotos projection change",
+      "step": 5,
+      "stepTitle": "Share the first photo with Bob and verify exact bytes"
+    },
+    {
+      "durationMs": 2781,
+      "kind": "step",
+      "label": "Restart Filer offline and verify persisted files",
+      "step": 8,
+      "stepTitle": "Restart Filer offline and verify persisted files"
+    },
+    {
+      "durationMs": 2546,
+      "kind": "step",
+      "label": "Reconnect Filer and preserve the same projection",
+      "step": 9,
+      "stepTitle": "Reconnect Filer and preserve the same projection"
+    },
+    {
+      "durationMs": 2495,
+      "kind": "step",
+      "label": "Import two photos and collect only the first",
+      "step": 4,
+      "stepTitle": "Import two photos and collect only the first"
+    },
+    {
+      "durationMs": 2481,
+      "kind": "call",
+      "label": "alice.importPhotoFixture.qa-second.jpg",
+      "step": 4,
+      "stepTitle": "Import two photos and collect only the first"
+    },
+    {
+      "durationMs": 2111,
+      "kind": "wait",
+      "label": "Bob collection revocation",
+      "step": 10,
+      "stepTitle": "Revoke Bob and remove the received collection"
+    },
+    {
+      "durationMs": 2111,
+      "kind": "call",
+      "label": "Bob collection revocation",
+      "step": 10,
+      "stepTitle": "Revoke Bob and remove the received collection"
+    },
+    {
+      "durationMs": 1899,
+      "kind": "call",
+      "label": "bob.getFotosSnapshot.reconnected",
+      "step": 9,
+      "stepTitle": "Reconnect Filer and preserve the same projection"
+    },
+    {
+      "durationMs": 1852,
+      "kind": "call",
+      "label": "alice.registerPreparedIdentity",
+      "step": 2,
+      "stepTitle": "Register all application identities with Glue"
+    },
+    {
+      "durationMs": 1766,
+      "kind": "step",
+      "label": "Pair Bob and Charlie with Alice without sharing content",
+      "step": 3,
+      "stepTitle": "Pair Bob and Charlie with Alice without sharing content"
+    },
+    {
+      "durationMs": 1764,
+      "kind": "call",
+      "label": "bob.getFotosSnapshot.offline",
+      "step": 8,
+      "stepTitle": "Restart Filer offline and verify persisted files"
+    },
+    {
+      "durationMs": 1164,
+      "kind": "call",
+      "label": "bob.connectUsingInvitation",
+      "step": 3,
+      "stepTitle": "Pair Bob and Charlie with Alice without sharing content"
+    },
+    {
+      "durationMs": 1088,
+      "kind": "call",
+      "label": "charlie.registerPreparedIdentity",
+      "step": 2,
+      "stepTitle": "Register all application identities with Glue"
+    }
+  ],
+  "startedAt": "2026-09-11T14:30:28.212Z",
+  "status": "passed",
+  "steps": [
+    {
+      "calls": [
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "alice.fotos-qa.discovery",
+          "maxDurationMs": 10,
+          "totalDurationMs": 10,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "charlie.fotos-qa.discovery",
+          "maxDurationMs": 7,
+          "totalDurationMs": 7,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "alice.waitForAppReady",
+          "maxDurationMs": 5,
+          "totalDurationMs": 5,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "charlie.waitForAppReady",
+          "maxDurationMs": 4,
+          "totalDurationMs": 4,
+          "totalRetries": 0
+        }
+      ],
+      "durationMs": 15,
+      "finishedAt": "2026-09-11T14:30:28.227Z",
+      "number": 1,
+      "startedAt": "2026-09-11T14:30:28.212Z",
+      "status": "PASS",
+      "title": "Verify exact Fotos browser actors",
+      "waits": [
+        {
+          "attempts": 1,
+          "description": "alice.waitForAppReady",
+          "durationMs": 5,
+          "intervalMs": 0,
+          "outcome": "PASS"
+        },
+        {
+          "attempts": 1,
+          "description": "charlie.waitForAppReady",
+          "durationMs": 4,
+          "intervalMs": 0,
+          "outcome": "PASS"
+        }
+      ]
+    },
+    {
+      "calls": [
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "alice.registerPreparedIdentity",
+          "maxDurationMs": 1852,
+          "totalDurationMs": 1852,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "charlie.registerPreparedIdentity",
+          "maxDurationMs": 1088,
+          "totalDurationMs": 1088,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "alice.reloadPreparedIdentity",
+          "maxDurationMs": 834,
+          "totalDurationMs": 834,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "charlie.reloadPreparedIdentity",
+          "maxDurationMs": 804,
+          "totalDurationMs": 804,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "alice.prepareIdentity",
+          "maxDurationMs": 131,
+          "totalDurationMs": 131,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "charlie.prepareIdentity",
+          "maxDurationMs": 131,
+          "totalDurationMs": 131,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "bob.registerIdentity",
+          "maxDurationMs": 110,
+          "totalDurationMs": 110,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "alice.getIdentity.afterRegistration",
+          "maxDurationMs": 10,
+          "totalDurationMs": 10,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "bob.getIdentity",
+          "maxDurationMs": 4,
+          "totalDurationMs": 4,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "charlie.getIdentity.afterRegistration",
+          "maxDurationMs": 4,
+          "totalDurationMs": 4,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "alice.getIdentity.beforePrepare",
+          "maxDurationMs": 2,
+          "totalDurationMs": 2,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "charlie.getIdentity.beforePrepare",
+          "maxDurationMs": 2,
+          "totalDurationMs": 2,
+          "totalRetries": 0
+        }
+      ],
+      "durationMs": 2857,
+      "finishedAt": "2026-09-11T14:30:31.084Z",
+      "number": 2,
+      "startedAt": "2026-09-11T14:30:28.227Z",
+      "status": "PASS",
+      "title": "Register all application identities with Glue",
+      "waits": [
+        {
+          "attempts": 1,
+          "description": "alice.reloadPreparedIdentity",
+          "durationMs": 834,
+          "intervalMs": 0,
+          "outcome": "PASS"
+        },
+        {
+          "attempts": 1,
+          "description": "charlie.reloadPreparedIdentity",
+          "durationMs": 804,
+          "intervalMs": 0,
+          "outcome": "PASS"
+        }
+      ]
+    },
+    {
+      "calls": [
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "bob.connectUsingInvitation",
+          "maxDurationMs": 1164,
+          "totalDurationMs": 1164,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "charlie.acceptPairingInvitation",
+          "maxDurationMs": 559,
+          "totalDurationMs": 559,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "alice.createPairingInvitation",
+          "maxDurationMs": 20,
+          "totalDurationMs": 20,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "alice.createPairingInvitation.forBob",
+          "maxDurationMs": 17,
+          "totalDurationMs": 17,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "bob.getFotosSnapshot.beforePairing",
+          "maxDurationMs": 2,
+          "totalDurationMs": 2,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "charlie.getReceivedShareSnapshot",
+          "maxDurationMs": 2,
+          "totalDurationMs": 2,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "bob.getFotosSnapshot",
+          "maxDurationMs": 1,
+          "totalDurationMs": 1,
+          "totalRetries": 0
+        }
+      ],
+      "durationMs": 1766,
+      "finishedAt": "2026-09-11T14:30:32.850Z",
+      "number": 3,
+      "startedAt": "2026-09-11T14:30:31.084Z",
+      "status": "PASS",
+      "title": "Pair Bob and Charlie with Alice without sharing content",
+      "waits": []
+    },
+    {
+      "calls": [
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "alice.importPhotoFixture.qa-second.jpg",
+          "maxDurationMs": 2481,
+          "totalDurationMs": 2481,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "alice.importPhotoFixture.qa-original.png",
+          "maxDurationMs": 211,
+          "totalDurationMs": 211,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "alice.createCollection",
+          "maxDurationMs": 12,
+          "totalDurationMs": 12,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "charlie.getReceivedShareSnapshot",
+          "maxDurationMs": 2,
+          "totalDurationMs": 2,
+          "totalRetries": 0
+        }
+      ],
+      "durationMs": 2495,
+      "finishedAt": "2026-09-11T14:30:35.346Z",
+      "number": 4,
+      "startedAt": "2026-09-11T14:30:32.851Z",
+      "status": "PASS",
+      "title": "Import two photos and collect only the first",
+      "waits": []
+    },
+    {
+      "calls": [
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "Bob Fotos projection change",
+          "maxDurationMs": 2805,
+          "totalDurationMs": 2805,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "bob.readFile.qa-original.png",
+          "maxDurationMs": 442,
+          "totalDurationMs": 442,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "alice.setCollectionRecipients",
+          "maxDurationMs": 234,
+          "totalDurationMs": 234,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "charlie.getReceivedShareSnapshot",
+          "maxDurationMs": 2,
+          "totalDurationMs": 2,
+          "totalRetries": 0
+        }
+      ],
+      "durationMs": 3484,
+      "finishedAt": "2026-09-11T14:30:38.830Z",
+      "number": 5,
+      "startedAt": "2026-09-11T14:30:35.346Z",
+      "status": "PASS",
+      "title": "Share the first photo with Bob and verify exact bytes",
+      "waits": [
+        {
+          "attempts": 1,
+          "description": "Bob Fotos projection change",
+          "durationMs": 2805,
+          "intervalMs": 0,
+          "outcome": "PASS"
+        }
+      ]
+    },
+    {
+      "calls": [
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "Bob Fotos projection change",
+          "maxDurationMs": 4571,
+          "totalDurationMs": 4571,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "bob.readFile.qa-original.png",
+          "maxDurationMs": 443,
+          "totalDurationMs": 443,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "bob.readFile.qa-second.jpg",
+          "maxDurationMs": 443,
+          "totalDurationMs": 443,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "alice.setCollectionMembers.add",
+          "maxDurationMs": 12,
+          "totalDurationMs": 12,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "charlie.getReceivedShareSnapshot",
+          "maxDurationMs": 2,
+          "totalDurationMs": 2,
+          "totalRetries": 0
+        }
+      ],
+      "durationMs": 5471,
+      "finishedAt": "2026-09-11T14:30:44.301Z",
+      "number": 6,
+      "startedAt": "2026-09-11T14:30:38.830Z",
+      "status": "PASS",
+      "title": "Add the second member and verify live propagation",
+      "waits": [
+        {
+          "attempts": 1,
+          "description": "Bob Fotos projection change",
+          "durationMs": 4571,
+          "intervalMs": 0,
+          "outcome": "PASS"
+        }
+      ]
+    },
+    {
+      "calls": [
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "Bob Fotos projection change",
+          "maxDurationMs": 3157,
+          "totalDurationMs": 3157,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "bob.readFile.qa-second.jpg",
+          "maxDurationMs": 440,
+          "totalDurationMs": 440,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "bob.readFile.removed collection member.rejects",
+          "maxDurationMs": 440,
+          "totalDurationMs": 440,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "alice.setCollectionMembers.remove",
+          "maxDurationMs": 11,
+          "totalDurationMs": 11,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "charlie.getReceivedShareSnapshot",
+          "maxDurationMs": 2,
+          "totalDurationMs": 2,
+          "totalRetries": 0
+        }
+      ],
+      "durationMs": 4050,
+      "finishedAt": "2026-09-11T14:30:48.351Z",
+      "number": 7,
+      "startedAt": "2026-09-11T14:30:44.301Z",
+      "status": "PASS",
+      "title": "Remove the first member and verify live propagation",
+      "waits": [
+        {
+          "attempts": 1,
+          "description": "Bob Fotos projection change",
+          "durationMs": 3157,
+          "intervalMs": 0,
+          "outcome": "PASS"
+        }
+      ]
+    },
+    {
+      "calls": [
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "bob.getFotosSnapshot.offline",
+          "maxDurationMs": 1764,
+          "totalDurationMs": 1764,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "bob.restartRuntime.offline",
+          "maxDurationMs": 577,
+          "totalDurationMs": 577,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "bob.readFile.qa-second.jpg",
+          "maxDurationMs": 440,
+          "totalDurationMs": 440,
+          "totalRetries": 0
+        }
+      ],
+      "durationMs": 2781,
+      "finishedAt": "2026-09-11T14:30:51.132Z",
+      "number": 8,
+      "startedAt": "2026-09-11T14:30:48.351Z",
+      "status": "PASS",
+      "title": "Restart Filer offline and verify persisted files",
+      "waits": []
+    },
+    {
+      "calls": [
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "bob.getFotosSnapshot.reconnected",
+          "maxDurationMs": 1899,
+          "totalDurationMs": 1899,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "bob.readFile.qa-second.jpg",
+          "maxDurationMs": 441,
+          "totalDurationMs": 441,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "bob.resumeNetwork",
+          "maxDurationMs": 204,
+          "totalDurationMs": 204,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "charlie.getReceivedShareSnapshot",
+          "maxDurationMs": 2,
+          "totalDurationMs": 2,
+          "totalRetries": 0
+        }
+      ],
+      "durationMs": 2546,
+      "finishedAt": "2026-09-11T14:30:53.678Z",
+      "number": 9,
+      "startedAt": "2026-09-11T14:30:51.132Z",
+      "status": "PASS",
+      "title": "Reconnect Filer and preserve the same projection",
+      "waits": []
+    },
+    {
+      "calls": [
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "Bob collection revocation",
+          "maxDurationMs": 2111,
+          "totalDurationMs": 2111,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "bob.getFotosSnapshot.revoked",
+          "maxDurationMs": 815,
+          "totalDurationMs": 815,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "bob.readFile.revoked collection member.rejects",
+          "maxDurationMs": 812,
+          "totalDurationMs": 812,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "alice.setCollectionRecipients.revoke",
+          "maxDurationMs": 144,
+          "totalDurationMs": 144,
+          "totalRetries": 0
+        },
+        {
+          "count": 1,
+          "errorSamples": [],
+          "failureCount": 0,
+          "label": "charlie.getReceivedShareSnapshot",
+          "maxDurationMs": 2,
+          "totalDurationMs": 2,
+          "totalRetries": 0
+        }
+      ],
+      "durationMs": 3884,
+      "finishedAt": "2026-09-11T14:30:57.562Z",
+      "number": 10,
+      "startedAt": "2026-09-11T14:30:53.678Z",
+      "status": "PASS",
+      "title": "Revoke Bob and remove the received collection",
+      "waits": [
+        {
+          "attempts": 1,
+          "description": "Bob collection revocation",
+          "durationMs": 2111,
+          "intervalMs": 0,
+          "outcome": "PASS"
+        }
+      ]
+    }
+  ]
+}
