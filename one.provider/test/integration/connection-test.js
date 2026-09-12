@@ -8,7 +8,7 @@ const provider = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../
 const bundle = path.join(provider, 'build/native-runtime');
 const entry = path.join(bundle, 'runtime/node_modules/@refinio/api/dist/src/filer/stdio-main.js');
 await access(entry);
-const child = spawn('swift', ['test', '--filter', 'ONEBridgeRpcTests'], {
+const child = spawn('swift', ['test', '--filter', 'ONEBridgeRpcTests|FilerQAProgressTests|FilerQARuntimeTests'], {
     cwd: provider, stdio: 'inherit', env: {...process.env,
         ONE_FILER_TEST_NODE: path.join(bundle, 'node'), ONE_FILER_TEST_ENTRY: entry,
         ONE_FILER_TEST_PRELOAD: path.join(bundle, 'runtime/console-to-stderr.cjs')}

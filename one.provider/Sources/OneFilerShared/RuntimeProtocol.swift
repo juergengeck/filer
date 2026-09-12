@@ -25,5 +25,8 @@ public enum RuntimeSecurity {
 public struct LocalDomainConfiguration: Codable, Equatable {
     public let storageId: UUID
     public let email: String
-    public init(storageId: UUID, email: String) { self.storageId = storageId; self.email = email }
+    public let commServerUrl: String?
+    public init(storageId: UUID, email: String, commServerUrl: String? = nil) {
+        self.storageId = storageId; self.email = email; self.commServerUrl = commServerUrl
+    }
 }

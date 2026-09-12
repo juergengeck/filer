@@ -20,6 +20,35 @@ final class RuntimeService {
         try PairingInvitation.validateResponse(await runtimes.perform(domain: domain, request: request))
     }
 
+    /// Run management stays on the domain's existing private operation transport.
+    func qa(domain: String, method: String, parameters: [String: Any] = [:]) async throws -> Data {
+        let operation = try Self.qaOperation(method: method)
+        let request = try JSONSerialization.data(withJSONObject: [
+            "operation": operation, "request": parameters, "requestId": UUID().uuidString
+        ])
+        let bytes = try await runtimes.perform(domain: domain, request: request)
+        guard let response = try JSONSerialization.jsonObject(with: bytes) as? [String: Any] else {
+            throw PrivateSocket.failure("Invalid integration-runner response.")
+        }
+        guard response["success"] as? Bool == true else {
+            let message = (response["error"] as? [String: Any])?["message"] as? String
+                ?? response["error"] as? String ?? "The integration-runner operation failed."
+            throw PrivateSocket.failure(message)
+        }
+        return try JSONSerialization.data(withJSONObject: response["result"] ?? NSNull(), options: [.fragmentsAllowed, .prettyPrinted, .sortedKeys])
+    }
+
+    /// Resolve only the fixed QA operations exposed to signed native clients.
+    static func qaOperation(method: String) throws -> String {
+        if ["getDiagnostics", "getFotosSnapshot", "waitForFotos"].contains(method) {
+            return "filer-qa:\(method)"
+        }
+        if ["runFullProtocol", "getStatus", "stop", "resume", "getProtocolReport", "getInspectionReport"].contains(method) {
+            return "filer-test-runner:\(method)"
+        }
+        throw PrivateSocket.failure("Unknown integration-runner operation.")
+    }
+
     func start() throws {
         let directory = try RuntimeSecurity.container()
         let lock = Darwin.open(directory.appendingPathComponent("runtime.lock").path, O_CREAT | O_RDWR | O_CLOEXEC | O_NOFOLLOW, 0o600)
@@ -140,11 +169,16 @@ final class RuntimeService {
                         }
                     } catch { NSLog("Filer change signaling failed: %@", error.localizedDescription) }
                 }
+            }, onQAProgress: { [storageId = config.storageId] progress in
+                DispatchQueue.main.async {
+                    NotificationCenter.default.post(name: .filerQAProgress, object: nil,
+                        userInfo: ["storageId": storageId, "progress": progress])
+                }
             })
         do {
             try await child.start(configuration: ["directory": directory.path, "email": config.email,
                 "secret": InstanceSecrets.getOrCreate(instance: config.storageId), "name": domain,
-                "commServerUrl": "wss://comm10.dev.refinio.one", "inviteUrlPrefix": "https://refinio.one/invite"])
+                "commServerUrl": config.commServerUrl ?? "wss://comm10.dev.refinio.one", "inviteUrlPrefix": "https://refinio.one/invite"])
             return child
         } catch { await child.shutdown(); throw error }
     }

@@ -27,9 +27,15 @@ class DomainManager {
         try withConfiguration { domains, _ in domains }
     }
 
-    func registerDomain(name: String, email: String? = nil, completion: @escaping (Error?) -> Void = { _ in }) throws {
+    func registerDomain(name: String, email: String? = nil, commServerUrl: String? = nil, completion: @escaping (Error?) -> Void = { _ in }) throws {
         if let email, email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             throw PrivateSocket.failure("An identity email is required.")
+        }
+        if let commServerUrl {
+            guard let url = URLComponents(string: commServerUrl), ["ws", "wss"].contains(url.scheme),
+                  url.host?.isEmpty == false, url.user == nil, url.password == nil, url.fragment == nil else {
+                throw PrivateSocket.failure("A WebSocket relay URL without credentials is required.")
+            }
         }
         let lease = try acquireDomain(name)
         let finish: (Error?) -> Void = { error in lease.release(); completion(error) }
@@ -39,8 +45,11 @@ class DomainManager {
                 if let previous, let email, previous.email != email {
                     throw PrivateSocket.failure("This domain already belongs to another identity. Create a new domain to use a different email.")
                 }
+                if let previous, let commServerUrl, previous.commServerUrl != commServerUrl {
+                    throw PrivateSocket.failure("This domain already uses another relay. Create a new domain for this relay.")
+                }
                 let id = UUID()
-                let config = previous ?? DomainConfig(storageId: id, email: email ?? "\(id.uuidString.lowercased())@filer.local")
+                let config = previous ?? DomainConfig(storageId: id, email: email ?? "\(id.uuidString.lowercased())@filer.local", commServerUrl: commServerUrl)
                 domains[name] = config
                 return (previous, config, domains, original)
             }

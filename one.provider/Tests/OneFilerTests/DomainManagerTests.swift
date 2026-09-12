@@ -2,6 +2,20 @@ import XCTest
 @testable import OneFilerHostSupport
 
 final class DomainManagerTests: XCTestCase {
+    func testExplicitRelayIsPersistedAndCannotRetargetAnExistingDomain() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = DomainManager(configFileURL: directory.appendingPathComponent("domains.json"),
+            addDomain: { _, completion in completion(nil) })
+        try manager.registerDomain(name: "QA", commServerUrl: "ws://127.0.0.1:19100")
+        XCTAssertEqual(try manager.getDomainConfig(name: "QA")?.commServerUrl, "ws://127.0.0.1:19100")
+        XCTAssertThrowsError(try manager.registerDomain(name: "QA", commServerUrl: "ws://127.0.0.1:19102"))
+        XCTAssertThrowsError(try manager.registerDomain(name: "bad", commServerUrl: "https://example.test"))
+        XCTAssertThrowsError(try manager.registerDomain(name: "bad", commServerUrl: "ws://user:secret@example.test"))
+        XCTAssertNil(try manager.getDomainConfig(name: "bad"))
+    }
+
     /// Enrollment selects the email before storage creation and cannot rebind a live domain.
     func testExplicitIdentityIsPreservedAndCannotBeReplaced() throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)

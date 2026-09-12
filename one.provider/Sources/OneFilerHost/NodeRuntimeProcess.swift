@@ -13,13 +13,16 @@ final class NodeRuntimeProcess: @unchecked Sendable {
     private var failure: Error?
     private var bootstrapped = false
     private let onChange: @Sendable ([String]) -> Void
+    private let onQAProgress: @Sendable (FilerQAProgress) -> Void
     private static let maxFrame = 96 * 1024 * 1024
 
     var isRunning: Bool { state.sync { failure == nil && process.isRunning } }
 
     /// Paths are supplied by the host's signed bundle, never by an IPC request.
-    init(node: URL, entry: URL, preload: URL, onChange: @escaping @Sendable ([String]) -> Void = { _ in }) {
+    init(node: URL, entry: URL, preload: URL, onChange: @escaping @Sendable ([String]) -> Void = { _ in },
+         onQAProgress: @escaping @Sendable (FilerQAProgress) -> Void = { _ in }) {
         self.onChange = onChange
+        self.onQAProgress = onQAProgress
         process.executableURL = node
         process.arguments = ["--jitless", "--require", preload.path, entry.path]
         // Do not inherit NODE_OPTIONS, NODE_PATH, inspector settings, or injected loaders.
@@ -111,6 +114,13 @@ final class NodeRuntimeProcess: @unchecked Sendable {
                     throw Self.error("Invalid runtime response.")
                 }
                 if let event = response["event"] {
+                    if event as? String == "filerQAProgress" {
+                        guard bootstrapped, response["requestId"] == nil, let status = response["status"] else {
+                            throw Self.error("Invalid QA progress notification.")
+                        }
+                        onQAProgress(try FilerQAProgress.decode(status))
+                        continue
+                    }
                     guard bootstrapped, event as? String == "filerChanged", response["requestId"] == nil,
                           let containers = response["containers"] as? [String], !containers.isEmpty, containers.count <= 128,
                           containers.allSatisfy({ $0 == "root" || $0 == "workingSet" || $0 == "ONE/System" ||
@@ -149,7 +159,7 @@ final class NodeRuntimeProcess: @unchecked Sendable {
 
     /// Only explicitly mounted file publications may use absolute path identifiers.
     static func isPublishedDirectory(_ value: String) -> Bool {
-        guard ["/Gesundheit", "/Files", "/Fotos"].contains(where: { value == $0 || value.hasPrefix($0 + "/") }) else { return false }
+        guard ["/Gesundheit", "/Files", "/Fotos", "/objects", "/contacts"].contains(where: { value == $0 || value.hasPrefix($0 + "/") }) else { return false }
         return !value.contains("\\") && !value.contains("\0") &&
             value.dropFirst().split(separator: "/", omittingEmptySubsequences: false).allSatisfy { !$0.isEmpty && $0 != "." && $0 != ".." }
     }

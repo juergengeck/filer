@@ -20,6 +20,8 @@ await chmod(path.join(output, 'node'), 0o755);
 await copyFile(path.join(provider, 'scripts/console-to-stderr.cjs'), path.join(output, 'runtime/console-to-stderr.cjs'));
 const installed = new Map();
 const packages = [];
+// API can be installed without Fotos, but this concrete Filer entrypoint imports it.
+const filerRequiredPeers = new Set(['@refinio/fotos.core']);
 
 /** Resolve a dependency according to Node's directory lookup, including workspace peer links. */
 async function resolvePackage(name, from) {
@@ -46,10 +48,10 @@ async function copyPackage(source) {
   packages.push({name: manifest.name, version: manifest.version});
   const dependencies = {...manifest.dependencies, ...manifest.peerDependencies};
   for (const name of Object.keys(dependencies)) {
-    if (manifest.peerDependenciesMeta?.[name]?.optional && !manifest.dependencies?.[name]) continue;
-    let dependency;
-    try { dependency = await resolvePackage(name, source); }
-    catch (error) { if (manifest.peerDependenciesMeta?.[name]?.optional) continue; throw error; }
+    const requiredByFiler = source === api && filerRequiredPeers.has(name);
+    const optional = manifest.peerDependenciesMeta?.[name]?.optional && !manifest.dependencies?.[name];
+    if (optional && !requiredByFiler) continue;
+    const dependency = await resolvePackage(name, source);
     const target = await copyPackage(dependency);
     const link = path.join(destination, 'node_modules', name);
     await mkdir(path.dirname(link), {recursive: true});
@@ -63,4 +65,23 @@ const link = path.join(output, 'runtime/node_modules/@refinio/api');
 await mkdir(path.dirname(link), {recursive: true});
 await symlink(path.relative(path.dirname(link), main), link);
 await writeFile(path.join(output, 'runtime/manifest.json'), JSON.stringify({node: version, packages}, null, 2) + '\n');
+
+// Link the actual Filer entrypoint, including installed optional peer packages
+// used by this composition. Empty stdin exercises startup without creating an instance.
+execFileSync(path.join(output, 'node'), ['--jitless', '--require',
+  path.join(output, 'runtime/console-to-stderr.cjs'),
+  path.join(main, 'dist/src/filer/stdio-main.js'), '--check-runtime'], {input: '', encoding: 'utf8', timeout: 15000});
+
+// Exercise real HTTP with the same transport and JIT settings as the signed host.
+execFileSync(path.join(output, 'node'), ['--jitless', '--input-type=module', '-e', `
+  import {createServer} from 'node:http';
+  import fetch from ${JSON.stringify(path.join(main, 'node_modules/node-fetch/src/index.js'))};
+  const server = createServer((_request, response) => response.end('filer-runtime-check'));
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  try {
+    const response = await fetch('http://127.0.0.1:' + server.address().port, {signal: AbortSignal.timeout(5000)});
+    if (await response.text() !== 'filer-runtime-check') throw new Error('Bundled HTTP transport failed');
+  } finally { server.close(); }
+`], {encoding: 'utf8', timeout: 15000});
+
 console.log(`Bundled Node ${version} and ${packages.length} runtime packages at ${output}`);

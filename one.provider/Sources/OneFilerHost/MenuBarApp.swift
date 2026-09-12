@@ -1,5 +1,6 @@
 import Cocoa
 import FileProvider
+import UniformTypeIdentifiers
 
 class MenuBarApp: NSObject, NSApplicationDelegate {
 
@@ -9,6 +10,7 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
     private var domainManager: DomainManager!
     private let runtimeService = RuntimeService()
     private var pairingDomains = Set<String>()
+    private var qaProgress: [String: FilerQAProgress] = [:]
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         do { try runtimeService.start() }
@@ -41,6 +43,7 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
         domainManager = DomainManager()
         statusMonitor = StatusMonitor(domainManager: domainManager)
         statusMonitor.delegate = self
+        NotificationCenter.default.addObserver(self, selector: #selector(integrationProgress(_:)), name: .filerQAProgress, object: nil)
 
         // Build initial menu
         updateMenu()
@@ -67,6 +70,69 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
     }
 
     // MARK: - Menu Building
+
+    /// Native progress is pushed by the owning runtime, with no status polling.
+    @objc private func integrationProgress(_ notification: Notification) {
+        guard let storageId = notification.userInfo?["storageId"] as? UUID,
+              let progress = notification.userInfo?["progress"] as? FilerQAProgress else { return }
+        do {
+            for (domain, configuration) in try domainManager.listDomains() where configuration.storageId == storageId {
+                qaProgress[domain] = progress
+            }
+            updateMenu()
+        } catch { NSLog("Cannot display integration progress: %@", error.localizedDescription) }
+    }
+
+    /// A run explicitly selects its configured app participants and fixture photos.
+    @objc private func runIntegration(_ sender: NSMenuItem) {
+        guard let domain = sender.representedObject as? String else { return }
+        let panel = NSOpenPanel()
+        panel.title = "Choose Integration Test Configuration"
+        panel.message = "Choose the JSON configuration for the Glue registrar and the two Fotos app instances."
+        panel.allowedContentTypes = [.json]
+        panel.allowsMultipleSelection = false
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            let data = try Data(contentsOf: url)
+            guard data.count <= 8 * 1024 * 1024,
+                  let parameters = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                throw CocoaError(.fileReadCorruptFile)
+            }
+            Task {
+                do { _ = try await runtimeService.qa(domain: domain, method: "runFullProtocol", parameters: parameters) }
+                catch { await MainActor.run { _ = Self.createAlert(error: error).runModal() } }
+            }
+        } catch { Self.createAlert(error: error).runModal() }
+    }
+
+    @objc private func stopIntegration(_ sender: NSMenuItem) {
+        guard let domain = sender.representedObject as? String else { return }
+        Task {
+            do { _ = try await runtimeService.qa(domain: domain, method: "stop") }
+            catch { await MainActor.run { _ = Self.createAlert(error: error).runModal() } }
+        }
+    }
+
+    @objc private func resumeIntegration(_ sender: NSMenuItem) {
+        guard let domain = sender.representedObject as? String else { return }
+        Task {
+            do { _ = try await runtimeService.qa(domain: domain, method: "resume") }
+            catch { await MainActor.run { _ = Self.createAlert(error: error).runModal() } }
+        }
+    }
+
+    @objc private func saveIntegrationReport(_ sender: NSMenuItem) {
+        guard let domain = sender.representedObject as? String else { return }
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "filer-integration-report.json"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        Task {
+            do {
+                let data = try await runtimeService.qa(domain: domain, method: qaProgress[domain]?.waitingForResume == true ? "getInspectionReport" : "getProtocolReport")
+                try data.write(to: url, options: .atomic)
+            } catch { await MainActor.run { _ = Self.createAlert(error: error).runModal() } }
+        }
+    }
 
     private func updateMenu() {
         menu.removeAllItems()
@@ -109,6 +175,24 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
                     refreshFiles.target = self
                     refreshFiles.representedObject = identifier
                     domainMenu.addItem(refreshFiles)
+
+                    let qaState = qaProgress[identifier]
+                    let qaStatus = NSMenuItem(title: "Integration: \(qaState?.status ?? "idle")\(qaState?.currentStep.map { " · \($0.title)" } ?? "")", action: nil, keyEquivalent: "")
+                    qaStatus.isEnabled = false
+                    domainMenu.addItem(qaStatus)
+                    for (title, action) in [("Run Integration Test…", #selector(runIntegration(_:))),
+                                            ("Finish Revocation Test", #selector(resumeIntegration(_:))),
+                                            ("Stop Integration Test", #selector(stopIntegration(_:))),
+                                            ("Save Integration Report…", #selector(saveIntegrationReport(_:)))] {
+                        let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
+                        item.target = self
+                        item.representedObject = identifier
+                        if title == "Run Integration Test…" { item.isEnabled = qaState?.status != "running" }
+                        if title == "Stop Integration Test" { item.isEnabled = qaState?.status == "running" }
+                        if title == "Finish Revocation Test" { item.isEnabled = qaState?.waitingForResume == true }
+                        if title == "Save Integration Report…" { item.isEnabled = qaState?.waitingForResume == true || ["passed", "failed", "cancelled"].contains(qaState?.status ?? "idle") }
+                        domainMenu.addItem(item)
+                    }
 
                     domainMenu.addItem(NSMenuItem.separator())
 

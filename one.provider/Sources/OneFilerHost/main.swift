@@ -4,10 +4,11 @@ import FileProvider
 // Domain commands run inside the signed host so File Provider resolves its extension.
 let arguments = CommandLine.arguments
 if arguments.count > 1 {
-    let registration = arguments.count == 5 && arguments[1] == "--register-domain" && arguments[3] == "--email"
-    guard registration || (arguments.count == 3 &&
+    let registration = arguments.count >= 3 && arguments[1] == "--register-domain"
+    let qaCommand = arguments.count == 4 && arguments[1] == "--qa-domain"
+    guard registration || qaCommand || (arguments.count == 3 &&
           ["--register-domain", "--unregister-domain", "--pair-domain", "--refresh-domain"].contains(arguments[1])) else {
-        fputs("Usage: OneFilerHost --register-domain NAME [--email EMAIL] | --unregister-domain NAME | --refresh-domain NAME | --pair-domain NAME < invitation.txt\n", stderr)
+        fputs("Usage: OneFilerHost --register-domain NAME [--email EMAIL] [--comm-server URL] | --unregister-domain NAME | --refresh-domain NAME | --pair-domain NAME < invitation.txt | --qa-domain NAME runFullProtocol|getStatus|resume|stop|getProtocolReport|getInspectionReport|getDiagnostics|getFotosSnapshot|waitForFotos [< parameters.json]\n", stderr)
         exit(2)
     }
     let manager = DomainManager()
@@ -21,7 +22,29 @@ if arguments.count > 1 {
         exit(0)
     }
     do {
-        if arguments[1] == "--pair-domain" {
+        if qaCommand {
+            let method = arguments[3]
+            let operation = try RuntimeService.qaOperation(method: method)
+            var parameters: [String: Any] = [:]
+            if ["runFullProtocol", "waitForFotos"].contains(method) {
+                guard let data = try FileHandle.standardInput.read(upToCount: 8 * 1024 * 1024 + 1),
+                      data.count <= 8 * 1024 * 1024,
+                      let value = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                    throw PrivateSocket.failure("Supply an operation parameters JSON object on standard input.")
+                }
+                parameters = value
+            }
+            let request: [String: Any] = ["operation": operation, "request": parameters,
+                                          "requestId": UUID().uuidString]
+            let fd = try PrivateSocket.connect(path: RuntimeSecurity.container().appendingPathComponent(RuntimeSecurity.socketName).path,
+                                               requirement: RuntimeSecurity.hostRequirement)
+            defer { Darwin.close(fd) }
+            try PrivateSocket.writeFrame(fd, JSONSerialization.data(withJSONObject: ["domain": name, "request": request]))
+            let response = try PrivateSocket.readFrame(fd)
+            FileHandle.standardOutput.write(response + Data("\n".utf8))
+            let envelope = try JSONSerialization.jsonObject(with: response) as? [String: Any]
+            exit(envelope?["success"] as? Bool == true ? 0 : 1)
+        } else if arguments[1] == "--pair-domain" {
             guard let data = try FileHandle.standardInput.read(upToCount: 65537),
                   data.count <= 65536, let url = String(data: data, encoding: .utf8) else {
                 throw PrivateSocket.failure("Supply one pairing invitation URL on standard input.")
@@ -37,7 +60,16 @@ if arguments.count > 1 {
         } else if arguments[1] == "--refresh-domain" {
             try manager.refreshDomain(name: name, completion: finish)
         } else if arguments[1] == "--register-domain" {
-            try manager.registerDomain(name: name, email: registration ? arguments[4] : nil, completion: finish)
+            var options: [String: String] = [:]
+            var index = 3
+            while index < arguments.count {
+                let key = arguments[index]
+                guard ["--email", "--comm-server"].contains(key), index + 1 < arguments.count, options[key] == nil else {
+                    throw PrivateSocket.failure("Use each domain registration option once with its value.")
+                }
+                options[key] = arguments[index + 1]; index += 2
+            }
+            try manager.registerDomain(name: name, email: options["--email"], commServerUrl: options["--comm-server"], completion: finish)
         } else {
             try manager.unregisterDomain(name: name, completion: finish)
         }
