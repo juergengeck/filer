@@ -193,6 +193,14 @@ public actor ONEBridge {
             permissions.insert(.delete)
         }
         obj.permissions = permissions
+        if let capability = result["canDelete"] {
+            guard let canDelete = capability as? Bool else { throw ONEBridgeError.invalidResponse }
+            if canDelete {
+                obj.permissions.insert(.delete)
+            } else {
+                obj.permissions.remove(.delete)
+            }
+        }
         obj.canAddChildren = result["canAddChildren"] as? Bool ?? false
         obj.contentHash = result["contentHash"] as? String ?? ""
         obj.metadataHash = result["metadataHash"] as? String ?? ""
@@ -285,8 +293,17 @@ public actor ONEBridge {
         }
     }
 
+    private struct ContentWriteResult {
+        let contentVersion: String?
+        let path: String?
+    }
+
     @discardableResult
     public func writeContent(id: String, data: Data, baseVersion: Data? = nil) async throws -> String? {
+        try await writeContentResult(id: id, data: data, baseVersion: baseVersion).contentVersion
+    }
+
+    private func writeContentResult(id: String, data: Data, baseVersion: Data? = nil) async throws -> ContentWriteResult {
         // Normalize path: ensure it starts with /
         let normalizedPath = try await resolvePath(id)
 
@@ -294,13 +311,14 @@ public actor ONEBridge {
         let request = ContentWriteRequest(path: normalizedPath, content: data, baseVersion: baseVersion)
         let result = try await sendRequest(method: "writeFile", params: request.parameters)
         guard let status = result["status"] as? String else { throw ONEBridgeError.invalidResponse }
-        if status == "ok" { return nil }
+        let path = try optionalCanonicalPath(result["path"])
+        if status == "ok" { return ContentWriteResult(contentVersion: nil, path: path) }
         guard status == "accepted" || status == "unchanged",
               let version = result["contentVersion"] as? String, !version.isEmpty,
               result["operationId"] as? String == request.operationId else {
             throw ONEBridgeError.invalidResponse
         }
-        return version
+        return ContentWriteResult(contentVersion: version, path: path)
     }
 
     /// Create an item through the owning filesystem and return its persisted metadata.
@@ -314,7 +332,8 @@ public actor ONEBridge {
             _ = try await sendRequest(method: "createDir", params: ["path": path, "mode": 0o040755])
         } else {
             guard let data else { throw ONEBridgeError.operationFailed }
-            try await writeContent(id: path, data: data)
+            let result = try await writeContentResult(id: path, data: data)
+            return try await getObject(id: result.path ?? path)
         }
         return try await getObject(id: path)
     }
@@ -330,17 +349,19 @@ public actor ONEBridge {
         }
         guard (existing.type == .folder) == isDirectory else { throw CocoaError(.fileWriteFileExists) }
         if let data, !isDirectory, data != (try await readContent(id: existing.id)) {
-            throw CocoaError(.fileWriteNoPermission)
+            return nil
         }
         return existing
     }
 
     public func deleteObject(id: String) async throws {
         // Normalize path: ensure it starts with /
+        let object = try await getObject(id: id)
         let normalizedPath = try await resolvePath(id)
 
         logger.info("Deleting object \(normalizedPath)")
-        _ = try await sendRequest(method: "unlink", params: ["path": normalizedPath])
+        let method = object.type == .folder ? "rmdir" : "unlink"
+        _ = try await sendRequest(method: method, params: ["path": normalizedPath])
     }
 
     public func rename(id: String, newName: String) async throws {
@@ -383,7 +404,28 @@ public actor ONEBridge {
             guard let canAddChildren = capability as? Bool else { throw ONEBridgeError.invalidResponse }
             object.canAddChildren = canAddChildren
         }
+        if let capability = item["canDelete"] {
+            guard let canDelete = capability as? Bool else { throw ONEBridgeError.invalidResponse }
+            if canDelete { object.permissions.insert(.delete) }
+        }
         return object
+    }
+
+    private func optionalCanonicalPath(_ value: Any?) throws -> String? {
+        guard let value else { return nil }
+        guard let path = value as? String,
+              path.hasPrefix("/"),
+              path != "/",
+              !path.contains("\\"),
+              !path.contains("\0"),
+              !path.contains("//") else {
+            throw ONEBridgeError.invalidResponse
+        }
+        let components = path.split(separator: "/", omittingEmptySubsequences: false)
+        guard components.dropFirst().allSatisfy({ $0 != "." && $0 != ".." && !$0.isEmpty }) else {
+            throw ONEBridgeError.invalidResponse
+        }
+        return path
     }
 
     /// Persistent identities are resolved by the owner; legacy addresses remain explicit paths.

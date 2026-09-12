@@ -4,6 +4,14 @@ import FileProvider
 @testable import OneFilerHostSupport
 
 final class ONEBridgeRpcTests: XCTestCase {
+    func testQAOperationMappingIsBoundedToRegisteredSurfaces() throws {
+        XCTAssertEqual(try RuntimeService.qaOperation(method: "getDiagnostics"), "filer-qa:getDiagnostics")
+        XCTAssertEqual(try RuntimeService.qaOperation(method: "getFotosSnapshot"), "filer-qa:getFotosSnapshot")
+        XCTAssertEqual(try RuntimeService.qaOperation(method: "waitForFotos"), "filer-qa:waitForFotos")
+        XCTAssertEqual(try RuntimeService.qaOperation(method: "getStatus"), "filer-test-runner:getStatus")
+        XCTAssertThrowsError(try RuntimeService.qaOperation(method: "getIdentity"))
+    }
+
     func testPublicationNotificationsAddressTheEnumeratedPathIdentifier() {
         XCTAssertEqual(RuntimeService.containerIdentifier("/Gesundheit").rawValue, "Gesundheit")
         XCTAssertEqual(RuntimeService.containerIdentifier("/Gesundheit/Patient/Temperatur").rawValue, "Gesundheit/Patient/Temperatur")
@@ -43,7 +51,7 @@ final class ONEBridgeRpcTests: XCTestCase {
             workingItems.append(contentsOf: result.items)
             page = result.nextPage
         } while page != nil
-        for mount in ["/Files", "/Fotos", "/Gesundheit", "/ONE/System/models"] {
+        for mount in ["/Files", "/Fotos", "/Gesundheit", "/objects", "/contacts", "/ONE/System/models"] {
             XCTAssertTrue(workingItems.contains { $0.path == mount }, mount)
         }
         XCTAssertTrue(workingItems.first { $0.path == "/Files" }?.canAddChildren == true)
@@ -88,13 +96,13 @@ final class ONEBridgeRpcTests: XCTestCase {
         createInterface({input: process.stdin}).on('line', line => {
           if (!ready) { ready = true; console.log(JSON.stringify({ready: true, owner: 'a'.repeat(64), instance: 'b'.repeat(64)})); return; }
           const request = JSON.parse(line);
-          console.log(JSON.stringify({event: 'filerChanged', containers: request.operation === 'invalid' ? ['/arbitrary/path'] : ['workingSet', 'filer:' + 'c'.repeat(64), 'ONE/System', '/Gesundheit', '/Files', '/Fotos']}));
+          console.log(JSON.stringify({event: 'filerChanged', containers: request.operation === 'invalid' ? ['/arbitrary/path'] : ['workingSet', 'filer:' + 'c'.repeat(64), 'ONE/System', '/Gesundheit', '/Files', '/Fotos', '/objects', '/contacts']}));
           console.log(JSON.stringify({requestId: request.requestId, success: true, result: {status: 'ok'}}));
         });
         """.utf8).write(to: entry)
         let notification = expectation(description: "typed change notification")
         let runtime = NodeRuntimeProcess(node: URL(fileURLWithPath: node), entry: entry, preload: preload, onChange: { containers in
-            XCTAssertEqual(containers, ["workingSet", "filer:" + String(repeating: "c", count: 64), "ONE/System", "/Gesundheit", "/Files", "/Fotos"])
+            XCTAssertEqual(containers, ["workingSet", "filer:" + String(repeating: "c", count: 64), "ONE/System", "/Gesundheit", "/Files", "/Fotos", "/objects", "/contacts"])
             notification.fulfill()
         })
         do {
@@ -117,7 +125,7 @@ final class ONEBridgeRpcTests: XCTestCase {
 
     /// Mounted publication paths remain bounded even when their roots expand.
     func testPublishedNotificationPathsRejectTraversal() {
-        for path in ["/Gesundheit", "/Files", "/Fotos", "/Gesundheit/Patient/Temperatur", "/Files/folder", "/Fotos/collection"] {
+        for path in ["/Gesundheit", "/Files", "/Fotos", "/objects", "/contacts", "/Gesundheit/Patient/Temperatur", "/Files/folder", "/Fotos/collection", "/objects/object-1/Shared with/Alice", "/contacts/Alice"] {
             XCTAssertTrue(NodeRuntimeProcess.isPublishedDirectory(path), path)
         }
         for path in ["/arbitrary/path", "/FilesOther", "/Fotos/../ONE", "/Files/./item", "/Files//item", "/Gesundheit/", "/Files/a\\b", "/Fotos/a\0b"] {

@@ -3,6 +3,7 @@ import {FilerRuntime, FileProviderOperations} from '@refinio/api/filer';
 import {getInstanceOwnerIdHash} from '@refinio/one.core/lib/instance.js';
 import {storeVersionedObject, getObjectByIdHash} from '@refinio/one.core/lib/storage-versioned-objects.js';
 import {getObject} from '@refinio/one.core/lib/storage-unversioned-objects.js';
+import {readBlobAsArrayBuffer} from '@refinio/one.core/lib/storage-blob.js';
 import {createAccess} from '@refinio/one.core/lib/access.js';
 import {SET_ACCESS_MODE} from '@refinio/one.core/lib/storage-base-common.js';
 import {calculateIdHashOfObj} from '@refinio/one.core/lib/util/object.js';
@@ -29,7 +30,7 @@ for (const [field, method] of [['multiUser', 'loginOrRegister'], ['leuteModel', 
 }
 const fs = await runtime.init();
 console.log('BOOT runtime complete');
-const rpc = new FileProviderOperations(fs, new Map(), runtime.getModelWeightsPlan().getProjection());
+const rpc = new FileProviderOperations(fs, new Map(), runtime.getModelWeightsPlan().getProjection(), runtime.resolveImportPath.bind(runtime));
 const owner = getInstanceOwnerIdHash();
 const originals = new FotosFileSystem('fotos', true);
 await originals.init();
@@ -43,12 +44,20 @@ objectEvents.onNewVersion(async result => {
 }, 'Collection integration evidence', 'FotosShareCertificateChain');
 objectEvents.onNewVersion(result => process.send({event: result.obj.$type$, idHash: result.idHash}),
   'Collection integration evidence', 'FotosShareManifest');
+objectEvents.onNewVersion(result => process.send({event: result.obj.$type$, idHash: result.idHash}),
+  'Object sharing integration evidence', 'FilerObjectRoot');
 
 process.on('message', async ({id, method, params = {}}) => {
   try {
     let result;
     switch (method) {
       case 'rpc': result = await rpc.handle({jsonrpc: '2.0', id: 1, ...params}); break;
+      case 'objectBytes': {
+        const root = (await getObjectByIdHash(params.idHash)).obj;
+        const entry = await getObject(root.entry);
+        result = Buffer.from(await readBlobAsArrayBuffer(entry.blob)).toString('base64');
+        break;
+      }
       case 'invite': result = await runtime.getConnectionsModel().pairing.createInvitation(); break;
       case 'pair': await runtime.getConnectionsModel().pairing.connectUsingInvitation(params.invitation); break;
       case 'original': {

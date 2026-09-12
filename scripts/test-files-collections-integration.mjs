@@ -109,6 +109,22 @@ try {
   const paired = waitMessage(recipient.child, message => message.event === 'paired');
   await recipient.command('pair', {invitation: await source.command('invite')});
   await paired;
+  console.log('2a. Contact HTML grants an individual object and removal revokes the relationship');
+  const contactNames = (await rpc(recipient, 'readDir', {path: '/contacts'})).children;
+  assert.equal(contactNames.length, 1);
+  const contactHtml = (await rpc(recipient, 'readFile', {path: `/contacts/${contactNames[0]}/index.html`})).content;
+  const objectPath = '/objects/document.bin';
+  assert.equal((await rpc(recipient, 'stat', {path: objectPath})).mode & 0o170000, 0o40000);
+  const objectReceived = waitMessage(source.child, message => message.event === 'FilerObjectRoot');
+  const imported = await rpc(recipient, 'writeFile', {path: `${objectPath}/Shared with/index.html`, content: contactHtml});
+  assert.equal(imported.path, `${objectPath}/Shared with/${contactNames[0]}`);
+  const sharedObject = await objectReceived;
+  assert.deepEqual(Buffer.from(await source.command('objectBytes', {idHash: sharedObject.idHash}), 'base64'), bytes);
+  await rpc(recipient, 'rmdir', {path: imported.path});
+  assert.deepEqual((await rpc(recipient, 'readDir', {path: `${objectPath}/Shared with`})).children, []);
+  await rpc(recipient, 'writeFile', {path: `${objectPath}/People in photo/index.html`, content: contactHtml});
+  assert.deepEqual((await rpc(recipient, 'readDir', {path: `${objectPath}/Shared with`})).children, []);
+  assert.deepEqual((await rpc(recipient, 'readDir', {path: `${objectPath}/People in photo`})).children, contactNames);
   const received = waitMessage(recipient.child, message => message.event === 'FotosShareCertificateChain');
   await source.command('share', {person: recipient.ready.person, collection: 'Summer', entries});
   await received;
@@ -138,6 +154,8 @@ try {
   await recipient.stop();
   const reopened = await startWorker('recipient-reopened', commServerUrl, recipient.config);
   assert.deepEqual(Buffer.from((await rpc(reopened, 'readFile', {path: '/Files/document.bin'})).content, 'base64'), bytes);
+  assert.deepEqual((await rpc(reopened, 'readDir', {path: `${objectPath}/Shared with`})).children, []);
+  assert.deepEqual((await rpc(reopened, 'readDir', {path: `${objectPath}/People in photo`})).children, contactNames);
   assert.deepEqual(Buffer.from((await rpc(reopened, 'readFile', {path: photoPath})).content, 'base64'), photo);
   console.log('Restart restored Files and the received collection; reconnecting for revocation');
   const reconnected = waitMessage(reopened.child, message => message.event === 'paired');
@@ -148,7 +166,7 @@ try {
   await revoked;
   assert.deepEqual((await rpc(reopened, 'readDir', {path: '/Fotos'})).children, []);
   await assert.rejects(rpc(reopened, 'readFile', {path: photoPath}), /does not exist/);
-  console.log('PASS: Files BLOB imports and persistence; collection-only signed sharing, membership updates, restart, and revocation');
+  console.log('PASS: Files imports; contact HTML object sharing and revocation; independent persisted photo associations; signed collection sharing, updates, and restart');
 } catch (error) {
   for (const worker of workers) console.error(`${worker.logPath}\n${(await readFile(worker.logPath, 'utf8')).slice(-12000)}`);
   throw error;

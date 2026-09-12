@@ -69,6 +69,158 @@ final class FileProviderChangesTests: XCTestCase {
         XCTAssertFalse(native.capabilities.contains(.allowsDeleting))
     }
 
+    func testStatCanDeleteCapabilityOverridesModePermissions() async throws {
+        for (mode, canDelete, expected) in [(0o40555, true, true), (0o40755, false, false)] {
+            let client = try bridge { operation, _ in
+                XCTAssertEqual(operation, "filer:stat")
+                return ["mode": mode, "size": 0, "canDelete": canDelete]
+            }
+            let object = try await client.getObject(id: "/objects/shared")
+            XCTAssertEqual(object.permissions.contains(.delete), expected)
+        }
+    }
+
+    func testCreateItemUsesCanonicalPathReturnedByWrite() async throws {
+        let canonicalPath = "/objects/object-1/Shared with/Alice"
+        let row: [String: Any] = [
+            "id": "filer:" + String(repeating: "d", count: 64),
+            "parentId": "objects/object-1/Shared with",
+            "name": "Alice",
+            "path": canonicalPath,
+            "type": "directory",
+            "size": 0,
+            "contentVersion": "folder-v1",
+            "metadataVersion": "folder-m1",
+            "downloadOnDemand": false,
+            "canDelete": true
+        ]
+        let client = try bridge { operation, params in
+            switch operation {
+            case "filer:writeFile":
+                XCTAssertEqual(params["path"] as? String, "/objects/object-1/Shared with/index.html")
+                return ["status": "ok", "path": canonicalPath]
+            case "filer:stat":
+                XCTAssertEqual(params["path"] as? String, canonicalPath)
+                return ["item": row]
+            default:
+                throw ONEBridgeError.invalidResponse
+            }
+        }
+        let object = try await client.createItem(parentId: "/objects/object-1/Shared with", name: "index.html",
+                                                 data: Data("<html>".utf8), isDirectory: false)
+        XCTAssertEqual(object.path, canonicalPath)
+        XCTAssertEqual(object.name, "Alice")
+        XCTAssertTrue(object.permissions.contains(.delete))
+    }
+
+    func testCreateItemRejectsCanonicalPathWithBackslash() async throws {
+        let client = try bridge { operation, _ in
+            XCTAssertEqual(operation, "filer:writeFile")
+            return ["status": "ok", "path": "/objects/object-1/Shared\\with/Alice"]
+        }
+        do {
+            _ = try await client.createItem(parentId: "/objects/object-1/Shared with", name: "index.html",
+                                            data: Data("<html>".utf8), isDirectory: false)
+            XCTFail("Accepted a canonical path containing a backslash")
+        } catch { XCTAssertTrue(error is ONEBridgeError) }
+    }
+
+    func testReconcileDifferentContentDefersToOwnerValidation() async throws {
+        let client = try bridge { operation, params in
+            switch operation {
+            case "filer:stat":
+                XCTAssertEqual(params["path"] as? String, "/contact.html")
+                return ["mode": 0o100444, "size": 3]
+            case "filer:readFile":
+                XCTAssertEqual(params["path"] as? String, "/contact.html")
+                return ["content": Data("old".utf8).base64EncodedString()]
+            default:
+                throw ONEBridgeError.invalidResponse
+            }
+        }
+        let reconciled = try await client.reconcileImportedItem(
+            parentId: "/", name: "contact.html", data: Data("new".utf8), isDirectory: false)
+        XCTAssertNil(reconciled)
+    }
+
+    func testDeleteFolderUsesRmdir() async throws {
+        var operations: [String] = []
+        let client = try bridge { operation, params in
+            operations.append(operation)
+            switch operation {
+            case "filer:stat":
+                return ["mode": 0o40755, "size": 0]
+            case "filer:rmdir":
+                XCTAssertEqual(params["path"] as? String, "/objects/object-1/Shared with/Alice")
+                return ["result": true]
+            default:
+                throw ONEBridgeError.invalidResponse
+            }
+        }
+        try await client.deleteObject(id: "/objects/object-1/Shared with/Alice")
+        XCTAssertEqual(operations, ["filer:stat", "filer:rmdir"])
+    }
+
+    func testRootEnumerationLocalizesRuntimeMounts() async throws {
+        var row = item
+        row["id"] = "contacts"
+        row["parentId"] = "root"
+        row["path"] = "/contacts"
+        row["name"] = "contacts"
+        row["type"] = "directory"
+        let client = try bridge { operation, params in
+            if operation == "filer:readDir" {
+                XCTAssertEqual(params["path"] as? String, "/")
+                return ["children": ["contacts"]]
+            }
+            XCTAssertEqual(operation, "filer:stat")
+            XCTAssertEqual(params["path"] as? String, "/contacts")
+            return ["item": row]
+        }
+        let enumerator = FilerEnumerator(container: "root", bridge: { client })
+        defer { enumerator.invalidate() }
+        let listed = expectation(description: "root listed")
+        let observer = ItemObserver(listed)
+        enumerator.enumerateItems(for: observer, startingAt: NSFileProviderPage(NSFileProviderPage.initialPageSortedByName as Data))
+        await fulfillment(of: [listed], timeout: 3)
+        XCTAssertNil(observer.error)
+        let contact = try XCTUnwrap(observer.items.first)
+        let language = FilerFolderNames.language(for: Locale.preferredLanguages)
+        XCTAssertEqual(contact.filename, FilerFolderNames.name(for: "/contacts", language: language))
+        XCTAssertEqual(contact.itemIdentifier.rawValue, "contacts")
+        XCTAssertEqual(contact.parentItemIdentifier, .rootContainer)
+    }
+
+    func testRootAnchorsInvalidateOldFolderLabelsAndRoundTrip() async throws {
+        let client = try bridge { operation, params in
+            if operation == "filer:getCurrentAnchor" { return ["anchor": "source-anchor"] }
+            XCTAssertEqual(operation, "filer:getChanges")
+            XCTAssertEqual(params["since"] as? String, "source-anchor")
+            return ["updated": [], "deleted": [], "newAnchor": "source-next", "moreComing": false]
+        }
+        let enumerator = FilerEnumerator(container: "root", bridge: { client })
+        defer { enumerator.invalidate() }
+        for old in ["source-anchor", "filer-folders-v1:fr:source-anchor"] {
+            let finished = expectation(description: "expired")
+            let observer = ChangeObserver(finished)
+            enumerator.enumerateChanges(for: observer, from: NSFileProviderSyncAnchor(Data(old.utf8)))
+            await fulfillment(of: [finished], timeout: 3)
+            XCTAssertEqual((observer.error as NSError?)?.code, NSFileProviderError.syncAnchorExpired.rawValue)
+        }
+        let anchored = expectation(description: "localized anchor")
+        var current: NSFileProviderSyncAnchor?
+        enumerator.currentSyncAnchor { anchor in current = anchor; anchored.fulfill() }
+        await fulfillment(of: [anchored], timeout: 3)
+        let language = FilerFolderNames.language(for: Locale.preferredLanguages)
+        XCTAssertEqual(current?.rawValue, Data("filer-folders-v1:\(language):source-anchor".utf8))
+        let finished = expectation(description: "round trip")
+        let observer = ChangeObserver(finished)
+        enumerator.enumerateChanges(for: observer, from: try XCTUnwrap(current))
+        await fulfillment(of: [finished], timeout: 3)
+        XCTAssertNil(observer.error)
+        XCTAssertEqual(observer.anchor?.rawValue, Data("filer-folders-v1:\(language):source-next".utf8))
+    }
+
     func testEnumeratorsPreserveItemVersionsPagesAndChangeAnchors() async throws {
         let row = item
         let client = try bridge { operation, params in
