@@ -160,7 +160,7 @@ final class NodeRuntimeProcess: @unchecked Sendable {
     /// Only explicitly mounted file publications may use absolute path identifiers.
     static func isPublishedDirectory(_ value: String) -> Bool {
         if value == "/ONE" || value == "/ONE/System" { return true }
-        guard ["/Gesundheit", "/Files", "/Fotos", "/objects", "/contacts", "/ONE/System/journal"].contains(where: { value == $0 || value.hasPrefix($0 + "/") }) else { return false }
+        guard ["/Gesundheit", "/Files", "/Fotos", "/contacts", "/ONE/System/journal", "/ONE/System/settings"].contains(where: { value == $0 || value.hasPrefix($0 + "/") }) else { return false }
         return !value.contains("\\") && !value.contains("\0") &&
             value.dropFirst().split(separator: "/", omittingEmptySubsequences: false).allSatisfy { !$0.isEmpty && $0 != "." && $0 != ".." }
     }

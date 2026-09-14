@@ -61,14 +61,15 @@ rendered its JSON successfully.
 Drive: `/Users/gecko/Library/CloudStorage/OneFiler-FlexibelCubeDemo`.
 
 Native pairing and clinical Finder browsing are now verified for the demo publication.
-The updated runtime also exposes `/Gesundheit`. Cube's `flexibel-health-files`
+The updated runtime exposes `/Gesundheit/Flexibel` when a verified Flexibel
+publication exists. Cube's `flexibel-health-files`
 plan publishes 15 verified demo records for the explicitly selected canonical
 patient as JSON BLOBs in a `PersistentFileSystemRoot` tree. An owner-only
 `ChannelInfo` carries the current root; normal paired CHUM carries its declared
 closure. Filer follows that current publication without interpreting raw clinical
 objects or using Cube's debug API as its data transport.
 
-Finder enumerated `Gesundheit/Patient-Test [canonical patient id]` and its clinical
+Finder enumerated `Gesundheit/Flexibel/Patient-Test [canonical patient id]` and its clinical
 categories. All 15 JSON files were hydrated through macOS File Provider and their
 sizes and SHA-256 hashes matched the downloaded publication. Finder Quick Look
 rendered the 305-byte BodyTemperature record (37.2 °C) successfully.
@@ -159,7 +160,8 @@ Flexibel's owning plans and validation, not overwrite the publication BLOBs.
 
 The native refresh path now follows the replicated File Provider contract:
 macOS ignores folder-level signals, so every validated notification wakes
-`workingSet`. `PublishedWorkingSet` includes Files, Fotos, and Gesundheit while
+`workingSet`. `PublishedWorkingSet` includes the currently mounted Files, Fotos,
+and Gesundheit roots while
 delegating model enumeration and exact model deltas to their existing persistent
 projection. Publication versions bind pagination and expire a changed working
 set. Path identities are preserved, and Files retains its explicit

@@ -1,5 +1,9 @@
 # File sharing trace — 12 September 2026
 
+> Historical QA evidence: `/objects` is now a vger.headless catchall and is no
+> longer mounted or published by the Filer UI. Filer's raw object browser remains
+> at `/ONE/System/objects`.
+
 The findings below describe the original trace. The subsequent fix adds an
 authenticated received-file projection and records under `ONE/System/Journal`,
 and changes ordinary Signature arrivals to preserve existing verification results.

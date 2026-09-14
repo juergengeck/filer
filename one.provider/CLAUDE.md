@@ -212,11 +212,13 @@ IFileSystem interface (TypeScript)
 TemporaryFileSystem with mounted filesystems:
   - /chats (ChatFileSystem)
   - /invites (PairingFileSystem)
-  - /objects (ObjectsFileSystem)
-  - /debug (DebugFileSystem)
-  - /types (TypesFileSystem)
-  - /profiles (ProfilesFileSystem)
-  - /questionnaires (QuestionnairesFileSystem)
+  - /Files (default-visible imports)
+  - /Fotos (dynamic verified Fotos shares)
+  - /Gesundheit/Flexibel (dynamic verified clinical publication)
+  - /contacts (ContactsFileSystem)
+  - /ONE/System/objects (raw object browser)
+  - /ONE/System/settings (Filer settings book)
+  - /ONE/System/debug, models, types, journal
       ↓
 one.core (content-addressable storage)
 ```
@@ -656,7 +658,10 @@ one.provider is configured for **full IoM mode**, enabling complete incremental 
   - `noImport: false` - Import enabled (receives all peer data)
   - `noExport: false` - Export enabled (shares data with peers)
 - **IoMManager**: Properly initialized with LeuteModel and CommServer URL
-- **Filesystems mounted**: `/chats`, `/invites`, `/objects`, `/profiles`, `/questionnaires`, `/types`, `/debug`
+- **Filesystems mounted**: `/chats`, `/contacts`, `/ONE/invites`, and the
+  `/ONE/System/*` projections. `/Files` is visible by default; `/Fotos` and
+  `/Gesundheit/Flexibel` are content-driven unless overridden by the Filer
+  settings book. The vger.headless `/objects` endpoint is not a Filer mount.
 
 **What this means**: When paired with another ONE instance via full IoM invitation, one.provider becomes a complete incremental backup, replicating all data from all channels of the peer.
 

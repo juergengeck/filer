@@ -1,26 +1,27 @@
-# Object folders and sharing through Filer
+# Object folders and the headless sharing endpoint
 
 Status: implemented for contacts, owned imported files, and authenticated received
 files. Received files are read-only; received Fotos collections retain their
 sender-controlled projection.
 
-## Current runtime
+## Runtime boundary
 
-The shared implementation lives in `../one/packages/filer.core`, with runtime
-composition in `../one/packages/refinio.api` and macOS bridge support in this
-repository. It exposes:
+The shared implementation lives in `../one/packages/filer.core`. The `/objects`
+catchall is an endpoint offered by vger.headless; the Filer UI does not mount or
+publish it. Filer keeps its user-facing imports under `/Files` and its internal
+raw-object browser under `/ONE/System/objects`.
+
+The headless endpoint exposes:
 
 - `/contacts/<main profile name>/index.html` for portable contact representations;
 - `/objects/<imported filename>/` for each owned file, containing its HTML view,
   original content, `Shared with`, and `People in photo`;
-- `/Files` as the existing import surface, preserving original paths and bytes.
-- `/ONE/System/journal` for sharing receipts and retained QA run reports (displayed
-  as `ONE/System/Journal` in Finder).
+- object-folder projections for imported content and sharing relationships.
 
 Completed CHUM object imports persist a receiver-owned receipt binding the exact
 file root to the authenticated sending person. Received objects appear alongside
-owned objects in `/objects`, with deterministic identity-based name disambiguation
-when filenames collide. They expose their summary and original bytes, without
+owned objects in the headless `/objects` endpoint, with deterministic
+identity-based name disambiguation when filenames collide. They expose their summary and original bytes, without
 editable sharing or photo-association folders. Their original sender retains
 ownership; receipt does not add the file to the receiver's owned `/Files` root.
 

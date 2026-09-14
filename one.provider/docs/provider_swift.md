@@ -123,23 +123,24 @@ required init(domain: NSFileProviderDomain)
 **Enumerates**: Root directory (`/`)
 
 **`enumerateItems(for:startingAt:)`**
-- Returns **hardcoded list** of top-level folders:
-  ```swift
-  ["objects", "chats", "types", "debug", "invites"]
-  ```
-- **No IPC calls** - purely synthetic
+- Reads the current root projection through `ONEBridge`.
+- Includes only currently mounted dynamic folders. `/Files` is visible by
+  default; `/Fotos` and `/Gesundheit/Flexibel` follow verified content and the
+  settings book at `/ONE/System/settings/Filer`.
 - Flow:
-  1. Call `FileProviderItem.standardFolders()`
-  2. Call `observer.didEnumerate(items)`
-  3. Call `observer.finishEnumerating(upTo: nil)`
+  1. Call `bridge.getChildren(parentId: "/")`
+  2. Convert the returned items without changing their stable identifiers
+  3. Call `observer.didEnumerate(items)`
+  4. Call `observer.finishEnumerating(upTo: nil)`
 
 **`enumerateChanges(for:from:)`**
 - Would call `bridge.getChanges(since:)` for sync
 - Currently returns empty (not implemented)
 
-### 2.2 ObjectsEnumerator
+### 2.2 Generic enumerator
 
-**Enumerates**: `/objects` directory and subdirectories
+**Enumerates**: Runtime-owned directories, including `/Files`, `/Fotos`,
+`/Gesundheit/Flexibel`, `/contacts`, and `/ONE/System/*`.
 
 **`enumerateItems(for:startingAt:)`**
 - Flow:
@@ -150,9 +151,8 @@ required init(domain: NSFileProviderDomain)
   4. Call `observer.didEnumerate(items)`
   5. Call `observer.finishEnumerating(upTo: nil)`
 
-### 2.3 GenericEnumerator
-
-**Enumerates**: All other directories (`/chats`, `/types`, `/invites`, `/debug`)
+There is no top-level `/objects` enumerator. That path is reserved for the
+vger.headless endpoint; Filer's raw object browser is `/ONE/System/objects`.
 
 **`enumerateItems(for:startingAt:)` with extensive logging**
 ```swift
@@ -707,7 +707,7 @@ This confirms:
    - Re-access directory
 
 5. **Test with different path**:
-   - Try `/objects` or `/chats` instead of `/invites`
+   - Try `/ONE/System/objects` or `/chats` instead of `/ONE/invites`
    - Same empty result? Framework-wide issue
    - Works? Specific to `/invites` path
 

@@ -13,6 +13,7 @@ const siblingDependencyPackages = [
     {directory: '../one/packages/filer.core'},
     {directory: '../one/packages/llm.one'},
     {directory: '../fotos/fotos.core'},
+    {directory: '../one/packages/settings.core'},
     {directory: '../one/packages/refinio.api'}
 ];
 

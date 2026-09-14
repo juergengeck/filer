@@ -6,7 +6,8 @@ The root workspace consumes and evolves the shared ONE packages in `../one/packa
 
 ## Filesystem Layout
 
-The root also contains `Files` for BLOB-backed imports and `Fotos` for collections shared from fotos.one through ONE pairing. See [Files and Fotos](docs/files-and-fotos.md).
+The root exposes content folders dynamically. `Files` is visible by default for BLOB-backed imports, while `Fotos` and `Gesundheit/Flexibel` appear when their verified publications contain content. See [Files and Fotos](docs/files-and-fotos.md) and [Dynamic folder configuration](docs/dynamic-folder-configuration.md).
+The `/objects` catchall belongs to the vger.headless API and is deliberately not mounted in the Filer UI.
 
 System folders live under `ONE`:
 
@@ -16,12 +17,15 @@ ONE/
 │   ├── debug/
 │   ├── models/
 │   ├── objects/
+│   ├── settings/
+│   │   └── Filer/
+│   │       ├── folders.json
+│   │       └── status.json
 │   └── types/
-├── settings/
 └── invites/
 ```
 
-`settings` is currently an empty directory. Chats, profiles, and domain folders remain at the filesystem root. Existing model libraries migrate to the new path on startup while preserving item identities and file content.
+`ONE/System/settings/Filer/folders.json` is the writable settings-book projection for folder visibility. `status.json` reports the configured mode, detected content, and effective mount state. Chats, contacts, and visible domain folders remain at the filesystem root. Existing model libraries migrate to the new path on startup while preserving item identities and file content.
 
 ## Workspace Commands
 

@@ -75,16 +75,16 @@ final class FileProviderChangesTests: XCTestCase {
                 XCTAssertEqual(operation, "filer:stat")
                 return ["mode": mode, "size": 0, "canDelete": canDelete]
             }
-            let object = try await client.getObject(id: "/objects/shared")
+            let object = try await client.getObject(id: "/Files/shared")
             XCTAssertEqual(object.permissions.contains(.delete), expected)
         }
     }
 
     func testCreateItemUsesCanonicalPathReturnedByWrite() async throws {
-        let canonicalPath = "/objects/object-1/Shared with/Alice"
+        let canonicalPath = "/Files/imported/Alice"
         let row: [String: Any] = [
             "id": "filer:" + String(repeating: "d", count: 64),
-            "parentId": "objects/object-1/Shared with",
+            "parentId": "Files/imported",
             "name": "Alice",
             "path": canonicalPath,
             "type": "directory",
@@ -97,7 +97,7 @@ final class FileProviderChangesTests: XCTestCase {
         let client = try bridge { operation, params in
             switch operation {
             case "filer:writeFile":
-                XCTAssertEqual(params["path"] as? String, "/objects/object-1/Shared with/index.html")
+                XCTAssertEqual(params["path"] as? String, "/Files/imported/index.html")
                 return ["status": "ok", "path": canonicalPath]
             case "filer:stat":
                 XCTAssertEqual(params["path"] as? String, canonicalPath)
@@ -106,7 +106,7 @@ final class FileProviderChangesTests: XCTestCase {
                 throw ONEBridgeError.invalidResponse
             }
         }
-        let object = try await client.createItem(parentId: "/objects/object-1/Shared with", name: "index.html",
+        let object = try await client.createItem(parentId: "/Files/imported", name: "index.html",
                                                  data: Data("<html>".utf8), isDirectory: false)
         XCTAssertEqual(object.path, canonicalPath)
         XCTAssertEqual(object.name, "Alice")
@@ -116,10 +116,10 @@ final class FileProviderChangesTests: XCTestCase {
     func testCreateItemRejectsCanonicalPathWithBackslash() async throws {
         let client = try bridge { operation, _ in
             XCTAssertEqual(operation, "filer:writeFile")
-            return ["status": "ok", "path": "/objects/object-1/Shared\\with/Alice"]
+            return ["status": "ok", "path": "/Files/imported\\Alice"]
         }
         do {
-            _ = try await client.createItem(parentId: "/objects/object-1/Shared with", name: "index.html",
+            _ = try await client.createItem(parentId: "/Files/imported", name: "index.html",
                                             data: Data("<html>".utf8), isDirectory: false)
             XCTFail("Accepted a canonical path containing a backslash")
         } catch { XCTAssertTrue(error is ONEBridgeError) }
@@ -151,13 +151,13 @@ final class FileProviderChangesTests: XCTestCase {
             case "filer:stat":
                 return ["mode": 0o40755, "size": 0]
             case "filer:rmdir":
-                XCTAssertEqual(params["path"] as? String, "/objects/object-1/Shared with/Alice")
+                XCTAssertEqual(params["path"] as? String, "/Files/imported/Alice")
                 return ["result": true]
             default:
                 throw ONEBridgeError.invalidResponse
             }
         }
-        try await client.deleteObject(id: "/objects/object-1/Shared with/Alice")
+        try await client.deleteObject(id: "/Files/imported/Alice")
         XCTAssertEqual(operations, ["filer:stat", "filer:rmdir"])
     }
 
@@ -284,14 +284,14 @@ final class FileProviderChangesTests: XCTestCase {
 
     func testPathContainersUseAbsoluteFilesystemAddressesForAnchorsAndChanges() async throws {
         let client = try bridge { operation, params in
-            XCTAssertEqual(params["container"] as? String, "/Gesundheit/Patient")
+            XCTAssertEqual(params["container"] as? String, "/Gesundheit/Flexibel/Patient")
             if operation == "filer:getCurrentAnchor" { return ["anchor": "health-version"] }
             XCTAssertEqual(operation, "filer:getChanges")
             XCTAssertEqual(params["since"] as? String, "health-version")
             return ["updated": [], "deleted": [], "newAnchor": "health-version", "moreComing": false]
         }
-        let anchor = try await client.getCurrentAnchor(container: "Gesundheit/Patient")
-        let changes = try await client.getChanges(container: "Gesundheit/Patient", since: anchor)
+        let anchor = try await client.getCurrentAnchor(container: "Gesundheit/Flexibel/Patient")
+        let changes = try await client.getChanges(container: "Gesundheit/Flexibel/Patient", since: anchor)
         XCTAssertEqual(changes.newAnchor, anchor)
     }
 

@@ -1,8 +1,10 @@
 # Fotos integration
 
 The native app exposes `/Fotos` for collections shared from fotos.one through
-ONE pairing. It composes the shared collection adapter from `fotos.core` into
-its bundled refinio.api runtime. See [Files and Fotos](files-and-fotos.md).
+ONE pairing. In the default `auto` mode the mount appears only while at least
+one verified collection exists. It composes the shared collection adapter from
+`fotos.core` into its bundled refinio.api runtime. See [Files and Fotos](files-and-fotos.md)
+and [Dynamic folder configuration](dynamic-folder-configuration.md).
 
 The HTTP flows below remain external integration fixtures for the original
 writable `/fotos` library adapter. They do not select the native `/Fotos`

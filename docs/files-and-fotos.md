@@ -1,6 +1,6 @@
 # Files and shared Fotos collections
 
-The native Filer runtime exposes two separate root folders:
+The native Filer runtime owns two separate content projections:
 
 - `/Files` accepts dropped files and folders. Every imported file is a typed
   `FilerStoredEntry` with a native `referenceToBlob`; `FilerFilesRoot`, addressed
@@ -16,7 +16,15 @@ The native Filer runtime exposes two separate root folders:
 
 Use the existing Filer pairing controls to pair Filer with fotos.one, then share
 an individual collection to that Filer identity from fotos.one. Pairing alone
-shares no collection. Before a share arrives, `/Fotos` is an empty folder.
+shares no collection. In the default `auto` mode, `/Fotos` is not mounted until
+a verified shared collection exists. Its visibility can be overridden in
+`/ONE/System/settings/Filer/folders.json`.
+
+`/Files` is visible by default. Deleting an empty `/Files` folder changes its
+configuration to `hidden`; deleting it never deletes imported content, and a
+non-empty folder is rejected as `ENOTEMPTY`. The same settings book can restore
+it or force either content projection visible or hidden. See
+[Dynamic folder configuration](dynamic-folder-configuration.md).
 
 The shared receiver in `fotos.core` verifies the recipient, issuer, scope,
 certificate chain, and signature with the runtime's trusted keys. Revoked or

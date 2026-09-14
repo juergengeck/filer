@@ -14,7 +14,7 @@ final class ONEBridgeRpcTests: XCTestCase {
 
     func testPublicationNotificationsAddressTheEnumeratedPathIdentifier() {
         XCTAssertEqual(RuntimeService.containerIdentifier("/Gesundheit").rawValue, "Gesundheit")
-        XCTAssertEqual(RuntimeService.containerIdentifier("/Gesundheit/Patient/Temperatur").rawValue, "Gesundheit/Patient/Temperatur")
+        XCTAssertEqual(RuntimeService.containerIdentifier("/Gesundheit/Flexibel/Patient/Temperatur").rawValue, "Gesundheit/Flexibel/Patient/Temperatur")
         XCTAssertEqual(RuntimeService.containerIdentifier("root"), .rootContainer)
         XCTAssertEqual(RuntimeService.containerIdentifier("workingSet"), .workingSet)
         XCTAssertEqual(RuntimeService.containerIdentifier("filer:abc").rawValue, "filer:abc")
@@ -42,6 +42,52 @@ final class ONEBridgeRpcTests: XCTestCase {
         let bridge = try ONEBridge(config: ONEInstanceConfig(name: "RPC Integration"),
             invoke: { try await pool.perform(domain: "RPC Integration", request: $0) }, close: {})
         try await bridge.connect()
+        let initialSettings = try await bridge.getObject(id: "/ONE/System/settings/Filer/folders.json")
+        XCTAssertTrue(FileProviderItem(oneObject: initialSettings).capabilities.contains(.allowsWriting))
+        try await bridge.deleteObject(id: "/Files")
+        let rootWithoutFiles = try await bridge.getChildren(parentId: "/")
+        XCTAssertFalse(rootWithoutFiles.contains { $0.name == "Files" })
+        let hiddenSettings = try await bridge.getObject(id: "/ONE/System/settings/Filer/folders.json")
+        let forcedSettings = Data("""
+        {
+          "$type$": "FilerFolderSettings",
+          "$version$": 1,
+          "folders": {
+            "files": "visible",
+            "fotos": "visible",
+            "health.flexibel": "auto"
+          }
+        }
+
+        """.utf8)
+        let forcedWriteVersion = try await bridge.writeContent(
+            id: "/ONE/System/settings/Filer/folders.json",
+            data: forcedSettings,
+            baseVersion: Data(hiddenSettings.contentHash.utf8)
+        )
+        let forcedVersion = try XCTUnwrap(forcedWriteVersion)
+        let forcedRoot = try await bridge.getChildren(parentId: "/")
+        XCTAssertTrue(forcedRoot.contains { $0.name == "Fotos" })
+        let automaticSettings = Data("""
+        {
+          "$type$": "FilerFolderSettings",
+          "$version$": 1,
+          "folders": {
+            "files": "auto",
+            "fotos": "auto",
+            "health.flexibel": "auto"
+          }
+        }
+
+        """.utf8)
+        _ = try await bridge.writeContent(
+            id: "/ONE/System/settings/Filer/folders.json",
+            data: automaticSettings,
+            baseVersion: Data(forcedVersion.utf8)
+        )
+        let automaticRoot = try await bridge.getChildren(parentId: "/")
+        XCTAssertTrue(automaticRoot.contains { $0.name == "Files" })
+        XCTAssertFalse(automaticRoot.contains { $0.name == "Fotos" })
         let children = try await bridge.getChildren(parentId: "chats")
         XCTAssertFalse(children.isEmpty)
         var workingItems: [ONEObject] = []
@@ -51,12 +97,13 @@ final class ONEBridgeRpcTests: XCTestCase {
             workingItems.append(contentsOf: result.items)
             page = result.nextPage
         } while page != nil
-        for mount in ["/Files", "/Fotos", "/Gesundheit", "/objects", "/contacts", "/ONE/System/models", "/ONE/System/journal"] {
+        for mount in ["/Files", "/contacts", "/ONE/System/models", "/ONE/System/journal", "/ONE/System/settings"] {
             XCTAssertTrue(workingItems.contains { $0.path == mount }, mount)
         }
+        XCTAssertFalse(workingItems.contains { $0.path == "/Fotos" })
+        XCTAssertFalse(workingItems.contains { $0.path == "/Gesundheit" })
+        XCTAssertFalse(workingItems.contains { $0.path == "/objects" })
         XCTAssertTrue(workingItems.first { $0.path == "/Files" }?.canAddChildren == true)
-        XCTAssertFalse(workingItems.first { $0.path == "/Fotos" }?.canAddChildren == true)
-        XCTAssertFalse(workingItems.first { $0.path == "/Gesundheit" }?.canAddChildren == true)
         let reconciled = try await bridge.reconcileImportedItem(parentId: "/", name: "chats", data: nil, isDirectory: true)
         XCTAssertEqual(reconciled?.type, .folder)
         let missing = try await bridge.reconcileImportedItem(parentId: "/", name: "missing-reimport-item", data: nil, isDirectory: true)
@@ -96,13 +143,13 @@ final class ONEBridgeRpcTests: XCTestCase {
         createInterface({input: process.stdin}).on('line', line => {
           if (!ready) { ready = true; console.log(JSON.stringify({ready: true, owner: 'a'.repeat(64), instance: 'b'.repeat(64)})); return; }
           const request = JSON.parse(line);
-          console.log(JSON.stringify({event: 'filerChanged', containers: request.operation === 'invalid' ? ['/arbitrary/path'] : ['workingSet', 'filer:' + 'c'.repeat(64), 'ONE/System', '/Gesundheit', '/Files', '/Fotos', '/objects', '/contacts']}));
+          console.log(JSON.stringify({event: 'filerChanged', containers: request.operation === 'invalid' ? ['/arbitrary/path'] : ['workingSet', 'filer:' + 'c'.repeat(64), 'ONE/System', '/Gesundheit', '/Files', '/Fotos', '/contacts', '/ONE/System/settings']}));
           console.log(JSON.stringify({requestId: request.requestId, success: true, result: {status: 'ok'}}));
         });
         """.utf8).write(to: entry)
         let notification = expectation(description: "typed change notification")
         let runtime = NodeRuntimeProcess(node: URL(fileURLWithPath: node), entry: entry, preload: preload, onChange: { containers in
-            XCTAssertEqual(containers, ["workingSet", "filer:" + String(repeating: "c", count: 64), "ONE/System", "/Gesundheit", "/Files", "/Fotos", "/objects", "/contacts"])
+            XCTAssertEqual(containers, ["workingSet", "filer:" + String(repeating: "c", count: 64), "ONE/System", "/Gesundheit", "/Files", "/Fotos", "/contacts", "/ONE/System/settings"])
             notification.fulfill()
         })
         do {
@@ -125,10 +172,10 @@ final class ONEBridgeRpcTests: XCTestCase {
 
     /// Mounted publication paths remain bounded even when their roots expand.
     func testPublishedNotificationPathsRejectTraversal() {
-        for path in ["/Gesundheit", "/Files", "/Fotos", "/objects", "/contacts", "/Gesundheit/Patient/Temperatur", "/Files/folder", "/Fotos/collection", "/objects/object-1/Shared with/Alice", "/contacts/Alice", "/ONE", "/ONE/System", "/ONE/System/journal", "/ONE/System/journal/qa-report.json"] {
+        for path in ["/Gesundheit", "/Files", "/Fotos", "/contacts", "/Gesundheit/Flexibel/Patient/Temperatur", "/Files/folder", "/Fotos/collection", "/contacts/Alice", "/ONE", "/ONE/System", "/ONE/System/journal", "/ONE/System/journal/qa-report.json", "/ONE/System/settings", "/ONE/System/settings/Filer/folders.json"] {
             XCTAssertTrue(NodeRuntimeProcess.isPublishedDirectory(path), path)
         }
-        for path in ["/arbitrary/path", "/FilesOther", "/Fotos/../ONE", "/Files/./item", "/Files//item", "/Gesundheit/", "/Files/a\\b", "/Fotos/a\0b", "/ONE/arbitrary", "/ONE/System/other", "/ONE/System/journal/../objects", "/ONE/System/journalOther"] {
+        for path in ["/objects", "/objects/object-1/Shared with/Alice", "/arbitrary/path", "/FilesOther", "/Fotos/../ONE", "/Files/./item", "/Files//item", "/Gesundheit/", "/Files/a\\b", "/Fotos/a\0b", "/ONE/arbitrary", "/ONE/System/other", "/ONE/System/journal/../objects", "/ONE/System/journalOther"] {
             XCTAssertFalse(NodeRuntimeProcess.isPublishedDirectory(path), path)
         }
     }
