@@ -15,6 +15,33 @@ The runner calls application operations. Fotos imports through its normal photo 
 
 ## Run from Filer
 
+For a complete disposable local run, including rebuilding the shared packages,
+registrar, packaged runtime, and native tests, run from the Filer repository:
+
+```bash
+pnpm test:glue-fotos-filer
+```
+
+The launcher starts a fresh production Glue registrar and relay, two Fotos QA
+servers, and independent persistent Chrome profiles for Alice and Charlie. It
+selects their exact operation-client IDs and runs the native bridge, progress,
+and runtime suites, including the full protocol. Logs, configuration, browser
+profiles, and the protocol report remain in the printed temporary evidence
+directory. Cleanup stops only processes owned by this run. Existing browser
+profiles, application stores, and installed File Provider domains are untouched.
+
+Use `FOTOS_QA_CHROME` to select a Chrome executable and `NODE_BINARY` to select
+the Node binary for runtime packaging; otherwise the launcher uses installed
+Google Chrome and `one.provider/build/toolchain/node`.
+
+Persistent profiles are required for these storage-backed actors. On Chrome
+153.0.8010.37, three diagnostic runs using incognito contexts crashed the browser
+main process during Alice's final reload (`EXC_BREAKPOINT`/`SIGTRAP`). Separate
+persistent profiles passed the same protocol without changing app readiness or
+storage code. The launcher reports actor crashes immediately instead of waiting
+for an operation timeout. The native crash's precise internal cause remains
+unresolved.
+
 Start the registrar and two separate Fotos browser profiles with independent storage. Configure both Fotos apps to use that registrar and communication relay, including the registrar's trusted system key. Use disposable app instances: the protocol registers identities, imports photos, creates a collection, pairs participants, and changes its grants. Older Fotos indexes without exact `data-size-bytes` metadata must be re-ingested; rounded display sizes are not accepted as byte counts.
 
 For unattended runs in an actively rebuilt workspace, finish the shared-package builds first, then start each Fotos server with `pnpm dev:qa 5383` (and `5384` for the second actor) from `fotos.browser/browser-ui`, using the same registrar/relay environment as normal development. This keeps the app-owned HTTP/HMR operation transport while disabling automatic file-watch reloads and separating optimizer caches per port. The QA launcher sets the null watch option after Vite configuration resolution, since Vite discards null values during config merging. Restart these QA servers after changing code. Normal `pnpm dev` retains live file watching.
@@ -109,6 +136,15 @@ npm --prefix one.provider run test:connection
 This entrypoint selects the Node binary, API entrypoint, and preload from `one.provider/build/native-runtime`. Obtain the disposable registrar's current public key from `GET /api/registration/authority/publicKey` when configuring the Fotos actors; a previous session's authority key is not a substitute for the current binding.
 
 ## Recorded live validation
+
+The [rebuilt persistent-profile run](qa-evidence/glue-fotos-filer-persistent-2026-09-12.json)
+passed all **9 native tests**, with **zero failures or skips**, and all **11
+protocol stages / 54 assertions** in **42.799 seconds**. The launcher exited with
+code zero after cleaning up its owned processes. The [reload trace](qa-evidence/glue-fotos-filer-reload-trace-2026-09-12.json)
+records the three incognito Chrome crashes and the passing persistent-profile
+comparison. The earlier [namespace rerun](qa-evidence/glue-fotos-filer-namespace-2026-09-12.json)
+failed at Alice reload because that temporary launcher used incognito contexts.
+Application readiness and reference encoding were unchanged by this launcher fix.
 
 The focused [before measurement](qa-evidence/glue-fotos-filer-latency-before-2026-09-12.json) took **6.607 seconds** to project a membership addition and **7.340 seconds** to read the new file through File Provider. With the receiver fix alone, the [same-collection measurement](qa-evidence/glue-fotos-filer-latency-receiver-2026-09-12.json) took **349 ms** for projection and **351 ms** for native bytes. Its projection rebuild fell from **6,217 ms to 10 ms**. After explicitly restarting Fotos with both fixes and retaining the additional regression collection, the [final measurement](qa-evidence/glue-fotos-filer-latency-final-2026-09-12.json) took **708 ms** for addition projection, **710 ms** for native bytes, and **505 ms** for removal/native bytes. These are individual observed runs, not percentile guarantees.
 

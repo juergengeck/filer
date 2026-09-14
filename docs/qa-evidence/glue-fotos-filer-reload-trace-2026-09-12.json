@@ -1,0 +1,3810 @@
+{
+  "description": "Alice reload timeout traced to native Chrome process crashes in disposable incognito test contexts; persistent actor profiles pass unchanged application protocol.",
+  "scope": "Test launcher repair; no change to application readiness or reference encoding.",
+  "crashes": [
+    {
+      "reportPath": "/Users/gecko/Library/Logs/DiagnosticReports/Google Chrome-2026-09-12-210007.ips",
+      "pid": 72395,
+      "version": "153.0.8010.37",
+      "exceptionType": "EXC_BREAKPOINT",
+      "signal": "SIGTRAP",
+      "threadName": "ThreadPoolForegroundWorker",
+      "frames": [
+        {
+          "imageOffset": 107014352,
+          "symbol": "ChromeMain",
+          "symbolLocation": 106994960
+        },
+        {
+          "imageOffset": 106987840,
+          "symbol": "ChromeMain",
+          "symbolLocation": 106968448
+        },
+        {
+          "imageOffset": 107046240,
+          "symbol": "ChromeMain",
+          "symbolLocation": 107026848
+        },
+        {
+          "imageOffset": 106836464,
+          "symbol": "ChromeMain",
+          "symbolLocation": 106817072
+        },
+        {
+          "imageOffset": 106835092,
+          "symbol": "ChromeMain",
+          "symbolLocation": 106815700
+        },
+        {
+          "imageOffset": 106795396,
+          "symbol": "ChromeMain",
+          "symbolLocation": 106776004
+        },
+        {
+          "imageOffset": 106795028,
+          "symbol": "ChromeMain",
+          "symbolLocation": 106775636
+        },
+        {
+          "imageOffset": 106794788,
+          "symbol": "ChromeMain",
+          "symbolLocation": 106775396
+        }
+      ]
+    },
+    {
+      "reportPath": "/Users/gecko/Library/Logs/DiagnosticReports/Google Chrome-2026-09-12-210815.ips",
+      "pid": 79028,
+      "version": "153.0.8010.37",
+      "exceptionType": "EXC_BREAKPOINT",
+      "signal": "SIGTRAP",
+      "threadName": "ThreadPoolForegroundWorker",
+      "frames": [
+        {
+          "imageOffset": 107014352,
+          "symbol": "ChromeMain",
+          "symbolLocation": 106994960
+        },
+        {
+          "imageOffset": 106987840,
+          "symbol": "ChromeMain",
+          "symbolLocation": 106968448
+        },
+        {
+          "imageOffset": 107046240,
+          "symbol": "ChromeMain",
+          "symbolLocation": 107026848
+        },
+        {
+          "imageOffset": 106836464,
+          "symbol": "ChromeMain",
+          "symbolLocation": 106817072
+        },
+        {
+          "imageOffset": 106835092,
+          "symbol": "ChromeMain",
+          "symbolLocation": 106815700
+        },
+        {
+          "imageOffset": 106795396,
+          "symbol": "ChromeMain",
+          "symbolLocation": 106776004
+        },
+        {
+          "imageOffset": 106795028,
+          "symbol": "ChromeMain",
+          "symbolLocation": 106775636
+        },
+        {
+          "imageOffset": 106794788,
+          "symbol": "ChromeMain",
+          "symbolLocation": 106775396
+        }
+      ]
+    },
+    {
+      "reportPath": "/Users/gecko/Library/Logs/DiagnosticReports/Google Chrome-2026-09-12-211022.ips",
+      "pid": 82971,
+      "version": "153.0.8010.37",
+      "exceptionType": "EXC_BREAKPOINT",
+      "signal": "SIGTRAP",
+      "threadName": "ThreadPoolForegroundWorker",
+      "frames": [
+        {
+          "imageOffset": 107014352,
+          "symbol": "ChromeMain",
+          "symbolLocation": 106994960
+        },
+        {
+          "imageOffset": 106987840,
+          "symbol": "ChromeMain",
+          "symbolLocation": 106968448
+        },
+        {
+          "imageOffset": 107046240,
+          "symbol": "ChromeMain",
+          "symbolLocation": 107026848
+        },
+        {
+          "imageOffset": 106836464,
+          "symbol": "ChromeMain",
+          "symbolLocation": 106817072
+        },
+        {
+          "imageOffset": 106835092,
+          "symbol": "ChromeMain",
+          "symbolLocation": 106815700
+        },
+        {
+          "imageOffset": 106795396,
+          "symbol": "ChromeMain",
+          "symbolLocation": 106776004
+        },
+        {
+          "imageOffset": 106795028,
+          "symbol": "ChromeMain",
+          "symbolLocation": 106775636
+        },
+        {
+          "imageOffset": 106794788,
+          "symbol": "ChromeMain",
+          "symbolLocation": 106775396
+        }
+      ]
+    }
+  ],
+  "controlledChange": {
+    "before": "One chromium.launch browser with two browser.newContext incognito contexts",
+    "after": "Two chromium.launchPersistentContext actors with distinct fresh userDataDir paths",
+    "unchanged": "Application source, protocol, fixtures, registrar and relay setup",
+    "limitation": "Precise native Chrome crash cause has not been established."
+  },
+  "persistentProfileReport": {
+    "assertions": [
+      {
+        "message": "Alice and Charlie application handlers are initialized",
+        "step": 1
+      },
+      {
+        "message": "Alice and Charlie expose fotos-qa on their explicit browser client IDs",
+        "step": 1
+      },
+      {
+        "message": "Fotos identities are prepared by their owning applications",
+        "step": 2
+      },
+      {
+        "message": "charlie reloaded into the prepared identity on the same exact browser client",
+        "step": 2
+      },
+      {
+        "message": "alice reloaded into the prepared identity on the same exact browser client",
+        "step": 2
+      },
+      {
+        "message": "Alice active publication identity matches its Glue registration",
+        "step": 2
+      },
+      {
+        "message": "Alice Glue certificate binds the publication signing key",
+        "step": 2
+      },
+      {
+        "message": "Alice device instance identity is independent from its Person owners",
+        "step": 2
+      },
+      {
+        "message": "Charlie active publication identity matches its Glue registration",
+        "step": 2
+      },
+      {
+        "message": "Charlie Glue certificate binds the publication signing key",
+        "step": 2
+      },
+      {
+        "message": "Charlie device instance identity is independent from its Person owners",
+        "step": 2
+      },
+      {
+        "message": "Filer uses the Glue-registered Bob identity",
+        "step": 2
+      },
+      {
+        "message": "Alice, Bob, and Charlie have distinct person identities",
+        "step": 2
+      },
+      {
+        "message": "Bob accepted Alice's application-owned pairing invitation",
+        "step": 3
+      },
+      {
+        "message": "Charlie paired with Alice through their application-owned pairing operations",
+        "step": 3
+      },
+      {
+        "message": "Pairing alone did not change Bob's Fotos projection",
+        "step": 3
+      },
+      {
+        "message": "Charlie has no verified active projection of Alice's collection",
+        "step": 3
+      },
+      {
+        "message": "The two imported fixtures have distinct content hashes",
+        "step": 4
+      },
+      {
+        "message": "Alice collection contains only the first of two imported photos",
+        "step": 4
+      },
+      {
+        "message": "Charlie has no verified active projection of Alice's collection",
+        "step": 4
+      },
+      {
+        "message": "Alice activated the collection share for Bob",
+        "step": 5
+      },
+      {
+        "message": "Bob exposes /Fotos/06433c6c-89fd-4ad7-bf67-30d7ac3aea46 (d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a)",
+        "step": 5
+      },
+      {
+        "message": "qa-original.png has the exact receiver byte digest",
+        "step": 5
+      },
+      {
+        "message": "qa-original.png bytes match Alice's imported fixture exactly",
+        "step": 5
+      },
+      {
+        "message": "Charlie has no verified active projection of Alice's collection",
+        "step": 5
+      },
+      {
+        "message": "Bob exposes /Fotos/06433c6c-89fd-4ad7-bf67-30d7ac3aea46 (d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a)",
+        "step": 6
+      },
+      {
+        "message": "qa-original.png has the exact receiver byte digest",
+        "step": 6
+      },
+      {
+        "message": "qa-original.png bytes match Alice's imported fixture exactly",
+        "step": 6
+      },
+      {
+        "message": "qa-second.jpg has the exact receiver byte digest",
+        "step": 6
+      },
+      {
+        "message": "qa-second.jpg bytes match Alice's imported fixture exactly",
+        "step": 6
+      },
+      {
+        "message": "Charlie has no verified active projection of Alice's collection",
+        "step": 6
+      },
+      {
+        "message": "Bob exposes /Fotos/06433c6c-89fd-4ad7-bf67-30d7ac3aea46 (d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a)",
+        "step": 7
+      },
+      {
+        "message": "qa-second.jpg has the exact receiver byte digest",
+        "step": 7
+      },
+      {
+        "message": "qa-second.jpg bytes match Alice's imported fixture exactly",
+        "step": 7
+      },
+      {
+        "message": "Charlie has no verified active projection of Alice's collection",
+        "step": 7
+      },
+      {
+        "message": "Offline Filer restart preserved Bob's exact identity and keys",
+        "step": 8
+      },
+      {
+        "message": "Bob exposes /Fotos/06433c6c-89fd-4ad7-bf67-30d7ac3aea46 (d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a)",
+        "step": 8
+      },
+      {
+        "message": "qa-second.jpg has the exact receiver byte digest",
+        "step": 8
+      },
+      {
+        "message": "qa-second.jpg bytes match Alice's imported fixture exactly",
+        "step": 8
+      },
+      {
+        "message": "Offline Filer restart preserved the received collection",
+        "step": 8
+      },
+      {
+        "message": "Bob exposes /Fotos/06433c6c-89fd-4ad7-bf67-30d7ac3aea46 (d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a)",
+        "step": 9
+      },
+      {
+        "message": "qa-second.jpg has the exact receiver byte digest",
+        "step": 9
+      },
+      {
+        "message": "qa-second.jpg bytes match Alice's imported fixture exactly",
+        "step": 9
+      },
+      {
+        "message": "Charlie has no verified active projection of Alice's collection",
+        "step": 9
+      },
+      {
+        "message": "Alice recorded Bob's recipient revocation",
+        "step": 10
+      },
+      {
+        "message": "Revocation removed the collection from Bob's Filer projection",
+        "step": 10
+      },
+      {
+        "message": "Charlie has no verified active projection of Alice's collection",
+        "step": 10
+      },
+      {
+        "message": "alice reloaded into the prepared identity on the same exact browser client",
+        "step": 11
+      },
+      {
+        "message": "Reloaded Alice recorded Bob's active recipient transition",
+        "step": 11
+      },
+      {
+        "message": "Bob exposes /Fotos/06433c6c-89fd-4ad7-bf67-30d7ac3aea46 (d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a)",
+        "step": 11
+      },
+      {
+        "message": "qa-second.jpg has the exact receiver byte digest",
+        "step": 11
+      },
+      {
+        "message": "qa-second.jpg bytes match Alice's imported fixture exactly",
+        "step": 11
+      },
+      {
+        "message": "Bob recovered the same collection scope after Alice reloaded",
+        "step": 11
+      },
+      {
+        "message": "Charlie has no verified active projection of Alice's collection",
+        "step": 11
+      }
+    ],
+    "collection": {
+      "finalPhotoHashes": [
+        "fd0f384be98adedd4a1bd47d68e84db36f73a14cc594ca722391a832dd0f0818"
+      ],
+      "id": "06433c6c-89fd-4ad7-bf67-30d7ac3aea46",
+      "name": "Namespace rebuild integration",
+      "path": "/Fotos/06433c6c-89fd-4ad7-bf67-30d7ac3aea46 (d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a)"
+    },
+    "durationMs": 13985,
+    "finishedAt": "2026-09-12T19:12:04.212Z",
+    "roles": {
+      "alice": {
+        "apiBase": "http://127.0.0.1:50771",
+        "certRef": "filerqaalice74518050@glue.one",
+        "certSubjectPublicKey": "4288790d4f71adea194e192d3d7422ffc52c7847d5306197a56af6f0a94c489e",
+        "clientId": "ab9decb8-fde3-4d7a-912e-67c145aff0ad",
+        "deviceInstanceId": "6d0233a0d9f4ce1fe47b48425e590a648adfa59677786b702cdef0eee45c1156",
+        "identity": "filerqaalice74518050@glue.one",
+        "personId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a"
+      },
+      "bob": {
+        "instanceId": "4b889e711c8db0d5007ee15f67252faf1cbe4fc6a03c15e524b5ff56db8cb4e4",
+        "ownerId": "de36e8ea63b394faddf4ce1a081137bef5d171653b160d9c76dd5d04b58fc978",
+        "personId": "de36e8ea63b394faddf4ce1a081137bef5d171653b160d9c76dd5d04b58fc978"
+      },
+      "charlie": {
+        "apiBase": "http://127.0.0.1:50772",
+        "certRef": "filerqacharlie74518050@glue.one",
+        "certSubjectPublicKey": "ce48f48b47c10e1e0bdf88a14b4d449987913cdaccc6a65d5aff2f8552f2e3a5",
+        "clientId": "b933a92f-dcf0-4b81-9581-66d7f07a0d8a",
+        "deviceInstanceId": "302e75f7aa60a029d21dac2f243cb8fb432a28770856acc8ea8360109b5d7a95",
+        "identity": "filerqacharlie74518050@glue.one",
+        "personId": "f5d8066f106bbb17e0013456a922e326bb880db33a5e7f26e818a763d5e647e9"
+      },
+      "glueApiBase": "http://127.0.0.1:50770"
+    },
+    "runId": "74518050-c191-4dfa-a62a-3c668b928c0f",
+    "runtimeDiagnostics": {
+      "chum": {
+        "activeChums": [
+          {
+            "AtoBBlob": 0,
+            "AtoBClob": 0,
+            "AtoBIdObjects": 0,
+            "AtoBObjects": 0,
+            "BtoABlob": 0,
+            "BtoAClob": 0,
+            "BtoAIdObjects": 0,
+            "BtoAObjects": 4,
+            "connId": 9,
+            "errorCount": 0,
+            "errors": []
+          }
+        ],
+        "activeExporters": [
+          {
+            "connId": 9,
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a"
+          }
+        ],
+        "activePeerSessions": [
+          {
+            "connId": 9,
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a"
+          }
+        ],
+        "traceEvents": [
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "95d5c8757adfb3bc24b656143079f9bd4f35b140f5fa5c6ae4b9f613c2f756d8",
+            "idHash": "0d41c726525ac5a127c6e8e317d9e3f86365e023325839bbe641c9f194ad61ed",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 86,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "fa3242522d156f85615b6933a4ca247cf2fb815667a99f66c47771e3be8dcb43",
+            "idHash": "08df8eafac1273140787b0449209c3b882a4f8ae6769853a5149fc1f787603ad",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 87,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "d873c9afa18d613aa3591ad8a64bf8514578bf0f5381a34b954a7dd42a952cae",
+            "idHash": "c497b951be6ed1c0b5ad7bd5ec5de42d61d9ce3db82d067502213cd47f193f97",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 88,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "8caabdfea4ddea3c68ad8b1060fed881fa3a5f5a29a1b5057cc2c6571a5a7527",
+            "idHash": "c398ee84e2db14d237f2e58ad45539273043f986b3db719c11327175a3ab7210",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 89,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "1f5a5145c64d75405085824b74af07393d7d2650d69d5537aaca046e8f4a9ad1",
+            "idHash": "8367a65a622ebadff6816cc3f7f586024445967ba1bc22ec2df42320d6f140f1",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 90,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "1d53afc33494183bb56bd6a70f196b879dc89b407f4d30850d69d18a4d1054fc",
+            "idHash": "406ccc465adbf6d00aae443f6b024e19251dc915ab2377939961843b93cc3706",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 91,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "0e9243b8c3f083a512ac01e7d58b469620eb88d083ed823b30b63271386b78f3",
+            "idHash": "6729552a20800f0d3d76dd8a19c8cf8a9c2a4365256117a6f5e4db9c6297fcd3",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 92,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "7687b816d8090627697753a51cad13d6cc2d10836fbc0e0ba2536f41c3d0f50c",
+            "idHash": "71f13799c5ecb770753e2d42f66031b037d1b2d2f4bac2488e89453a4fd45e79",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 93,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "8e970853baec26f488935cb226685f692b0de23c9aa0bf7580da119ece76d559",
+            "idHash": "2021c00e8bc972301ed842e0df355546cea4aa8972e047b5236b279f557d02dc",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 94,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "f51face4b88054f2c3a636737fd6c778460f497d6eacf9cf4bf694e3d7b4ba2e",
+            "idHash": "ff87b730c6fb47437679ef0207d79c47a2e7f43cc454a49d821ecb40889fd1fc",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 95,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "aa34c3aff6fb51519a6eb5438201c50fa9df4a4a27c20d18bd2fca23df4aae64",
+            "idHash": "10276f2778daa0e94482f2e877808c391bf9ca34a98c6e4c1a5720555da6ea4e",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 96,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "e7e8d052d8ed8413538dec8140607d8d467e01be4bbab0851bb4a5b191bdafa5",
+            "idHash": "8f60e693c6a11adf09ff0df4fe06bd6630df9b2a3d0de202a192bd5260a37742",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 97,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "2045339e00aef130b1b016e966e1368657c438ea1c8bd53f0590f31e59ba20ca",
+            "idHash": "d6cd910697b345e963b4c654272101f50ee0a7a87409afd2e62cedc709fcf2f4",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 98,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "1342155eb34bf15337d6c63e64d67dff76568664c653bfafd6f6df879970772a",
+            "idHash": "1d2262c409d483401e85d3b1adfe5ae50b7065f5ec302010923150c96b9223df",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 99,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "4caca2393cfced101586af2e3911b0be7850e9c21e9e60498a3149a73711faff",
+            "idHash": "87151a81b26b813f29add601061e3b69e1831539de09751ca73aa4d53cce58ab",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 100,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "56f812aa8eace87d287a0838e8e24a0ae4267f244190ecdb253ce247ac8d5a37",
+            "idHash": "2f5e7a6a5c4994fc05de33abc094f852c5b1e6791d5a8be80406e16cd6a8b3f5",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 101,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "3da1088b495dbc099ec96e2bd115232cbfba80b911071a4f45a1eccc7f34e7d4",
+            "idHash": "85096733766532b06bbd473699f7a72aed0bcb71475c953c6d4bbd937b92b8f7",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 102,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "b2bfd1cbba357fa7f8e2cefa69f4d835acc2a6e6bd67f35b8961adc8f0fa5816",
+            "idHash": "9ae27d332fe2978f71d7276e7435cdc6d2a07c733609910f35b3bfff407d4ef5",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 103,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "0e47496b8e6e105acf6a6a54b9820664fa5f8bed30fc94793eff2f1986069ef7",
+            "idHash": "36959524eaed4650cf8221c77a4bae6c3e15ae670d2b245759d197b4553abde0",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 104,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "c9631c773d4cb31583708de573f5b53a83e1cfc3836bfb5436ccf8c60bf23ae8",
+            "idHash": "86d3125f9589783681fc45b32af41b478ba9cb8cf15a0005268f4e2fe6f12e63",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 105,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "9099f9f4c09f8b9ed3b5013550827b4eeabbfb04050f7b331fbe523331871075",
+            "idHash": "b52eaabb973f50bdbdb5558f4c9f59b3652f6f2feb8661d32ff97cd860a38837",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 106,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "394b33fceae245043b2ca9d8d8511ab5497a8342fb758ce58ea75b43851ad33f",
+            "idHash": "36b88e19a67610b9676a559b7f54a7b0d374afe49e620bc14a45bf8ef4e78289",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 107,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "64f095023399f678139e0631a587af77d5dfc24b5c378848c1e7cbd2ab4ac449",
+            "idHash": "b248c1a2be86a98052773edf3292c7e3886a5b0b4555b15933e91477286cc43e",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 108,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "83df1a3a50a443c5f4193002523052583be855a2071520c043e2729152565452",
+            "idHash": "251d15ca7b551aaeef0e771b7a1ec8dbf74d964a38eab9e8338964763c411a91",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 109,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "1f0fa686df90102280599a524a401a5bfdd9d9bc6252e9b9539f54c72fb86c29",
+            "idHash": "db65545a8962fc5aaf41e8d9dd0d2fb2f95cb337864c960713bdd1aa3e6f5da6",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 110,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "c31ce456ba64a2b71fe76df616d7b3b23cc56d876ead4e5ec0437e6df8717485",
+            "idHash": "f12f9679080d817a162c6993e1d229487e5df91b742d7d5c0650c26696e4d6c6",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 111,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "bd6790b0a1e66bcda8c2cf1b5f22f662233674d3b08dff91ad4a57292ebd8f01",
+            "idHash": "110b5c243907c2397d1aad78668c63374d689b1c0ea7824cac5016b188116b21",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 112,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "6d5648eab7edf7caa31ffe212842ec2e6ea14db94563764f1c7caafa72a06591",
+            "idHash": "e6f19f8a1216800c610d3739264925a9253f0d644c8612e3a11d40f4b7bbb279",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 113,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "b7e8389676f8d3bba0b4f71193d907aadc646184b4390f7832adec0c125bf27a",
+            "idHash": "5cfb8f4ccea69d20c32daca62cd52a72fa4902800540d53fc5cd34b42e52d3b5",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 114,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "ffa9ae633f355358ba250ee16a961e4a0cfec5f75bb6eb9e64787c4dcf5581bb",
+            "idHash": "8b249d2b15d58d501550161e827181ece8d9b9b91a644753e5d8950234120e75",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 115,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "4186b5c29860f67e344e145e76cc41b0c62e50f31c0606646de01ed6b5e63268",
+            "idHash": "aff40c2712a9ced259244a717aa67c4ed36389a88eafc32a91d83e3f4aaef8fd",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 116,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "326286c2e3dd42afc625ebfad260394dd746ad61dabd0539d86ede6fbc0b3f26",
+            "idHash": "43defbf0ed146fb2719a66a75d3150410fc83ffaff189a7b3ba4d5defbd13c82",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 117,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "b55a500e62877c1cf37e9ed083ed06e57fd67af5d447ca87b89a39b29d57f597",
+            "idHash": "471e9eb1dac24632780e9128f0e912fbaf5885e8afd073e4cb9f4fd4ca9c7041",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 118,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "f402aba7ef8d9c8bb14551bc37aee90ccb8a178c08fc49b1b5257b62beb53dcc",
+            "idHash": "83d81076c00c041a8e191342788e6a712d4be7083e29e7e0fa8fe6ee417ac0b7",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 119,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "4a6bdff379f22851615e5e657b43e9688ddbad6bb9df8d2ee0e734ff3e74da12",
+            "idHash": "c2587df140e8b9b15d042ad89d3012fb8e74549e75518a9a8e21647155da9f2d",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 120,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "a9067f2eac9b3d157d279230535a9518ad295859b30272188d9bf456ab372bcd",
+            "idHash": "8122962853b1a2380ede97ca44b804e40e088b227b627ac9ef9f9b15026ed84f",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 121,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "2e3ffb0086314be498ffa3f7dba5ebf894ff0a74890fe946e041f151b720c94c",
+            "idHash": "d7917069a0486a880d8c05514ee43acd0276d7c89d6e4b9fd383b7466dacfe11",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 122,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "587e19f5cdaad852200b24cf649d4b4f1d925479f456919f3cb1dfb77a3df2a5",
+            "idHash": "92ac28e6f30f69de5e74c6fd2197504bf672ccc6d54cd50d5ad39dd589f580f0",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 123,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "f3c169f0439c728aac193c940a5d224e1672e1901a6f0455ff62e71ddc637fea",
+            "idHash": "65d785405fda6f44e37a69d53fb89795045f2004519a9a0caf57eee2d9858e57",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 124,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "37312faca75e837dfbec9f67ba1abca748ac58b444a76fc40f733bb7242d4139",
+            "idHash": "b463cb9fff38bc238c25d2967e654ec1267fb805f4ad12604906a1a17665d33e",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 125,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1830,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "79bb04a7079e06ee2e614a988015b3a17e689f918f559b76b8f38993923c0891",
+            "idHash": "9e4eed575b5df559cd66e33a9eb3f981fc2f05dad3b0bb674565fb4044bdc6d0",
+            "objectType": "Recipe",
+            "rootSource": "stored-version",
+            "seq": 126,
+            "time": "2026-09-12T19:11:48.400Z"
+          },
+          {
+            "elapsedMs": 1880,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "89cc4e2d3566aefb17b42271ddc1a25871db5696329679b38b1c1ee55566a7fc",
+            "idHash": "4b889e711c8db0d5007ee15f67252faf1cbe4fc6a03c15e524b5ff56db8cb4e4",
+            "objectType": "Instance",
+            "rootSource": "stored-version",
+            "seq": 127,
+            "time": "2026-09-12T19:11:48.450Z"
+          },
+          {
+            "elapsedMs": 2166,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "ebeaa87d0587a1f865b1fa66033a9efad5435ba3c439d60b9afa3b57ce02c5f1",
+            "idHash": "f9b6973006a5fcb29b3df05e1bb61796d3fc1de29c5be23529597ee7bbd48edc",
+            "objectType": "Profile",
+            "rootSource": "stored-version",
+            "seq": 128,
+            "time": "2026-09-12T19:11:48.736Z"
+          },
+          {
+            "elapsedMs": 2211,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "6878a4e6521a08feb9ca39724ccd9c124d2ec7434c2520260d3e736e0f5f44ff",
+            "idHash": "693c719b2a13554d5439c7e8013044797f0fb16e63e67ae0dfdc8803fe7e1e2f",
+            "objectType": "Someone",
+            "rootSource": "stored-version",
+            "seq": 129,
+            "time": "2026-09-12T19:11:48.781Z"
+          },
+          {
+            "elapsedMs": 2255,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "d9659f814e5060195b5088073e90b49f1f5492bc368fa386894c04b879761140",
+            "idHash": "da52cabfd014664efee958a5bfb10c44f6c514ad3d2b8459f535aecdeff9c802",
+            "objectType": "Leute",
+            "rootSource": "stored-version",
+            "seq": 130,
+            "time": "2026-09-12T19:11:48.825Z"
+          },
+          {
+            "elapsedMs": 2458,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "c46f497802713f5361f0768bd2c9609fb482c753ee51a5cc2e7b93fa2129f5f4",
+            "idHash": "2751ed8531b34b201be28c607ea8b612e2c6904287f3ada72dee4517888630b0",
+            "objectType": "Group",
+            "rootSource": "stored-version",
+            "seq": 131,
+            "time": "2026-09-12T19:11:49.028Z"
+          },
+          {
+            "elapsedMs": 2506,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "0d9b2ff0963e8460b1afbb4e3075d070d0b074fb9fdc0807c1fc4a3a497ccff7",
+            "idHash": "f435c4e6df6f8f17145b10e21f4fa43aee997aaaa3561c446c97497538d26394",
+            "objectType": "GroupProfile",
+            "rootSource": "stored-version",
+            "seq": 132,
+            "time": "2026-09-12T19:11:49.076Z"
+          },
+          {
+            "elapsedMs": 2546,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "ef84b4afcded2f2337ba3f3b95eab0071aab29a4f95696320d86cc75fed10262",
+            "idHash": "da52cabfd014664efee958a5bfb10c44f6c514ad3d2b8459f535aecdeff9c802",
+            "objectType": "Leute",
+            "rootSource": "stored-version",
+            "seq": 133,
+            "time": "2026-09-12T19:11:49.116Z"
+          },
+          {
+            "elapsedMs": 2598,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "f02ac47393984ab0ce977f7ad6aac8319d6362cbc4830866bd9dda5cf8fa4192",
+            "idHash": "2751ed8531b34b201be28c607ea8b612e2c6904287f3ada72dee4517888630b0",
+            "objectType": "Group",
+            "rootSource": "stored-version",
+            "seq": 134,
+            "time": "2026-09-12T19:11:49.168Z"
+          },
+          {
+            "elapsedMs": 2899,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "3d11af320166d9560b8908e0968e06273e00000a12eb78e73ed9914a74a55311",
+            "idHash": "7aada21e7cd4aa6ec0ef2cccb329f9557f724c4b9f630bd8ea5ad95d48d06306",
+            "objectType": "Group",
+            "rootSource": "stored-version",
+            "seq": 135,
+            "time": "2026-09-12T19:11:49.469Z"
+          },
+          {
+            "elapsedMs": 2945,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "9facda1dcc09dc935c5eba63191f4969c2222c9da93227cdf27d304f15f3f8ab",
+            "idHash": "a3539d1a1e3d9158495d84bf798ac543b2eb86d5ba9e005c64322d92f868d39e",
+            "objectType": "GroupProfile",
+            "rootSource": "stored-version",
+            "seq": 136,
+            "time": "2026-09-12T19:11:49.515Z"
+          },
+          {
+            "elapsedMs": 2985,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "884f9a0ba1799f25e0d4aa63ea3d7447a86256e21a23f40f424b952850563ac9",
+            "idHash": "7aada21e7cd4aa6ec0ef2cccb329f9557f724c4b9f630bd8ea5ad95d48d06306",
+            "objectType": "Group",
+            "rootSource": "stored-version",
+            "seq": 137,
+            "time": "2026-09-12T19:11:49.555Z"
+          },
+          {
+            "elapsedMs": 3032,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "7efd603789e63c552a98667695a0e1d56d89d0d083268dbb54de5ee8b8ae4c11",
+            "idHash": "4510f3724bb347f6ce5bd6f188295086c8ffe14baa9fbd69b5fc168b01d49b3a",
+            "objectType": "IoMRequestsRegistry",
+            "rootSource": "stored-version",
+            "seq": 138,
+            "time": "2026-09-12T19:11:49.602Z"
+          },
+          {
+            "elapsedMs": 3080,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "d25da640ce936663854bd4accbb2a58b33eca5518a67415d5fd78aaf5058c8a2",
+            "idHash": "1058a17fa831a9db3bef3584660446ec559c94a9d6b26b42d162ba93f65e47d5",
+            "objectType": "TopicAppRegistry",
+            "rootSource": "stored-version",
+            "seq": 139,
+            "time": "2026-09-12T19:11:49.650Z"
+          },
+          {
+            "elapsedMs": 3135,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "b56c4c8fcc1f109f20c9edf7564735f073bde4a529ac0730fb56f84798bdad88",
+            "idHash": "a5329a16b8471332f7a3cd1481046774b13d6261c98f26ba4f064d6d0146870e",
+            "objectType": "FilerItem",
+            "rootSource": "stored-version",
+            "seq": 140,
+            "time": "2026-09-12T19:11:49.705Z"
+          },
+          {
+            "elapsedMs": 3226,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "08604379b432d9045c9a6a28d1a92d547a387fb11f360862545023f352bb016b",
+            "idHash": "3df792d43aff6f93b3ef6a866f6377f0bb7749dc6055a7be5d29a039e624391c",
+            "objectType": "ModelWeightLibrary",
+            "rootSource": "stored-version",
+            "seq": 141,
+            "time": "2026-09-12T19:11:49.796Z"
+          },
+          {
+            "elapsedMs": 3290,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "59be8cb6c5a1584a2145be9c662a1112fdcbea4fa023312a7c3a38c36b10dd96",
+            "idHash": "34b0dfc0bc6ff25f41b9a484cb7687f3564dce319535a4cd9ae62a74e0f24457",
+            "objectType": "FilerFilesRoot",
+            "rootSource": "stored-version",
+            "seq": 142,
+            "time": "2026-09-12T19:11:49.860Z"
+          },
+          {
+            "elapsedMs": 3343,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "6e0a35e6ab9fe4a64e13f2e994b53d1fd42544b0cfe30709ae35419ac98e289f",
+            "idHash": "23499411bcb16078d7683ddeb997be93bc38eb3b2bf504eee9500436af8972a0",
+            "objectType": "FilerReceivedObjectsRoot",
+            "rootSource": "stored-version",
+            "seq": 143,
+            "time": "2026-09-12T19:11:49.913Z"
+          },
+          {
+            "elapsedMs": 3396,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "688407fd7c3307efeda8b0bd7990b8d5b8a06e22a62bfe4e6ad536c4e57b5edf",
+            "idHash": "32202b6eb478da3f76b5c5e21dab5d0bb9c27a68762245c90d547bdfe3c75297",
+            "objectType": "Group",
+            "rootSource": "stored-version",
+            "seq": 144,
+            "time": "2026-09-12T19:11:49.966Z"
+          },
+          {
+            "elapsedMs": 3471,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "655e8159b3298f3653053483d2e63561da8c7ee264ded2cdaf0769a0996bc8b3",
+            "idHash": "c9aaa961bbcf54ecd356a1f1fc87d8784d8e8a314631ceac0b3c58e3a107a050",
+            "objectType": "GroupProfile",
+            "rootSource": "stored-version",
+            "seq": 145,
+            "time": "2026-09-12T19:11:50.041Z"
+          },
+          {
+            "elapsedMs": 3546,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "1900c60b993ac0772d52deea6c36311851f1cf90e6a6f6645cda746079a74aeb",
+            "idHash": "9cb52ae326f775ed661ec5dc26a1a0d7ccaf4d931fa0079078080535396a8bd2",
+            "objectType": "OneInstanceInfo",
+            "rootSource": "stored-version",
+            "seq": 146,
+            "time": "2026-09-12T19:11:50.116Z"
+          },
+          {
+            "elapsedMs": 3606,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "da3a1ea9f22cc353877b20bc5e9ffabebc468034a58bcd1e145c0c022de13c44",
+            "idHash": "2cef4e49dc4b665de99a2238e990964c3cf87eae976b4e45164119bdb82fbb8d",
+            "objectType": "Device",
+            "rootSource": "stored-version",
+            "seq": 147,
+            "time": "2026-09-12T19:11:50.176Z"
+          },
+          {
+            "elapsedMs": 3651,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "53318e800b32ba98f87900c017aaa97dabc5c6820651b2c9921e34e1674bf26a",
+            "idHash": "2cef4e49dc4b665de99a2238e990964c3cf87eae976b4e45164119bdb82fbb8d",
+            "objectType": "Device",
+            "rootSource": "stored-version",
+            "seq": 148,
+            "time": "2026-09-12T19:11:50.221Z"
+          },
+          {
+            "elapsedMs": 8093,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "723055cb32061d2022b16446d1d72109d8cbc3cd4a80b9ee5faeb500d94b28a8",
+            "idHash": "c1a45cf42d411e43f59cd397e8caddaf002fa6f1c8a3b2713535ad4194b3f70b",
+            "objectType": "Profile",
+            "rootSource": "stored-version",
+            "seq": 149,
+            "time": "2026-09-12T19:11:54.663Z"
+          },
+          {
+            "elapsedMs": 8287,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "27b838aa2f680963f811684db6009d9c60b5b4f0c01c0cd8a3ce4c1389cd860c",
+            "idHash": "2b49b0539d600d5b6b57fd2497e71a4d4c617432591e720c750ff23fa527b345",
+            "objectType": "Someone",
+            "rootSource": "stored-version",
+            "seq": 150,
+            "time": "2026-09-12T19:11:54.857Z"
+          },
+          {
+            "elapsedMs": 8713,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "5a56ae240001562f3e573fad214cd3826d911537a0a8be40a97d38d8d6380d9b",
+            "idHash": "da52cabfd014664efee958a5bfb10c44f6c514ad3d2b8459f535aecdeff9c802",
+            "objectType": "Leute",
+            "rootSource": "stored-version",
+            "seq": 151,
+            "time": "2026-09-12T19:11:55.283Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 9659,
+            "event": "importer.protocol.ready",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 152,
+            "time": "2026-09-12T19:11:56.229Z"
+          },
+          {
+            "connId": 5,
+            "durationMs": 0,
+            "elapsedMs": 9659,
+            "event": "importer.protocol.ready.done",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 153,
+            "time": "2026-09-12T19:11:56.229Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 9662,
+            "event": "exporter.roots.sent",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "rootCount": 0,
+            "rootTypes": {},
+            "seq": 154,
+            "time": "2026-09-12T19:11:56.232Z"
+          },
+          {
+            "connId": 5,
+            "direction": "remote-to-local",
+            "elapsedMs": 9866,
+            "event": "importer.object.saved",
+            "hash": "28ffe6dd5d0b5e7f06282c6b2ad0fa167f156c4468521a7f6a908c4b2563f522",
+            "kind": "object",
+            "objectType": "HashGroup",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 155,
+            "time": "2026-09-12T19:11:56.436Z"
+          },
+          {
+            "elapsedMs": 10236,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "30349b21e062da337629cb2875eb80debe45abf8fe49e95f228aa32b07f4dbe3",
+            "idHash": "320c493f6dbcdcc3bb6ce80144a6e64fcb969a10dca5d6ee9e8655a1038f852d",
+            "objectType": "Access",
+            "rootSource": "stored-version",
+            "seq": 156,
+            "time": "2026-09-12T19:11:56.806Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 10237,
+            "event": "importer.recipient-access.projected",
+            "hash": "28ffe6dd5d0b5e7f06282c6b2ad0fa167f156c4468521a7f6a908c4b2563f522",
+            "objectType": "HashGroup",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 157,
+            "time": "2026-09-12T19:11:56.807Z"
+          },
+          {
+            "elapsedMs": 10287,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "ff462a430356720fbb1a028be00c663c92c395333fd727b8a045be1e809d2114",
+            "idHash": "64df8a1b3a3be8450a0f57d59a4e79ea0bb00bba831918c6fde52919721e6a0d",
+            "objectType": "IdAccess",
+            "rootSource": "stored-version",
+            "seq": 158,
+            "time": "2026-09-12T19:11:56.857Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 10288,
+            "event": "importer.recipient-access.projected",
+            "hash": "8b071af1960b9f69c8bdf2b3eb81b80fa2169e9a77db4e7cac66369ce1fad278",
+            "objectType": "Topic",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 159,
+            "time": "2026-09-12T19:11:56.858Z"
+          },
+          {
+            "elapsedMs": 10336,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "ebb01a2966f2b344167fbdcdccb82bb4741004971c7c5afefa3ff6e6b47352a9",
+            "idHash": "6aaf074e819221480d8a6f2352f46ec1e4e6c184823293230f0550338fcaf68c",
+            "objectType": "IdAccess",
+            "rootSource": "stored-version",
+            "seq": 160,
+            "time": "2026-09-12T19:11:56.906Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 10337,
+            "event": "importer.recipient-access.projected",
+            "hash": "6c0af31e1dde489023e966507d396572b929b3b7f2e60f0128a93e7200492b30",
+            "objectType": "Profile",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 161,
+            "time": "2026-09-12T19:11:56.907Z"
+          },
+          {
+            "elapsedMs": 10385,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "b8647431264478f55e578ada61855f87d7ade6edb67e005da0c7843796206773",
+            "idHash": "cc0ca0ec5849a8eff96a732ee412e98c1619cf82ffd84f478796aea844928644",
+            "objectType": "IdAccess",
+            "rootSource": "stored-version",
+            "seq": 162,
+            "time": "2026-09-12T19:11:56.955Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 10386,
+            "event": "importer.recipient-access.projected",
+            "hash": "f9b6973006a5fcb29b3df05e1bb61796d3fc1de29c5be23529597ee7bbd48edc",
+            "objectType": "Profile",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 163,
+            "time": "2026-09-12T19:11:56.956Z"
+          },
+          {
+            "elapsedMs": 10436,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "431c3e0f54d6b00b3d8592ae1580bc9c392bfd388b6924efc549f220761d368c",
+            "idHash": "98307b8372bffba7a0989b1d7d71551d86c65610425ae03f24f01221eff32d29",
+            "objectType": "IdAccess",
+            "rootSource": "stored-version",
+            "seq": 164,
+            "time": "2026-09-12T19:11:57.006Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 10437,
+            "event": "importer.recipient-access.projected",
+            "hash": "c1a45cf42d411e43f59cd397e8caddaf002fa6f1c8a3b2713535ad4194b3f70b",
+            "objectType": "Profile",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 165,
+            "time": "2026-09-12T19:11:57.007Z"
+          },
+          {
+            "connId": 5,
+            "direction": "remote-to-local",
+            "elapsedMs": 10494,
+            "event": "importer.object.saved",
+            "hash": "d90d9c06e3086bdaddb926658340e73c1718ff3aef0aef351dc6df48227e0b60",
+            "kind": "object",
+            "objectType": "VersionNodeEdge",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 166,
+            "time": "2026-09-12T19:11:57.064Z"
+          },
+          {
+            "elapsedMs": 10513,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "89fd32ce3af288817b469c92af5d9b6af09d96b1ae4121fa058e7137ba9fc4b6",
+            "idHash": "8b071af1960b9f69c8bdf2b3eb81b80fa2169e9a77db4e7cac66369ce1fad278",
+            "objectType": "Topic",
+            "rootSource": "stored-version",
+            "seq": 167,
+            "time": "2026-09-12T19:11:57.082Z"
+          },
+          {
+            "elapsedMs": 10592,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "ba6ece3d673b55f8a69cc9f59bc50f76cbe2b35fb06906205e52650605409064",
+            "idHash": "1058a17fa831a9db3bef3584660446ec559c94a9d6b26b42d162ba93f65e47d5",
+            "objectType": "TopicAppRegistry",
+            "rootSource": "stored-version",
+            "seq": 168,
+            "time": "2026-09-12T19:11:57.162Z"
+          },
+          {
+            "elapsedMs": 10622,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "d1e9bae23ef6c0d4ad4131bf30ac2f5ceac2049ec3296d447bdf76a6757a477f",
+            "idHash": "56c5bd5652a44f27e52d4f90ec9a6a34ae60fac9835fc47dec1e7379c660665b",
+            "objectType": "Access",
+            "rootSource": "stored-version",
+            "seq": 169,
+            "time": "2026-09-12T19:11:57.192Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 10622,
+            "event": "importer.recipient-access.projected",
+            "hash": "8b071af1960b9f69c8bdf2b3eb81b80fa2169e9a77db4e7cac66369ce1fad278",
+            "objectType": "Topic",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 170,
+            "time": "2026-09-12T19:11:57.192Z"
+          },
+          {
+            "elapsedMs": 10648,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "59d93d277ba1a0d202cdcc81cf1673abb3ffd94963a2fd5ed7b1cffea641d8d3",
+            "idHash": "320c493f6dbcdcc3bb6ce80144a6e64fcb969a10dca5d6ee9e8655a1038f852d",
+            "objectType": "Access",
+            "rootSource": "stored-version",
+            "seq": 171,
+            "time": "2026-09-12T19:11:57.218Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 10652,
+            "event": "storage.wakeup.queued",
+            "hash": "28ffe6dd5d0b5e7f06282c6b2ad0fa167f156c4468521a7f6a908c4b2563f522",
+            "queued": true,
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "rootSource": "access-grant",
+            "seq": 172,
+            "time": "2026-09-12T19:11:57.222Z"
+          },
+          {
+            "connId": 5,
+            "count": 1,
+            "elapsedMs": 10653,
+            "event": "storage.wakeup.sent",
+            "queued": false,
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "rootSource": "new-content-notification",
+            "seq": 173,
+            "time": "2026-09-12T19:11:57.223Z"
+          },
+          {
+            "elapsedMs": 10742,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "043e69b8f8293f96254a1935798af0fa9561ae8d12e9d17735ad704052107936",
+            "idHash": "64df8a1b3a3be8450a0f57d59a4e79ea0bb00bba831918c6fde52919721e6a0d",
+            "objectType": "IdAccess",
+            "rootSource": "stored-version",
+            "seq": 174,
+            "time": "2026-09-12T19:11:57.312Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 10743,
+            "event": "storage.wakeup.queued",
+            "idHash": "8b071af1960b9f69c8bdf2b3eb81b80fa2169e9a77db4e7cac66369ce1fad278",
+            "queued": true,
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "rootSource": "access-grant",
+            "seq": 175,
+            "time": "2026-09-12T19:11:57.313Z"
+          },
+          {
+            "connId": 5,
+            "count": 1,
+            "elapsedMs": 10749,
+            "event": "storage.wakeup.sent",
+            "queued": false,
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "rootSource": "new-content-notification",
+            "seq": 176,
+            "time": "2026-09-12T19:11:57.319Z"
+          },
+          {
+            "connId": 5,
+            "direction": "remote-to-local",
+            "elapsedMs": 10799,
+            "event": "importer.object.saved",
+            "hash": "3d5513937137e315eca1052bdc9661eadf9cbb55d32579afdf504858622d04dc",
+            "kind": "object",
+            "objectType": "VersionNodeEdge",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 177,
+            "time": "2026-09-12T19:11:57.369Z"
+          },
+          {
+            "connId": 5,
+            "direction": "remote-to-local",
+            "elapsedMs": 10813,
+            "event": "importer.object.saved",
+            "hash": "992ac71961c3375797a1ec2bd29e443e6a344315432244de73cfc6f3817c4987",
+            "kind": "object",
+            "objectType": "VersionNodeChange",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 178,
+            "time": "2026-09-12T19:11:57.383Z"
+          },
+          {
+            "elapsedMs": 10824,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "a4586393cdf0e15160af9463cb8753476636185489589646cd7eef383e82cd66",
+            "idHash": "6c0af31e1dde489023e966507d396572b929b3b7f2e60f0128a93e7200492b30",
+            "objectType": "Profile",
+            "rootSource": "stored-version",
+            "seq": 179,
+            "time": "2026-09-12T19:11:57.394Z"
+          },
+          {
+            "elapsedMs": 10909,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "eeff7a2d4d0af885b574134ccd446ab3882fa6ebee3c6522dd2dc6df417e332f",
+            "idHash": "3cc59bad2f05e88879ec3bbd47439f76385bacec8ee08e8b819b6e378afb49a9",
+            "objectType": "Someone",
+            "rootSource": "stored-version",
+            "seq": 180,
+            "time": "2026-09-12T19:11:57.479Z"
+          },
+          {
+            "elapsedMs": 10914,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "d787fc06c979aa74fe0fef211bf9d130db5d0fd466303d03024f986b54350dfe",
+            "idHash": "5a93a7cab7a2f50cf6b6f93ffb41054d2ac8e4703936d377d6e2897f57c466d7",
+            "objectType": "Access",
+            "rootSource": "stored-version",
+            "seq": 181,
+            "time": "2026-09-12T19:11:57.484Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 10915,
+            "event": "importer.recipient-access.projected",
+            "hash": "6c0af31e1dde489023e966507d396572b929b3b7f2e60f0128a93e7200492b30",
+            "objectType": "Profile",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 182,
+            "time": "2026-09-12T19:11:57.485Z"
+          },
+          {
+            "elapsedMs": 11240,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "bf2d3b12639868efd5e64bc242bd9deaf5a50ab993ea52773f8cc4e74766a6c7",
+            "idHash": "da52cabfd014664efee958a5bfb10c44f6c514ad3d2b8459f535aecdeff9c802",
+            "objectType": "Leute",
+            "rootSource": "stored-version",
+            "seq": 183,
+            "time": "2026-09-12T19:11:57.810Z"
+          },
+          {
+            "connId": 5,
+            "direction": "remote-to-local",
+            "elapsedMs": 11501,
+            "event": "importer.object.saved",
+            "hash": "849a1f245ac7ec36e10e06ef3ffde0185f08b32063b8e69aa33fe66d736fb740",
+            "kind": "object",
+            "objectType": "VersionNodeEdge",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 184,
+            "time": "2026-09-12T19:11:58.071Z"
+          },
+          {
+            "elapsedMs": 11913,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "9f63fbdcf51b5ec4b314f284b868c2863d46d69627f37478aef4e67ad749a867",
+            "idHash": "f9b6973006a5fcb29b3df05e1bb61796d3fc1de29c5be23529597ee7bbd48edc",
+            "objectType": "Profile",
+            "rootSource": "stored-version",
+            "seq": 185,
+            "time": "2026-09-12T19:11:58.483Z"
+          },
+          {
+            "elapsedMs": 12254,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "fea31f677f89c0c289688737a91597a3998bc21b15c2128d4d9530f7f48551b4",
+            "idHash": "536f016831cb1b0af2fa1db3633cd24efbc96c90af3c59fe7272817c8963c793",
+            "objectType": "Access",
+            "rootSource": "stored-version",
+            "seq": 186,
+            "time": "2026-09-12T19:11:58.824Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 12255,
+            "event": "importer.recipient-access.projected",
+            "hash": "f9b6973006a5fcb29b3df05e1bb61796d3fc1de29c5be23529597ee7bbd48edc",
+            "objectType": "Profile",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 187,
+            "time": "2026-09-12T19:11:58.825Z"
+          },
+          {
+            "connId": 5,
+            "direction": "remote-to-local",
+            "elapsedMs": 12308,
+            "event": "importer.object.saved",
+            "hash": "590966caefa9069d8c221f55d164a959c6fd8756ea8659549eddd07fe69fbdb4",
+            "kind": "object",
+            "objectType": "VersionNodeEdge",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 188,
+            "time": "2026-09-12T19:11:58.878Z"
+          },
+          {
+            "connId": 5,
+            "direction": "remote-to-local",
+            "elapsedMs": 12320,
+            "event": "importer.object.saved",
+            "hash": "8ef031fbd36c2af072efafd42d08f4ae49d16a38f1cd2873ca0bfd1be694894c",
+            "kind": "object",
+            "objectType": "VersionNodeChange",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 189,
+            "time": "2026-09-12T19:11:58.890Z"
+          },
+          {
+            "elapsedMs": 12361,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "723055cb32061d2022b16446d1d72109d8cbc3cd4a80b9ee5faeb500d94b28a8",
+            "idHash": "c1a45cf42d411e43f59cd397e8caddaf002fa6f1c8a3b2713535ad4194b3f70b",
+            "objectType": "Profile",
+            "rootSource": "stored-version",
+            "seq": 190,
+            "time": "2026-09-12T19:11:58.931Z"
+          },
+          {
+            "elapsedMs": 12801,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "e45e681d1e8041315f4074206a0eb9c1a6e01a1959ed9e979bd10bff28d181da",
+            "idHash": "561a60be449983ab628bfaa1113a2dcb2fe7f35226f20c18e63230c40d7bc193",
+            "objectType": "Access",
+            "rootSource": "stored-version",
+            "seq": 191,
+            "time": "2026-09-12T19:11:59.371Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 12801,
+            "event": "importer.recipient-access.projected",
+            "hash": "c1a45cf42d411e43f59cd397e8caddaf002fa6f1c8a3b2713535ad4194b3f70b",
+            "objectType": "Profile",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 192,
+            "time": "2026-09-12T19:11:59.371Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 12802,
+            "event": "importer.recipient-access.projected",
+            "hash": "8b071af1960b9f69c8bdf2b3eb81b80fa2169e9a77db4e7cac66369ce1fad278",
+            "objectType": "Topic",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 193,
+            "time": "2026-09-12T19:11:59.372Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 12803,
+            "event": "importer.recipient-access.projected",
+            "hash": "6c0af31e1dde489023e966507d396572b929b3b7f2e60f0128a93e7200492b30",
+            "objectType": "Profile",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 194,
+            "time": "2026-09-12T19:11:59.373Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 12804,
+            "event": "importer.recipient-access.projected",
+            "hash": "f9b6973006a5fcb29b3df05e1bb61796d3fc1de29c5be23529597ee7bbd48edc",
+            "objectType": "Profile",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 195,
+            "time": "2026-09-12T19:11:59.374Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 12805,
+            "event": "importer.recipient-access.projected",
+            "hash": "c1a45cf42d411e43f59cd397e8caddaf002fa6f1c8a3b2713535ad4194b3f70b",
+            "objectType": "Profile",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 196,
+            "time": "2026-09-12T19:11:59.375Z"
+          },
+          {
+            "connId": 5,
+            "direction": "remote-to-local",
+            "elapsedMs": 12822,
+            "event": "importer.object.saved",
+            "hash": "417f6c5fd18b0a7b40ce699ed7da0506ec16a6be8ed70c12bd98829ef29abd7c",
+            "kind": "id",
+            "objectType": "FotosShareCertificateChain",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 197,
+            "time": "2026-09-12T19:11:59.392Z"
+          },
+          {
+            "connId": 5,
+            "direction": "remote-to-local",
+            "elapsedMs": 12837,
+            "event": "importer.object.saved",
+            "hash": "79e013a15f90c5478666f5630b609f8c86da8d64d5b0ad9560a53bf2f4eb5136",
+            "kind": "id",
+            "objectType": "FotosShareManifest",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 198,
+            "time": "2026-09-12T19:11:59.407Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 12839,
+            "event": "importer.recipient-access.projected",
+            "hash": "28ffe6dd5d0b5e7f06282c6b2ad0fa167f156c4468521a7f6a908c4b2563f522",
+            "objectType": "HashGroup",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 199,
+            "time": "2026-09-12T19:11:59.409Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 12840,
+            "event": "importer.recipient-access.projected",
+            "hash": "c1a45cf42d411e43f59cd397e8caddaf002fa6f1c8a3b2713535ad4194b3f70b",
+            "objectType": "Profile",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 200,
+            "time": "2026-09-12T19:11:59.410Z"
+          },
+          {
+            "elapsedMs": 12887,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "f0b8807b2b7d3ea9d471a964807b3f2f9d6b49e1a77351aae825439a717bc3d0",
+            "idHash": "2132c279d63f54c5b37dfcf345a0605493fca829efdbe6e031a74dcafc1cf5c2",
+            "objectType": "IdAccess",
+            "rootSource": "stored-version",
+            "seq": 201,
+            "time": "2026-09-12T19:11:59.457Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 12887,
+            "event": "importer.recipient-access.projected",
+            "hash": "417f6c5fd18b0a7b40ce699ed7da0506ec16a6be8ed70c12bd98829ef29abd7c",
+            "objectType": "FotosShareCertificateChain",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 202,
+            "time": "2026-09-12T19:11:59.457Z"
+          },
+          {
+            "elapsedMs": 12937,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "b3f936d976ea5ff11927121e32f05ba5ddba2dc03e2c463126ff1038a2e2672f",
+            "idHash": "9ddd30701563660b6cb8ac4844d5e1940555792c5e8740ee51046984af08b34a",
+            "objectType": "IdAccess",
+            "rootSource": "stored-version",
+            "seq": 203,
+            "time": "2026-09-12T19:11:59.507Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 12937,
+            "event": "importer.recipient-access.projected",
+            "hash": "79e013a15f90c5478666f5630b609f8c86da8d64d5b0ad9560a53bf2f4eb5136",
+            "objectType": "FotosShareManifest",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 204,
+            "time": "2026-09-12T19:11:59.507Z"
+          },
+          {
+            "connId": 5,
+            "direction": "remote-to-local",
+            "elapsedMs": 12959,
+            "event": "importer.object.saved",
+            "hash": "be7f863d71105535e21c641131b0038678cac2ce1916cb3df2aba9e26880968a",
+            "kind": "object",
+            "objectType": "VersionNodeEdge",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 205,
+            "time": "2026-09-12T19:11:59.529Z"
+          },
+          {
+            "connId": 5,
+            "direction": "remote-to-local",
+            "elapsedMs": 12971,
+            "event": "importer.object.saved",
+            "hash": "b81fd8184566b3f423e00a48313992ea66b36ce8f33fcfd18ad80b690cd421d0",
+            "kind": "object",
+            "objectType": "VersionNodeMerge",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 206,
+            "time": "2026-09-12T19:11:59.541Z"
+          },
+          {
+            "elapsedMs": 12985,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "723055cb32061d2022b16446d1d72109d8cbc3cd4a80b9ee5faeb500d94b28a8",
+            "idHash": "c1a45cf42d411e43f59cd397e8caddaf002fa6f1c8a3b2713535ad4194b3f70b",
+            "objectType": "Profile",
+            "rootSource": "stored-version",
+            "seq": 207,
+            "time": "2026-09-12T19:11:59.555Z"
+          },
+          {
+            "elapsedMs": 13432,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "959141737f0d63b8594d3917acd92adee309facb0d7a66b73415f67c6de80618",
+            "idHash": "3b45b36c5c43e7009bb84852275310ec618cb28ee0d33c96706887fb2ec440af",
+            "objectType": "Access",
+            "rootSource": "stored-version",
+            "seq": 208,
+            "time": "2026-09-12T19:12:00.002Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 13433,
+            "event": "importer.recipient-access.projected",
+            "hash": "c1a45cf42d411e43f59cd397e8caddaf002fa6f1c8a3b2713535ad4194b3f70b",
+            "objectType": "Profile",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 209,
+            "time": "2026-09-12T19:12:00.003Z"
+          },
+          {
+            "connId": 5,
+            "direction": "remote-to-local",
+            "elapsedMs": 13476,
+            "event": "importer.object.saved",
+            "hash": "fcfc74b862987b8dd513b9f60cc9f89fc8f674420cae174d3b5c19d08668ca57",
+            "kind": "object",
+            "objectType": "FotosShareCertificate",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 210,
+            "time": "2026-09-12T19:12:00.046Z"
+          },
+          {
+            "connId": 5,
+            "direction": "remote-to-local",
+            "elapsedMs": 13477,
+            "event": "importer.object.saved",
+            "hash": "fcfc74b862987b8dd513b9f60cc9f89fc8f674420cae174d3b5c19d08668ca57",
+            "kind": "object",
+            "objectType": "FotosShareCertificate",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 211,
+            "time": "2026-09-12T19:12:00.047Z"
+          },
+          {
+            "connId": 5,
+            "direction": "remote-to-local",
+            "elapsedMs": 13514,
+            "event": "importer.object.saved",
+            "hash": "a256937279be6943512eb457cd34ddce8d43e386e5e0b50f84f4ff907b51ec37",
+            "kind": "object",
+            "objectType": "FotosShareCertificateChain",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 212,
+            "time": "2026-09-12T19:12:00.084Z"
+          },
+          {
+            "connId": 5,
+            "direction": "remote-to-local",
+            "elapsedMs": 13537,
+            "event": "importer.object.saved",
+            "hash": "e35ba156ef4c9b0c7b9b59e7298e3a88390fdc76564ab4cb2de83b80a5e70871",
+            "kind": "object",
+            "objectType": "VersionNodeEdge",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 213,
+            "time": "2026-09-12T19:12:00.107Z"
+          },
+          {
+            "elapsedMs": 13554,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "a256937279be6943512eb457cd34ddce8d43e386e5e0b50f84f4ff907b51ec37",
+            "idHash": "417f6c5fd18b0a7b40ce699ed7da0506ec16a6be8ed70c12bd98829ef29abd7c",
+            "objectType": "FotosShareCertificateChain",
+            "rootSource": "stored-version",
+            "seq": 214,
+            "time": "2026-09-12T19:12:00.124Z"
+          },
+          {
+            "elapsedMs": 13720,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "2332ff9366325a28128a0ed6383752fdc6539098ff0aff384bc54c7e4a44e358",
+            "idHash": "39a95bb662c249d96336d31bc6d0ade57c6769f413b732731ba2b9f817fcd3ad",
+            "objectType": "Access",
+            "rootSource": "stored-version",
+            "seq": 215,
+            "time": "2026-09-12T19:12:00.290Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 13721,
+            "event": "importer.recipient-access.projected",
+            "hash": "417f6c5fd18b0a7b40ce699ed7da0506ec16a6be8ed70c12bd98829ef29abd7c",
+            "objectType": "FotosShareCertificateChain",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 216,
+            "time": "2026-09-12T19:12:00.291Z"
+          },
+          {
+            "connId": 5,
+            "direction": "remote-to-local",
+            "elapsedMs": 13838,
+            "event": "importer.object.saved",
+            "hash": "8e206048d9d708173366ca3dcf8cda8c5d44b8fd00b3f08c7963e9a98e21e302",
+            "kind": "object",
+            "objectType": "FotosShareManifest",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 217,
+            "time": "2026-09-12T19:12:00.408Z"
+          },
+          {
+            "connId": 5,
+            "direction": "remote-to-local",
+            "elapsedMs": 13855,
+            "event": "importer.object.saved",
+            "hash": "fcaa7d800234c7d405cea0ac95f3459ccfdb5a2e97d1a5be280ab7b8e860419e",
+            "kind": "object",
+            "objectType": "VersionNodeEdge",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 218,
+            "time": "2026-09-12T19:12:00.425Z"
+          },
+          {
+            "elapsedMs": 13867,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "8e206048d9d708173366ca3dcf8cda8c5d44b8fd00b3f08c7963e9a98e21e302",
+            "idHash": "79e013a15f90c5478666f5630b609f8c86da8d64d5b0ad9560a53bf2f4eb5136",
+            "objectType": "FotosShareManifest",
+            "rootSource": "stored-version",
+            "seq": 219,
+            "time": "2026-09-12T19:12:00.437Z"
+          },
+          {
+            "elapsedMs": 13918,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "834571f0435e3062ad3cd1513093b1f21ec5218b1d4192c84ae4d7832de4dcf5",
+            "idHash": "8bf3358321a603c3308ea421a66e43a44a10705f947a7059bf6197ea9fbadbe2",
+            "objectType": "Access",
+            "rootSource": "stored-version",
+            "seq": 220,
+            "time": "2026-09-12T19:12:00.488Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 13918,
+            "event": "importer.recipient-access.projected",
+            "hash": "79e013a15f90c5478666f5630b609f8c86da8d64d5b0ad9560a53bf2f4eb5136",
+            "objectType": "FotosShareManifest",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 221,
+            "time": "2026-09-12T19:12:00.488Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 13919,
+            "event": "importer.recipient-access.projected",
+            "hash": "c1a45cf42d411e43f59cd397e8caddaf002fa6f1c8a3b2713535ad4194b3f70b",
+            "objectType": "Profile",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 222,
+            "time": "2026-09-12T19:12:00.489Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 13920,
+            "event": "importer.recipient-access.projected",
+            "hash": "417f6c5fd18b0a7b40ce699ed7da0506ec16a6be8ed70c12bd98829ef29abd7c",
+            "objectType": "FotosShareCertificateChain",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 223,
+            "time": "2026-09-12T19:12:00.490Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 13921,
+            "event": "importer.recipient-access.projected",
+            "hash": "79e013a15f90c5478666f5630b609f8c86da8d64d5b0ad9560a53bf2f4eb5136",
+            "objectType": "FotosShareManifest",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 224,
+            "time": "2026-09-12T19:12:00.491Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 13922,
+            "event": "importer.recipient-access.projected",
+            "hash": "79e013a15f90c5478666f5630b609f8c86da8d64d5b0ad9560a53bf2f4eb5136",
+            "objectType": "FotosShareManifest",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 225,
+            "time": "2026-09-12T19:12:00.492Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 13923,
+            "event": "importer.recipient-access.projected",
+            "hash": "c1a45cf42d411e43f59cd397e8caddaf002fa6f1c8a3b2713535ad4194b3f70b",
+            "objectType": "Profile",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 226,
+            "time": "2026-09-12T19:12:00.493Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 13945,
+            "event": "importer.recipient-access.projected",
+            "hash": "28ffe6dd5d0b5e7f06282c6b2ad0fa167f156c4468521a7f6a908c4b2563f522",
+            "objectType": "HashGroup",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 227,
+            "time": "2026-09-12T19:12:00.515Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 13946,
+            "event": "importer.recipient-access.projected",
+            "hash": "8e206048d9d708173366ca3dcf8cda8c5d44b8fd00b3f08c7963e9a98e21e302",
+            "objectType": "FotosShareManifest",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 228,
+            "time": "2026-09-12T19:12:00.516Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 13947,
+            "event": "importer.recipient-access.projected",
+            "hash": "6c0af31e1dde489023e966507d396572b929b3b7f2e60f0128a93e7200492b30",
+            "objectType": "Profile",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 229,
+            "time": "2026-09-12T19:12:00.517Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 13948,
+            "event": "importer.recipient-access.projected",
+            "hash": "c1a45cf42d411e43f59cd397e8caddaf002fa6f1c8a3b2713535ad4194b3f70b",
+            "objectType": "Profile",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 230,
+            "time": "2026-09-12T19:12:00.518Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 13949,
+            "event": "importer.recipient-access.projected",
+            "hash": "8b071af1960b9f69c8bdf2b3eb81b80fa2169e9a77db4e7cac66369ce1fad278",
+            "objectType": "Topic",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 231,
+            "time": "2026-09-12T19:12:00.519Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 13950,
+            "event": "importer.recipient-access.projected",
+            "hash": "417f6c5fd18b0a7b40ce699ed7da0506ec16a6be8ed70c12bd98829ef29abd7c",
+            "objectType": "FotosShareCertificateChain",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 232,
+            "time": "2026-09-12T19:12:00.520Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 13951,
+            "event": "importer.recipient-access.projected",
+            "hash": "79e013a15f90c5478666f5630b609f8c86da8d64d5b0ad9560a53bf2f4eb5136",
+            "objectType": "FotosShareManifest",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 233,
+            "time": "2026-09-12T19:12:00.521Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 13951,
+            "event": "importer.recipient-access.projected",
+            "hash": "f9b6973006a5fcb29b3df05e1bb61796d3fc1de29c5be23529597ee7bbd48edc",
+            "objectType": "Profile",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 234,
+            "time": "2026-09-12T19:12:00.521Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 13966,
+            "event": "importer.recipient-access.projected",
+            "hash": "8b071af1960b9f69c8bdf2b3eb81b80fa2169e9a77db4e7cac66369ce1fad278",
+            "objectType": "Topic",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 235,
+            "time": "2026-09-12T19:12:00.536Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 13971,
+            "event": "importer.recipient-access.projected",
+            "hash": "417f6c5fd18b0a7b40ce699ed7da0506ec16a6be8ed70c12bd98829ef29abd7c",
+            "objectType": "FotosShareCertificateChain",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 236,
+            "time": "2026-09-12T19:12:00.541Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 13985,
+            "event": "importer.recipient-access.projected",
+            "hash": "79e013a15f90c5478666f5630b609f8c86da8d64d5b0ad9560a53bf2f4eb5136",
+            "objectType": "FotosShareManifest",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 237,
+            "time": "2026-09-12T19:12:00.555Z"
+          },
+          {
+            "elapsedMs": 14004,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "9f63fbdcf51b5ec4b314f284b868c2863d46d69627f37478aef4e67ad749a867",
+            "idHash": "f9b6973006a5fcb29b3df05e1bb61796d3fc1de29c5be23529597ee7bbd48edc",
+            "objectType": "Profile",
+            "rootSource": "stored-version",
+            "seq": 238,
+            "time": "2026-09-12T19:12:00.574Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 14007,
+            "event": "importer.recipient-access.projected",
+            "hash": "f9b6973006a5fcb29b3df05e1bb61796d3fc1de29c5be23529597ee7bbd48edc",
+            "objectType": "Profile",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 239,
+            "time": "2026-09-12T19:12:00.577Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 14014,
+            "event": "importer.recipient-access.projected",
+            "hash": "6c0af31e1dde489023e966507d396572b929b3b7f2e60f0128a93e7200492b30",
+            "objectType": "Profile",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 240,
+            "time": "2026-09-12T19:12:00.584Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 14083,
+            "event": "importer.recipient-access.projected",
+            "hash": "79e013a15f90c5478666f5630b609f8c86da8d64d5b0ad9560a53bf2f4eb5136",
+            "objectType": "FotosShareManifest",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 241,
+            "time": "2026-09-12T19:12:00.652Z"
+          },
+          {
+            "connId": 5,
+            "direction": "remote-to-local",
+            "elapsedMs": 14590,
+            "event": "importer.object.saved",
+            "hash": "e96c010ec6629f3036ab2837fafc950a4166ac79169bf288e46c1a602bbf2d13",
+            "kind": "object",
+            "objectType": "FotosShareManifest",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 242,
+            "time": "2026-09-12T19:12:01.160Z"
+          },
+          {
+            "connId": 5,
+            "direction": "remote-to-local",
+            "elapsedMs": 14606,
+            "event": "importer.object.saved",
+            "hash": "9042cede0a5ece9e429cb170479b4646fa3a004b17e67afb67850cd4cf5c677f",
+            "kind": "object",
+            "objectType": "VersionNodeChange",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 243,
+            "time": "2026-09-12T19:12:01.176Z"
+          },
+          {
+            "elapsedMs": 14618,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "e96c010ec6629f3036ab2837fafc950a4166ac79169bf288e46c1a602bbf2d13",
+            "idHash": "79e013a15f90c5478666f5630b609f8c86da8d64d5b0ad9560a53bf2f4eb5136",
+            "objectType": "FotosShareManifest",
+            "rootSource": "stored-version",
+            "seq": 244,
+            "time": "2026-09-12T19:12:01.188Z"
+          },
+          {
+            "elapsedMs": 14667,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "46818ba8363de6c3b706e8bc4bf600bbf00f5251cedcbd38c5bd071ccff31914",
+            "idHash": "ce7b998b32a05b9802ad8463abba89a5a4fc659af8a7c2e8fb9754a68c3825a5",
+            "objectType": "Access",
+            "rootSource": "stored-version",
+            "seq": 245,
+            "time": "2026-09-12T19:12:01.237Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 14668,
+            "event": "importer.recipient-access.projected",
+            "hash": "79e013a15f90c5478666f5630b609f8c86da8d64d5b0ad9560a53bf2f4eb5136",
+            "objectType": "FotosShareManifest",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 246,
+            "time": "2026-09-12T19:12:01.238Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 14669,
+            "event": "importer.recipient-access.projected",
+            "hash": "79e013a15f90c5478666f5630b609f8c86da8d64d5b0ad9560a53bf2f4eb5136",
+            "objectType": "FotosShareManifest",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 247,
+            "time": "2026-09-12T19:12:01.239Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 14697,
+            "event": "importer.recipient-access.projected",
+            "hash": "79e013a15f90c5478666f5630b609f8c86da8d64d5b0ad9560a53bf2f4eb5136",
+            "objectType": "FotosShareManifest",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 248,
+            "time": "2026-09-12T19:12:01.267Z"
+          },
+          {
+            "connId": 5,
+            "direction": "remote-to-local",
+            "elapsedMs": 14727,
+            "event": "importer.object.saved",
+            "hash": "246fd10fffbd3c03c160f156388acdd589ba61dcdbd44ac52f3ef031427fe4d5",
+            "kind": "object",
+            "objectType": "FotosShareManifest",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 249,
+            "time": "2026-09-12T19:12:01.297Z"
+          },
+          {
+            "connId": 5,
+            "direction": "remote-to-local",
+            "elapsedMs": 14747,
+            "event": "importer.object.saved",
+            "hash": "b3caaec87c3f6f94392e8af4ccf1595acf7f703dbc6c74dbe4b3393160773c59",
+            "kind": "object",
+            "objectType": "VersionNodeChange",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 250,
+            "time": "2026-09-12T19:12:01.317Z"
+          },
+          {
+            "elapsedMs": 14760,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "246fd10fffbd3c03c160f156388acdd589ba61dcdbd44ac52f3ef031427fe4d5",
+            "idHash": "79e013a15f90c5478666f5630b609f8c86da8d64d5b0ad9560a53bf2f4eb5136",
+            "objectType": "FotosShareManifest",
+            "rootSource": "stored-version",
+            "seq": 251,
+            "time": "2026-09-12T19:12:01.330Z"
+          },
+          {
+            "elapsedMs": 14813,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "f192f935aaa24c35668ce62a5d17169992c70af83fd04084fcf7a8bbc1a31e3c",
+            "idHash": "4573f75a8280a4b6a21e8a38c880bf673a1344f858f150c5548c5e370dd647cd",
+            "objectType": "Access",
+            "rootSource": "stored-version",
+            "seq": 252,
+            "time": "2026-09-12T19:12:01.383Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 14814,
+            "event": "importer.recipient-access.projected",
+            "hash": "79e013a15f90c5478666f5630b609f8c86da8d64d5b0ad9560a53bf2f4eb5136",
+            "objectType": "FotosShareManifest",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 253,
+            "time": "2026-09-12T19:12:01.384Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 14815,
+            "event": "importer.recipient-access.projected",
+            "hash": "79e013a15f90c5478666f5630b609f8c86da8d64d5b0ad9560a53bf2f4eb5136",
+            "objectType": "FotosShareManifest",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 254,
+            "time": "2026-09-12T19:12:01.385Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 14816,
+            "event": "importer.recipient-access.projected",
+            "hash": "79e013a15f90c5478666f5630b609f8c86da8d64d5b0ad9560a53bf2f4eb5136",
+            "objectType": "FotosShareManifest",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 255,
+            "time": "2026-09-12T19:12:01.386Z"
+          },
+          {
+            "connId": 5,
+            "elapsedMs": 14817,
+            "event": "importer.recipient-access.projected",
+            "hash": "79e013a15f90c5478666f5630b609f8c86da8d64d5b0ad9560a53bf2f4eb5136",
+            "objectType": "FotosShareManifest",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 256,
+            "time": "2026-09-12T19:12:01.387Z"
+          },
+          {
+            "elapsedMs": 14867,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "d2fc68e9859b34945aabc0f1a556a81a9a63999b4fccf02fb4e35d48e395d1ba",
+            "idHash": "08e4fef92ff4765713a406b0dc785d1b2f32ddc8c9be3c4cc1bcfaf2d6112e1a",
+            "objectType": "Chum",
+            "rootSource": "stored-version",
+            "seq": 257,
+            "time": "2026-09-12T19:12:01.437Z"
+          },
+          {
+            "elapsedMs": 14922,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "80e0b6d9711d81a6cd73bf18dc07ab07234683e8903b36e737580f0d682357ad",
+            "idHash": "2751ed8531b34b201be28c607ea8b612e2c6904287f3ada72dee4517888630b0",
+            "objectType": "Group",
+            "rootSource": "stored-version",
+            "seq": 258,
+            "time": "2026-09-12T19:12:01.492Z"
+          },
+          {
+            "connId": 8,
+            "elapsedMs": 15847,
+            "event": "importer.protocol.ready",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 259,
+            "time": "2026-09-12T19:12:02.417Z"
+          },
+          {
+            "connId": 8,
+            "durationMs": 0,
+            "elapsedMs": 15847,
+            "event": "importer.protocol.ready.done",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 260,
+            "time": "2026-09-12T19:12:02.417Z"
+          },
+          {
+            "connId": 8,
+            "elapsedMs": 15855,
+            "event": "exporter.roots.sent",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "rootCount": 3,
+            "rootTypes": {
+              "HashGroup": 1,
+              "Topic": 2
+            },
+            "seq": 261,
+            "time": "2026-09-12T19:12:02.425Z"
+          },
+          {
+            "connId": 8,
+            "elapsedMs": 15918,
+            "event": "importer.recipient-access.projected",
+            "hash": "417f6c5fd18b0a7b40ce699ed7da0506ec16a6be8ed70c12bd98829ef29abd7c",
+            "objectType": "FotosShareCertificateChain",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 262,
+            "time": "2026-09-12T19:12:02.488Z"
+          },
+          {
+            "connId": 8,
+            "direction": "remote-to-local",
+            "elapsedMs": 15943,
+            "event": "importer.object.saved",
+            "hash": "adb9a491d8e480b2a95a5118247f515f8f7958fafbb5b581d9a069755f592328",
+            "kind": "object",
+            "objectType": "FotosShareCertificate",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 263,
+            "time": "2026-09-12T19:12:02.513Z"
+          },
+          {
+            "connId": 8,
+            "direction": "remote-to-local",
+            "elapsedMs": 15944,
+            "event": "importer.object.saved",
+            "hash": "adb9a491d8e480b2a95a5118247f515f8f7958fafbb5b581d9a069755f592328",
+            "kind": "object",
+            "objectType": "FotosShareCertificate",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 264,
+            "time": "2026-09-12T19:12:02.514Z"
+          },
+          {
+            "connId": 8,
+            "direction": "remote-to-local",
+            "elapsedMs": 15968,
+            "event": "importer.object.saved",
+            "hash": "80f18d6412158fc09932c2b3c59e52778c75b8bbd176f961709ff463a1312f5d",
+            "kind": "object",
+            "objectType": "FotosShareCertificateChain",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 265,
+            "time": "2026-09-12T19:12:02.538Z"
+          },
+          {
+            "connId": 8,
+            "direction": "remote-to-local",
+            "elapsedMs": 15990,
+            "event": "importer.object.saved",
+            "hash": "9004d0ca727e708d2a5f7177bdceebb9435f594560afec1b08fbe143c5c14bca",
+            "kind": "object",
+            "objectType": "VersionNodeChange",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 266,
+            "time": "2026-09-12T19:12:02.560Z"
+          },
+          {
+            "elapsedMs": 16001,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "80f18d6412158fc09932c2b3c59e52778c75b8bbd176f961709ff463a1312f5d",
+            "idHash": "417f6c5fd18b0a7b40ce699ed7da0506ec16a6be8ed70c12bd98829ef29abd7c",
+            "objectType": "FotosShareCertificateChain",
+            "rootSource": "stored-version",
+            "seq": 267,
+            "time": "2026-09-12T19:12:02.571Z"
+          },
+          {
+            "elapsedMs": 16143,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "e80e29002e71f11cd176507006d42290de0c68dff26e09f64a07a8fb120c0aaf",
+            "idHash": "7fb78d56e2a3f44aa181b77d3eac40b4b171b0b7cfee46be90b6a635c544d317",
+            "objectType": "Access",
+            "rootSource": "stored-version",
+            "seq": 268,
+            "time": "2026-09-12T19:12:02.713Z"
+          },
+          {
+            "connId": 8,
+            "elapsedMs": 16150,
+            "event": "importer.recipient-access.projected",
+            "hash": "417f6c5fd18b0a7b40ce699ed7da0506ec16a6be8ed70c12bd98829ef29abd7c",
+            "objectType": "FotosShareCertificateChain",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 269,
+            "time": "2026-09-12T19:12:02.720Z"
+          },
+          {
+            "connId": 8,
+            "elapsedMs": 16185,
+            "event": "importer.recipient-access.projected",
+            "hash": "417f6c5fd18b0a7b40ce699ed7da0506ec16a6be8ed70c12bd98829ef29abd7c",
+            "objectType": "FotosShareCertificateChain",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 270,
+            "time": "2026-09-12T19:12:02.755Z"
+          },
+          {
+            "elapsedMs": 16318,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "874c3158057ab787d0750356850427ec3d588f411670abb0705b00942aeb5d41",
+            "idHash": "08e4fef92ff4765713a406b0dc785d1b2f32ddc8c9be3c4cc1bcfaf2d6112e1a",
+            "objectType": "Chum",
+            "rootSource": "stored-version",
+            "seq": 271,
+            "time": "2026-09-12T19:12:02.888Z"
+          },
+          {
+            "connId": 9,
+            "elapsedMs": 17216,
+            "event": "importer.protocol.ready",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 272,
+            "time": "2026-09-12T19:12:03.786Z"
+          },
+          {
+            "connId": 9,
+            "durationMs": 0,
+            "elapsedMs": 17216,
+            "event": "importer.protocol.ready.done",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 273,
+            "time": "2026-09-12T19:12:03.786Z"
+          },
+          {
+            "connId": 9,
+            "elapsedMs": 17222,
+            "event": "exporter.roots.sent",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "rootCount": 3,
+            "rootTypes": {
+              "HashGroup": 1,
+              "Topic": 2
+            },
+            "seq": 274,
+            "time": "2026-09-12T19:12:03.792Z"
+          },
+          {
+            "connId": 9,
+            "elapsedMs": 17452,
+            "event": "importer.recipient-access.projected",
+            "hash": "28ffe6dd5d0b5e7f06282c6b2ad0fa167f156c4468521a7f6a908c4b2563f522",
+            "objectType": "HashGroup",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 275,
+            "time": "2026-09-12T19:12:04.022Z"
+          },
+          {
+            "connId": 9,
+            "elapsedMs": 17454,
+            "event": "importer.recipient-access.projected",
+            "hash": "c1a45cf42d411e43f59cd397e8caddaf002fa6f1c8a3b2713535ad4194b3f70b",
+            "objectType": "Profile",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 276,
+            "time": "2026-09-12T19:12:04.024Z"
+          },
+          {
+            "connId": 9,
+            "elapsedMs": 17457,
+            "event": "importer.recipient-access.projected",
+            "hash": "417f6c5fd18b0a7b40ce699ed7da0506ec16a6be8ed70c12bd98829ef29abd7c",
+            "objectType": "FotosShareCertificateChain",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 277,
+            "time": "2026-09-12T19:12:04.027Z"
+          },
+          {
+            "connId": 9,
+            "elapsedMs": 17458,
+            "event": "importer.recipient-access.projected",
+            "hash": "79e013a15f90c5478666f5630b609f8c86da8d64d5b0ad9560a53bf2f4eb5136",
+            "objectType": "FotosShareManifest",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 278,
+            "time": "2026-09-12T19:12:04.028Z"
+          },
+          {
+            "connId": 9,
+            "elapsedMs": 17461,
+            "event": "importer.recipient-access.projected",
+            "hash": "8b071af1960b9f69c8bdf2b3eb81b80fa2169e9a77db4e7cac66369ce1fad278",
+            "objectType": "Topic",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 279,
+            "time": "2026-09-12T19:12:04.031Z"
+          },
+          {
+            "connId": 9,
+            "elapsedMs": 17477,
+            "event": "importer.recipient-access.projected",
+            "hash": "c1a45cf42d411e43f59cd397e8caddaf002fa6f1c8a3b2713535ad4194b3f70b",
+            "objectType": "Profile",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 280,
+            "time": "2026-09-12T19:12:04.047Z"
+          },
+          {
+            "connId": 9,
+            "direction": "remote-to-local",
+            "elapsedMs": 17509,
+            "event": "importer.object.saved",
+            "hash": "5a75730614a3d8bc0de784a23c9b5b1e5c85b0513f17d2933db56e5d0e725e5d",
+            "kind": "object",
+            "objectType": "FotosShareCertificate",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 281,
+            "time": "2026-09-12T19:12:04.079Z"
+          },
+          {
+            "connId": 9,
+            "direction": "remote-to-local",
+            "elapsedMs": 17509,
+            "event": "importer.object.saved",
+            "hash": "5a75730614a3d8bc0de784a23c9b5b1e5c85b0513f17d2933db56e5d0e725e5d",
+            "kind": "object",
+            "objectType": "FotosShareCertificate",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 282,
+            "time": "2026-09-12T19:12:04.079Z"
+          },
+          {
+            "connId": 9,
+            "direction": "remote-to-local",
+            "elapsedMs": 17535,
+            "event": "importer.object.saved",
+            "hash": "4080d8a9130e54e9867313ff775eee9b050d1c6bb60b453eee504bed714a2b32",
+            "kind": "object",
+            "objectType": "FotosShareCertificateChain",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 283,
+            "time": "2026-09-12T19:12:04.105Z"
+          },
+          {
+            "connId": 9,
+            "direction": "remote-to-local",
+            "elapsedMs": 17552,
+            "event": "importer.object.saved",
+            "hash": "33a001b6a0dc553bf7b3502c99f6974f93c40bea1c44fc8e257468fa06ecd6a0",
+            "kind": "object",
+            "objectType": "VersionNodeChange",
+            "remotePersonId": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+            "seq": 284,
+            "time": "2026-09-12T19:12:04.122Z"
+          },
+          {
+            "elapsedMs": 17567,
+            "event": "storage.wakeup.partial-inaccessible",
+            "hash": "4080d8a9130e54e9867313ff775eee9b050d1c6bb60b453eee504bed714a2b32",
+            "idHash": "417f6c5fd18b0a7b40ce699ed7da0506ec16a6be8ed70c12bd98829ef29abd7c",
+            "objectType": "FotosShareCertificateChain",
+            "rootSource": "stored-version",
+            "seq": 285,
+            "time": "2026-09-12T19:12:04.137Z"
+          }
+        ]
+      },
+      "fotosProjection": {
+        "buildCount": 5,
+        "cacheHitCount": 23,
+        "invalidationCauses": {
+          "unversioned:Signature": 2,
+          "versioned:FotosShareCertificateChain": 2
+        },
+        "invalidationCount": 4,
+        "maxBuildMs": 118,
+        "maxSignatureVerificationMs": 116,
+        "recentInvalidations": [
+          {
+            "at": "2026-09-12T19:12:02.526Z",
+            "cause": "unversioned:Signature",
+            "trustChanged": false
+          },
+          {
+            "at": "2026-09-12T19:12:02.571Z",
+            "cause": "versioned:FotosShareCertificateChain",
+            "trustChanged": false
+          },
+          {
+            "at": "2026-09-12T19:12:04.092Z",
+            "cause": "unversioned:Signature",
+            "trustChanged": false
+          },
+          {
+            "at": "2026-09-12T19:12:04.137Z",
+            "cause": "versioned:FotosShareCertificateChain",
+            "trustChanged": false
+          }
+        ],
+        "signatureVerificationCacheHitCount": 6,
+        "signatureVerificationCount": 3,
+        "totalBuildMs": 251,
+        "totalSignatureVerificationMs": 239,
+        "trust": {
+          "barriers": {
+            "count": 3,
+            "maxDurationMs": 0,
+            "totalDurationMs": 0,
+            "waitedCount": 0
+          },
+          "queue": {
+            "causes": {
+              "initial-hydration": {
+                "completedCount": 1,
+                "count": 1,
+                "failureCount": 0,
+                "maxDurationMs": 310,
+                "maxQueueWaitMs": 0,
+                "queuedCount": 1,
+                "totalDurationMs": 310,
+                "totalQueueWaitMs": 0
+              },
+              "unversioned:HashGroup": {
+                "completedCount": 2,
+                "count": 2,
+                "failureCount": 0,
+                "maxDurationMs": 0,
+                "maxQueueWaitMs": 0,
+                "queuedCount": 2,
+                "totalDurationMs": 0,
+                "totalQueueWaitMs": 0
+              },
+              "unversioned:Keys": {
+                "completedCount": 2,
+                "count": 2,
+                "failureCount": 0,
+                "maxDurationMs": 0,
+                "maxQueueWaitMs": 0,
+                "queuedCount": 2,
+                "totalDurationMs": 0,
+                "totalQueueWaitMs": 0
+              },
+              "unversioned:Signature": {
+                "completedCount": 2,
+                "count": 2,
+                "failureCount": 0,
+                "maxDurationMs": 1,
+                "maxQueueWaitMs": 0,
+                "queuedCount": 2,
+                "totalDurationMs": 2,
+                "totalQueueWaitMs": 0
+              },
+              "unversioned:VersionNodeChange": {
+                "completedCount": 3,
+                "count": 3,
+                "failureCount": 0,
+                "maxDurationMs": 0,
+                "maxQueueWaitMs": 0,
+                "queuedCount": 3,
+                "totalDurationMs": 0,
+                "totalQueueWaitMs": 0
+              },
+              "unversioned:VersionNodeEdge": {
+                "completedCount": 1,
+                "count": 1,
+                "failureCount": 0,
+                "maxDurationMs": 0,
+                "maxQueueWaitMs": 0,
+                "queuedCount": 1,
+                "totalDurationMs": 0,
+                "totalQueueWaitMs": 0
+              },
+              "version-stored:Access": {
+                "completedCount": 1,
+                "count": 1,
+                "failureCount": 0,
+                "maxDurationMs": 0,
+                "maxQueueWaitMs": 0,
+                "queuedCount": 1,
+                "totalDurationMs": 0,
+                "totalQueueWaitMs": 0
+              },
+              "version-stored:Chum": {
+                "completedCount": 1,
+                "count": 1,
+                "failureCount": 0,
+                "maxDurationMs": 0,
+                "maxQueueWaitMs": 0,
+                "queuedCount": 1,
+                "totalDurationMs": 0,
+                "totalQueueWaitMs": 0
+              },
+              "version-stored:FotosShareCertificate": {
+                "completedCount": 2,
+                "count": 2,
+                "failureCount": 0,
+                "maxDurationMs": 0,
+                "maxQueueWaitMs": 0,
+                "queuedCount": 2,
+                "totalDurationMs": 0,
+                "totalQueueWaitMs": 0
+              },
+              "version-stored:FotosShareCertificateChain": {
+                "completedCount": 2,
+                "count": 2,
+                "failureCount": 0,
+                "maxDurationMs": 1,
+                "maxQueueWaitMs": 0,
+                "queuedCount": 2,
+                "totalDurationMs": 1,
+                "totalQueueWaitMs": 0
+              }
+            },
+            "completedCount": 17,
+            "failureCount": 0,
+            "pendingCount": 0,
+            "queuedCount": 17
+          },
+          "recentBarriers": [
+            {
+              "durationMs": 0,
+              "outcome": "success",
+              "pendingCount": 0,
+              "startedAt": "2026-09-12T19:12:01.953Z"
+            },
+            {
+              "durationMs": 0,
+              "outcome": "success",
+              "pendingCount": 0,
+              "startedAt": "2026-09-12T19:12:02.573Z"
+            },
+            {
+              "durationMs": 0,
+              "outcome": "success",
+              "pendingCount": 0,
+              "startedAt": "2026-09-12T19:12:04.140Z"
+            }
+          ],
+          "recentRefreshes": [
+            {
+              "durationMs": 310,
+              "outcome": "success",
+              "phase": "refreshCaches",
+              "startedAt": "2026-09-12T19:12:01.627Z"
+            }
+          ],
+          "recentUpdates": [
+            {
+              "cause": "initial-hydration",
+              "durationMs": 310,
+              "enqueuedAt": "2026-09-12T19:12:01.627Z",
+              "outcome": "success",
+              "pendingCountAtEnqueue": 0,
+              "queueWaitMs": 0,
+              "startedAt": "2026-09-12T19:12:01.627Z"
+            },
+            {
+              "cause": "unversioned:HashGroup",
+              "durationMs": 0,
+              "enqueuedAt": "2026-09-12T19:12:01.942Z",
+              "outcome": "success",
+              "pendingCountAtEnqueue": 0,
+              "queueWaitMs": 0,
+              "startedAt": "2026-09-12T19:12:01.942Z"
+            },
+            {
+              "cause": "unversioned:HashGroup",
+              "durationMs": 0,
+              "enqueuedAt": "2026-09-12T19:12:02.071Z",
+              "outcome": "success",
+              "pendingCountAtEnqueue": 0,
+              "queueWaitMs": 0,
+              "startedAt": "2026-09-12T19:12:02.071Z"
+            },
+            {
+              "cause": "unversioned:Keys",
+              "durationMs": 0,
+              "enqueuedAt": "2026-09-12T19:12:02.405Z",
+              "outcome": "success",
+              "pendingCountAtEnqueue": 0,
+              "queueWaitMs": 0,
+              "startedAt": "2026-09-12T19:12:02.405Z"
+            },
+            {
+              "cause": "version-stored:FotosShareCertificate",
+              "durationMs": 0,
+              "enqueuedAt": "2026-09-12T19:12:02.513Z",
+              "outcome": "success",
+              "pendingCountAtEnqueue": 0,
+              "queueWaitMs": 0,
+              "startedAt": "2026-09-12T19:12:02.513Z"
+            },
+            {
+              "cause": "unversioned:Signature",
+              "durationMs": 1,
+              "enqueuedAt": "2026-09-12T19:12:02.525Z",
+              "outcome": "success",
+              "pendingCountAtEnqueue": 0,
+              "queueWaitMs": 0,
+              "startedAt": "2026-09-12T19:12:02.525Z"
+            },
+            {
+              "cause": "version-stored:FotosShareCertificateChain",
+              "durationMs": 0,
+              "enqueuedAt": "2026-09-12T19:12:02.538Z",
+              "outcome": "success",
+              "pendingCountAtEnqueue": 0,
+              "queueWaitMs": 0,
+              "startedAt": "2026-09-12T19:12:02.538Z"
+            },
+            {
+              "cause": "unversioned:VersionNodeChange",
+              "durationMs": 0,
+              "enqueuedAt": "2026-09-12T19:12:02.560Z",
+              "outcome": "success",
+              "pendingCountAtEnqueue": 0,
+              "queueWaitMs": 0,
+              "startedAt": "2026-09-12T19:12:02.560Z"
+            },
+            {
+              "cause": "version-stored:Access",
+              "durationMs": 0,
+              "enqueuedAt": "2026-09-12T19:12:02.657Z",
+              "outcome": "success",
+              "pendingCountAtEnqueue": 0,
+              "queueWaitMs": 0,
+              "startedAt": "2026-09-12T19:12:02.657Z"
+            },
+            {
+              "cause": "unversioned:VersionNodeEdge",
+              "durationMs": 0,
+              "enqueuedAt": "2026-09-12T19:12:02.681Z",
+              "outcome": "success",
+              "pendingCountAtEnqueue": 0,
+              "queueWaitMs": 0,
+              "startedAt": "2026-09-12T19:12:02.681Z"
+            },
+            {
+              "cause": "version-stored:Chum",
+              "durationMs": 0,
+              "enqueuedAt": "2026-09-12T19:12:02.824Z",
+              "outcome": "success",
+              "pendingCountAtEnqueue": 0,
+              "queueWaitMs": 0,
+              "startedAt": "2026-09-12T19:12:02.824Z"
+            },
+            {
+              "cause": "unversioned:VersionNodeChange",
+              "durationMs": 0,
+              "enqueuedAt": "2026-09-12T19:12:02.860Z",
+              "outcome": "success",
+              "pendingCountAtEnqueue": 0,
+              "queueWaitMs": 0,
+              "startedAt": "2026-09-12T19:12:02.860Z"
+            },
+            {
+              "cause": "unversioned:Keys",
+              "durationMs": 0,
+              "enqueuedAt": "2026-09-12T19:12:03.752Z",
+              "outcome": "success",
+              "pendingCountAtEnqueue": 0,
+              "queueWaitMs": 0,
+              "startedAt": "2026-09-12T19:12:03.752Z"
+            },
+            {
+              "cause": "version-stored:FotosShareCertificate",
+              "durationMs": 0,
+              "enqueuedAt": "2026-09-12T19:12:04.079Z",
+              "outcome": "success",
+              "pendingCountAtEnqueue": 0,
+              "queueWaitMs": 0,
+              "startedAt": "2026-09-12T19:12:04.079Z"
+            },
+            {
+              "cause": "unversioned:Signature",
+              "durationMs": 1,
+              "enqueuedAt": "2026-09-12T19:12:04.091Z",
+              "outcome": "success",
+              "pendingCountAtEnqueue": 0,
+              "queueWaitMs": 0,
+              "startedAt": "2026-09-12T19:12:04.091Z"
+            },
+            {
+              "cause": "version-stored:FotosShareCertificateChain",
+              "durationMs": 1,
+              "enqueuedAt": "2026-09-12T19:12:04.104Z",
+              "outcome": "success",
+              "pendingCountAtEnqueue": 0,
+              "queueWaitMs": 0,
+              "startedAt": "2026-09-12T19:12:04.104Z"
+            },
+            {
+              "cause": "unversioned:VersionNodeChange",
+              "durationMs": 0,
+              "enqueuedAt": "2026-09-12T19:12:04.122Z",
+              "outcome": "success",
+              "pendingCountAtEnqueue": 0,
+              "queueWaitMs": 0,
+              "startedAt": "2026-09-12T19:12:04.122Z"
+            }
+          ],
+          "refreshCaches": {
+            "count": 1,
+            "maxDurationMs": 310,
+            "totalDurationMs": 310
+          },
+          "refreshProfile": {
+            "count": 0,
+            "maxDurationMs": 0,
+            "totalDurationMs": 0
+          },
+          "signatureVerification": {
+            "callCount": 3,
+            "recentSpans": [
+              {
+                "call": 1,
+                "durationMs": 59,
+                "issuer": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+                "outcome": "success",
+                "phase": "trustedKeyLookup",
+                "startedAt": "2026-09-12T19:12:01.953Z"
+              },
+              {
+                "call": 1,
+                "durationMs": 57,
+                "issuer": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+                "outcome": "success",
+                "phase": "synchronousCrypto",
+                "result": true,
+                "startedAt": "2026-09-12T19:12:02.012Z"
+              },
+              {
+                "call": 2,
+                "durationMs": 0,
+                "issuer": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+                "outcome": "success",
+                "phase": "trustedKeyLookup",
+                "startedAt": "2026-09-12T19:12:02.573Z"
+              },
+              {
+                "call": 2,
+                "durationMs": 60,
+                "issuer": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+                "outcome": "success",
+                "phase": "synchronousCrypto",
+                "result": true,
+                "startedAt": "2026-09-12T19:12:02.573Z"
+              },
+              {
+                "call": 3,
+                "durationMs": 0,
+                "issuer": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+                "outcome": "success",
+                "phase": "trustedKeyLookup",
+                "startedAt": "2026-09-12T19:12:04.140Z"
+              },
+              {
+                "call": 3,
+                "durationMs": 63,
+                "issuer": "d4d8a20fdf37214d536c58d171965f2bc0b3f34ac96ba47693111f3871d0676a",
+                "outcome": "success",
+                "phase": "synchronousCrypto",
+                "result": true,
+                "startedAt": "2026-09-12T19:12:04.140Z"
+              }
+            ],
+            "synchronousCrypto": {
+              "count": 3,
+              "failureCount": 0,
+              "maxDurationMs": 63,
+              "totalDurationMs": 180
+            },
+            "trustedKeyLookup": {
+              "count": 3,
+              "failureCount": 0,
+              "maxDurationMs": 59,
+              "totalDurationMs": 59
+            }
+          }
+        },
+        "verifier": {
+          "callCount": 3,
+          "recentSpans": [
+            {
+              "call": 1,
+              "durationMs": 0,
+              "outcome": "success",
+              "phase": "trustQueueBarrier",
+              "startedAt": "2026-09-12T19:12:01.953Z"
+            },
+            {
+              "call": 1,
+              "durationMs": 116,
+              "outcome": "success",
+              "phase": "trustVerificationCall",
+              "startedAt": "2026-09-12T19:12:01.953Z"
+            },
+            {
+              "call": 2,
+              "durationMs": 0,
+              "outcome": "success",
+              "phase": "trustQueueBarrier",
+              "startedAt": "2026-09-12T19:12:02.573Z"
+            },
+            {
+              "call": 2,
+              "durationMs": 60,
+              "outcome": "success",
+              "phase": "trustVerificationCall",
+              "startedAt": "2026-09-12T19:12:02.573Z"
+            },
+            {
+              "call": 3,
+              "durationMs": 0,
+              "outcome": "success",
+              "phase": "trustQueueBarrier",
+              "startedAt": "2026-09-12T19:12:04.140Z"
+            },
+            {
+              "call": 3,
+              "durationMs": 63,
+              "outcome": "success",
+              "phase": "trustVerificationCall",
+              "startedAt": "2026-09-12T19:12:04.140Z"
+            }
+          ],
+          "trustQueueBarrier": {
+            "count": 3,
+            "failureCount": 0,
+            "maxDurationMs": 0,
+            "totalDurationMs": 0
+          },
+          "trustVerificationCall": {
+            "count": 3,
+            "failureCount": 0,
+            "maxDurationMs": 116,
+            "totalDurationMs": 239
+          }
+        }
+      }
+    },
+    "slowTimings": [
+      {
+        "durationMs": 3980,
+        "kind": "step",
+        "label": "Register all application identities with Glue",
+        "step": 2,
+        "stepTitle": "Register all application identities with Glue"
+      },
+      {
+        "durationMs": 3722,
+        "kind": "step",
+        "label": "Share the first photo with Bob and verify exact bytes",
+        "step": 5,
+        "stepTitle": "Share the first photo with Bob and verify exact bytes"
+      },
+      {
+        "durationMs": 2760,
+        "kind": "wait",
+        "label": "Bob Fotos projection change",
+        "step": 5,
+        "stepTitle": "Share the first photo with Bob and verify exact bytes"
+      },
+      {
+        "durationMs": 2760,
+        "kind": "call",
+        "label": "Bob Fotos projection change",
+        "step": 5,
+        "stepTitle": "Share the first photo with Bob and verify exact bytes"
+      },
+      {
+        "durationMs": 2681,
+        "kind": "call",
+        "label": "alice.registerPreparedIdentity",
+        "step": 2,
+        "stepTitle": "Register all application identities with Glue"
+      },
+      {
+        "durationMs": 2210,
+        "kind": "step",
+        "label": "Pair Bob and Charlie with Alice without sharing content",
+        "step": 3,
+        "stepTitle": "Pair Bob and Charlie with Alice without sharing content"
+      },
+      {
+        "durationMs": 1574,
+        "kind": "step",
+        "label": "Reload Alice and restore Bob's received collection",
+        "step": 11,
+        "stepTitle": "Reload Alice and restore Bob's received collection"
+      },
+      {
+        "durationMs": 1297,
+        "kind": "call",
+        "label": "bob.connectUsingInvitation",
+        "step": 3,
+        "stepTitle": "Pair Bob and Charlie with Alice without sharing content"
+      },
+      {
+        "durationMs": 1103,
+        "kind": "wait",
+        "label": "alice.reloadPreparedIdentity",
+        "step": 2,
+        "stepTitle": "Register all application identities with Glue"
+      },
+      {
+        "durationMs": 1103,
+        "kind": "call",
+        "label": "alice.reloadPreparedIdentity",
+        "step": 2,
+        "stepTitle": "Register all application identities with Glue"
+      },
+      {
+        "durationMs": 1047,
+        "kind": "wait",
+        "label": "charlie.reloadPreparedIdentity",
+        "step": 2,
+        "stepTitle": "Register all application identities with Glue"
+      },
+      {
+        "durationMs": 1047,
+        "kind": "call",
+        "label": "charlie.reloadPreparedIdentity",
+        "step": 2,
+        "stepTitle": "Register all application identities with Glue"
+      },
+      {
+        "durationMs": 1045,
+        "kind": "call",
+        "label": "charlie.registerPreparedIdentity",
+        "step": 2,
+        "stepTitle": "Register all application identities with Glue"
+      }
+    ],
+    "startedAt": "2026-09-12T19:11:50.227Z",
+    "status": "passed",
+    "steps": [
+      {
+        "calls": [
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "alice.fotos-qa.discovery",
+            "maxDurationMs": 14,
+            "totalDurationMs": 14,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "charlie.fotos-qa.discovery",
+            "maxDurationMs": 10,
+            "totalDurationMs": 10,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "alice.waitForAppReady",
+            "maxDurationMs": 6,
+            "totalDurationMs": 6,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "charlie.waitForAppReady",
+            "maxDurationMs": 5,
+            "totalDurationMs": 5,
+            "totalRetries": 0
+          }
+        ],
+        "durationMs": 21,
+        "finishedAt": "2026-09-12T19:11:50.250Z",
+        "number": 1,
+        "startedAt": "2026-09-12T19:11:50.229Z",
+        "status": "PASS",
+        "title": "Verify exact Fotos browser actors",
+        "waits": [
+          {
+            "attempts": 1,
+            "description": "alice.waitForAppReady",
+            "durationMs": 6,
+            "intervalMs": 0,
+            "outcome": "PASS"
+          },
+          {
+            "attempts": 1,
+            "description": "charlie.waitForAppReady",
+            "durationMs": 5,
+            "intervalMs": 0,
+            "outcome": "PASS"
+          }
+        ]
+      },
+      {
+        "calls": [
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "alice.registerPreparedIdentity",
+            "maxDurationMs": 2681,
+            "totalDurationMs": 2681,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "alice.reloadPreparedIdentity",
+            "maxDurationMs": 1103,
+            "totalDurationMs": 1103,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "charlie.reloadPreparedIdentity",
+            "maxDurationMs": 1047,
+            "totalDurationMs": 1047,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "charlie.registerPreparedIdentity",
+            "maxDurationMs": 1045,
+            "totalDurationMs": 1045,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "alice.prepareIdentity",
+            "maxDurationMs": 177,
+            "totalDurationMs": 177,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "charlie.prepareIdentity",
+            "maxDurationMs": 151,
+            "totalDurationMs": 151,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "bob.registerIdentity",
+            "maxDurationMs": 122,
+            "totalDurationMs": 122,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "alice.getIdentity.afterRegistration",
+            "maxDurationMs": 7,
+            "totalDurationMs": 7,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "bob.getIdentity",
+            "maxDurationMs": 5,
+            "totalDurationMs": 5,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "charlie.getIdentity.afterRegistration",
+            "maxDurationMs": 5,
+            "totalDurationMs": 5,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "charlie.getIdentity.beforePrepare",
+            "maxDurationMs": 3,
+            "totalDurationMs": 3,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "alice.getIdentity.beforePrepare",
+            "maxDurationMs": 2,
+            "totalDurationMs": 2,
+            "totalRetries": 0
+          }
+        ],
+        "durationMs": 3980,
+        "finishedAt": "2026-09-12T19:11:54.230Z",
+        "number": 2,
+        "startedAt": "2026-09-12T19:11:50.250Z",
+        "status": "PASS",
+        "title": "Register all application identities with Glue",
+        "waits": [
+          {
+            "attempts": 1,
+            "description": "alice.reloadPreparedIdentity",
+            "durationMs": 1103,
+            "intervalMs": 0,
+            "outcome": "PASS"
+          },
+          {
+            "attempts": 1,
+            "description": "charlie.reloadPreparedIdentity",
+            "durationMs": 1047,
+            "intervalMs": 0,
+            "outcome": "PASS"
+          }
+        ]
+      },
+      {
+        "calls": [
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "bob.connectUsingInvitation",
+            "maxDurationMs": 1297,
+            "totalDurationMs": 1297,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "charlie.acceptPairingInvitation",
+            "maxDurationMs": 875,
+            "totalDurationMs": 875,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "alice.createPairingInvitation",
+            "maxDurationMs": 19,
+            "totalDurationMs": 19,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "alice.createPairingInvitation.forBob",
+            "maxDurationMs": 11,
+            "totalDurationMs": 11,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "bob.getFotosSnapshot.beforePairing",
+            "maxDurationMs": 3,
+            "totalDurationMs": 3,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "charlie.getReceivedShareSnapshot",
+            "maxDurationMs": 3,
+            "totalDurationMs": 3,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "bob.getFotosSnapshot",
+            "maxDurationMs": 2,
+            "totalDurationMs": 2,
+            "totalRetries": 0
+          }
+        ],
+        "durationMs": 2210,
+        "finishedAt": "2026-09-12T19:11:56.440Z",
+        "number": 3,
+        "startedAt": "2026-09-12T19:11:54.230Z",
+        "status": "PASS",
+        "title": "Pair Bob and Charlie with Alice without sharing content",
+        "waits": []
+      },
+      {
+        "calls": [
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "alice.importPhotoFixture.qa-second.jpg",
+            "maxDurationMs": 265,
+            "totalDurationMs": 265,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "alice.importPhotoFixture.qa-original.png",
+            "maxDurationMs": 136,
+            "totalDurationMs": 136,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "alice.createCollection",
+            "maxDurationMs": 16,
+            "totalDurationMs": 16,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "charlie.getReceivedShareSnapshot",
+            "maxDurationMs": 2,
+            "totalDurationMs": 2,
+            "totalRetries": 0
+          }
+        ],
+        "durationMs": 283,
+        "finishedAt": "2026-09-12T19:11:56.723Z",
+        "number": 4,
+        "startedAt": "2026-09-12T19:11:56.440Z",
+        "status": "PASS",
+        "title": "Import two photos and collect only the first",
+        "waits": []
+      },
+      {
+        "calls": [
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "Bob Fotos projection change",
+            "maxDurationMs": 2760,
+            "totalDurationMs": 2760,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "alice.setCollectionRecipients",
+            "maxDurationMs": 958,
+            "totalDurationMs": 958,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "charlie.getReceivedShareSnapshot",
+            "maxDurationMs": 3,
+            "totalDurationMs": 3,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "bob.readFile.qa-original.png",
+            "maxDurationMs": 0,
+            "totalDurationMs": 0,
+            "totalRetries": 0
+          }
+        ],
+        "durationMs": 3722,
+        "finishedAt": "2026-09-12T19:12:00.445Z",
+        "number": 5,
+        "startedAt": "2026-09-12T19:11:56.723Z",
+        "status": "PASS",
+        "title": "Share the first photo with Bob and verify exact bytes",
+        "waits": [
+          {
+            "attempts": 1,
+            "description": "Bob Fotos projection change",
+            "durationMs": 2760,
+            "intervalMs": 0,
+            "outcome": "PASS"
+          }
+        ]
+      },
+      {
+        "calls": [
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "Bob Fotos projection change",
+            "maxDurationMs": 737,
+            "totalDurationMs": 737,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "alice.setCollectionMembers.add",
+            "maxDurationMs": 10,
+            "totalDurationMs": 10,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "charlie.getReceivedShareSnapshot",
+            "maxDurationMs": 2,
+            "totalDurationMs": 2,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "bob.readFile.qa-original.png",
+            "maxDurationMs": 1,
+            "totalDurationMs": 1,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "bob.readFile.qa-second.jpg",
+            "maxDurationMs": 0,
+            "totalDurationMs": 0,
+            "totalRetries": 0
+          }
+        ],
+        "durationMs": 750,
+        "finishedAt": "2026-09-12T19:12:01.195Z",
+        "number": 6,
+        "startedAt": "2026-09-12T19:12:00.445Z",
+        "status": "PASS",
+        "title": "Add the second member and verify live propagation",
+        "waits": [
+          {
+            "attempts": 1,
+            "description": "Bob Fotos projection change",
+            "durationMs": 737,
+            "intervalMs": 0,
+            "outcome": "PASS"
+          }
+        ]
+      },
+      {
+        "calls": [
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "Bob Fotos projection change",
+            "maxDurationMs": 131,
+            "totalDurationMs": 131,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "alice.setCollectionMembers.remove",
+            "maxDurationMs": 9,
+            "totalDurationMs": 9,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "charlie.getReceivedShareSnapshot",
+            "maxDurationMs": 2,
+            "totalDurationMs": 2,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "bob.readFile.qa-second.jpg",
+            "maxDurationMs": 0,
+            "totalDurationMs": 0,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "bob.readFile.removed collection member.rejects",
+            "maxDurationMs": 0,
+            "totalDurationMs": 0,
+            "totalRetries": 0
+          }
+        ],
+        "durationMs": 142,
+        "finishedAt": "2026-09-12T19:12:01.337Z",
+        "number": 7,
+        "startedAt": "2026-09-12T19:12:01.195Z",
+        "status": "PASS",
+        "title": "Remove the first member and verify live propagation",
+        "waits": [
+          {
+            "attempts": 1,
+            "description": "Bob Fotos projection change",
+            "durationMs": 131,
+            "intervalMs": 0,
+            "outcome": "PASS"
+          }
+        ]
+      },
+      {
+        "calls": [
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "bob.restartRuntime.offline",
+            "maxDurationMs": 615,
+            "totalDurationMs": 615,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "bob.getFotosSnapshot.offline",
+            "maxDurationMs": 119,
+            "totalDurationMs": 119,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "bob.readFile.qa-second.jpg",
+            "maxDurationMs": 0,
+            "totalDurationMs": 0,
+            "totalRetries": 0
+          }
+        ],
+        "durationMs": 734,
+        "finishedAt": "2026-09-12T19:12:02.071Z",
+        "number": 8,
+        "startedAt": "2026-09-12T19:12:01.337Z",
+        "status": "PASS",
+        "title": "Restart Filer offline and verify persisted files",
+        "waits": []
+      },
+      {
+        "calls": [
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "bob.resumeNetwork",
+            "maxDurationMs": 198,
+            "totalDurationMs": 198,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "charlie.getReceivedShareSnapshot",
+            "maxDurationMs": 51,
+            "totalDurationMs": 51,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "bob.getFotosSnapshot.reconnected",
+            "maxDurationMs": 20,
+            "totalDurationMs": 20,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "bob.readFile.qa-second.jpg",
+            "maxDurationMs": 0,
+            "totalDurationMs": 0,
+            "totalRetries": 0
+          }
+        ],
+        "durationMs": 269,
+        "finishedAt": "2026-09-12T19:12:02.340Z",
+        "number": 9,
+        "startedAt": "2026-09-12T19:12:02.071Z",
+        "status": "PASS",
+        "title": "Reconnect Filer and preserve the same projection",
+        "waits": []
+      },
+      {
+        "calls": [
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "Bob collection revocation",
+            "maxDurationMs": 230,
+            "totalDurationMs": 230,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "alice.setCollectionRecipients.revoke",
+            "maxDurationMs": 63,
+            "totalDurationMs": 63,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "charlie.getReceivedShareSnapshot",
+            "maxDurationMs": 2,
+            "totalDurationMs": 2,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "bob.getFotosSnapshot.revoked",
+            "maxDurationMs": 1,
+            "totalDurationMs": 1,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "bob.readFile.revoked collection member.rejects",
+            "maxDurationMs": 0,
+            "totalDurationMs": 0,
+            "totalRetries": 0
+          }
+        ],
+        "durationMs": 297,
+        "finishedAt": "2026-09-12T19:12:02.637Z",
+        "number": 10,
+        "startedAt": "2026-09-12T19:12:02.340Z",
+        "status": "PASS",
+        "title": "Revoke Bob and remove the received collection",
+        "waits": [
+          {
+            "attempts": 1,
+            "description": "Bob collection revocation",
+            "durationMs": 230,
+            "intervalMs": 0,
+            "outcome": "PASS"
+          }
+        ]
+      },
+      {
+        "calls": [
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "alice.reloadPreparedIdentity",
+            "maxDurationMs": 668,
+            "totalDurationMs": 668,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "Bob Fotos projection change",
+            "maxDurationMs": 540,
+            "totalDurationMs": 540,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "alice.setCollectionRecipients.regrant",
+            "maxDurationMs": 308,
+            "totalDurationMs": 308,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "bob.resumeNetwork.afterAliceReload",
+            "maxDurationMs": 55,
+            "totalDurationMs": 55,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "charlie.getReceivedShareSnapshot",
+            "maxDurationMs": 2,
+            "totalDurationMs": 2,
+            "totalRetries": 0
+          },
+          {
+            "count": 1,
+            "errorSamples": [],
+            "failureCount": 0,
+            "label": "bob.readFile.qa-second.jpg",
+            "maxDurationMs": 1,
+            "totalDurationMs": 1,
+            "totalRetries": 0
+          }
+        ],
+        "durationMs": 1574,
+        "finishedAt": "2026-09-12T19:12:04.211Z",
+        "number": 11,
+        "startedAt": "2026-09-12T19:12:02.637Z",
+        "status": "PASS",
+        "title": "Reload Alice and restore Bob's received collection",
+        "waits": [
+          {
+            "attempts": 1,
+            "description": "alice.reloadPreparedIdentity",
+            "durationMs": 668,
+            "intervalMs": 0,
+            "outcome": "PASS"
+          },
+          {
+            "attempts": 1,
+            "description": "Bob Fotos projection change",
+            "durationMs": 540,
+            "intervalMs": 0,
+            "outcome": "PASS"
+          }
+        ]
+      }
+    ]
+  }
+}

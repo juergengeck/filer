@@ -18,6 +18,7 @@
     "test:provider:connection": "pnpm --dir one.provider test:connection",
     "dev:fotos": "node scripts/fotos-api.mjs",
     "test:fotos": "pnpm build:fotos && node scripts/test-fotos-integration.mjs",
+    "test:glue-fotos-filer": "node scripts/test-glue-fotos-filer-integration.mjs",
     "build:fotos": "pnpm --dir ../one/packages/one.models build:src && pnpm --dir ../one/packages/filer.core build && pnpm --dir ../fotos/fotos.core build && pnpm --dir ../one/packages/glue.core build && pnpm --dir ../one/packages/settings.core build && pnpm --dir ../one/packages/qa.protocol build && pnpm --dir ../one/packages/refinio.api build",
     "test:files": "pnpm build:models && node scripts/test-files-collections-integration.mjs"
   },
