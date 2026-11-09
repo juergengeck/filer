@@ -280,8 +280,8 @@ the events; every report reads them and none is written alongside them.
 | `TagSelector.unionOfSets?: string[]`, included in `makeTagSetId` normalization, resolved with a visited set in `TagSetService` | Folder includes (D4). Today a selector is one conjunction. |
 | `TagSetDefinition.state?: 'active' \| 'retired'` (absent = active), mirroring `TagBinding.state` | Removing a saved folder without deleting history. |
 | Namespaced slugs `category:`, `time:`, `place:`, `person:` as a documented convention | Category roots, demand, and axis folders. `canonicalizeTagSlug` already keeps `:`; the README already uses `person:<personId>`. |
-| Slug canonicalization of non-ASCII letters | System tags are English, but user tags keep the user's own label: `canonicalizeTagSlug` replaces everything outside `[a-z0-9:._/-]`, so a user tag `München` becomes `m-nchen` and `Ärztin` becomes `rztin`. Transliterate (`ä→ae`, `ß→ss`) or keep Unicode letters. |
-| README status | It says "Planned package" while recipes and services exist. |
+| Slug canonicalization of non-ASCII letters | Done: `canonicalizeTagSlug` transliterates (`ä→ae`, `ö→oe`, `ü→ue`, `ß→ss`, `æ→ae`, `œ→oe`, `ø→o`, `å→a`), then NFKD-strips remaining marks, so a user tag `München` becomes `muenchen`. Labels keep the user's own spelling; only slugs stay ASCII. |
+| README status | Done: README now says the package is implemented. |
 
 ## Ownership boundaries
 
