@@ -1,6 +1,6 @@
 # Filer folder layout: demand categories and tag folders
 
-Status: proposed, awaiting owner review (revision 3: category-tag demand, literal paths, after-the-fact reporting)
+Status: proposed, awaiting owner review (revision 4: generic demand/supply, English system tags translated)
 Date: 2026-11-09
 Summary: Filer folders are Unix paths mapped into Finder. Every path segment
 is a `tag.core` tag, root segments are category tags, and demand is a set of
@@ -40,9 +40,9 @@ audit. This spec adds no tag, collection, or grouping type of its own.
 
 | # | Decision |
 | --- | --- |
-| D0 | **Folders are Unix paths**, mapped into Finder (and FUSE, ProjFS) as ordinary folders. Segment names are literal: no localized display layer, no Finder-tag mirror. |
+| D0 | **Folders are Unix paths**, mapped into Finder (and FUSE, ProjFS) as ordinary folders. A segment is a tag's label: system tags (categories, axes) are English and shown translated (`pictures` → `Bilder`); user tags show the user's own label. No Finder-tag mirror. |
 | D1 | Root folders are **category tags** (`tag:category:pictures`, …), not products. A product appears as a child only when its data has its own authority (`Gesundheit/Flexibel`). |
-| D2 | **Demand is a set of category tags**, never a specific folder, item, or person. A category's checkbox adds or removes its tag from the owner's `SyncDemand`. |
+| D2 | **Demand is category tags** in the system's generic demand and supply (`matching.core`, `RuntimeDemand`/`RuntimeSupply`), never a specific folder, item, or person. A category's checkbox activates or withdraws that category's demand. |
 | D2a | **Only supply makes content visible.** Demand grants nothing and reveals nothing a supplier can act on beyond the categories. If the owner does not supply something, no one sees it. |
 | D3 | **A folder path is a tag selector**: each segment names a tag, and the path means `allOf` those tags. No folder objects exist for plain paths. |
 | D4 | A **saved folder** is a `TagSetDefinition` with an owner-scoped explicit `id`; it may include other folders by reference (requires the tag.core extension in [Required tag.core changes](#required-tagcore-changes)). |
@@ -91,9 +91,12 @@ A path below a category resolves to a selector:
    on import (`sourceKind: system`) from the item's type, so every supplied item
    carries its category. The same tags form demand, which keeps folders and
    demand one vocabulary.
-2. **Axis segments** (`Zeit`, `Orte`, `Personen`) are fixed path names for the
-   tag namespaces `tag:time:*`, `tag:place:*`, `tag:person:*`. They are not tags
-   and cannot be created by users.
+2. **Axis segments** (`time`, `places`, `people`, shown translated as `Zeit`,
+   `Orte`, `Personen`) name the tag namespaces `tag:time:*`, `tag:place:*`,
+   `tag:person:*`. They are not tags and cannot be created by users.
+
+   Category and axis segments resolve from either the English name or its
+   translation, so paths keep working when the display language changes.
 3. Every **other segment** is looked up first among the viewer's saved-folder
    labels at that position, then by the label or alias of a `TagDefinition`.
    Each additional tag segment narrows the result: the path's tags form one
@@ -183,26 +186,38 @@ defines. Finder shows the canonical view. The apps may show the discovery view
 
 ## Demand and supply
 
-Demand and supply use the objects described in
-[demand/supply matching](../DEMAND_SUPPLY_SYNC_MATCHING.md) (`SyncDemand`,
-`SyncSupply`, `ScopedTrieRoot`, `SyncMatch`). They are not implemented yet; they
-belong in `../one/packages`, and this spec is their first consumer.
+Filer uses the system's generic demand and supply; it defines no demand or
+supply type of its own.
+
+- **Matching:** `matching.core` (`matchDemandSupply`, `matchRuntimeDemandSupply`),
+  which already matches on tags and trust.
+- **Records:** the persisted `RuntimeDemand` and `RuntimeSupply` objects
+  (recipes in `discovery.core`). Their tag fields already carry tag.core IDs:
+  `RuntimeDemand.requiredTagIds` and `RuntimeSupply.governedTagIds`.
+
+The channel-free `SyncDemand`/`SyncSupply`/`ScopedTrieRoot`/`SyncMatch` family
+in [demand/supply matching](../DEMAND_SUPPLY_SYNC_MATCHING.md) was never
+implemented and is superseded by this; it is not built.
 
 ### Demand is category tags
 
-The owner's demand is one versioned `SyncDemand` whose selector is a set of
-category tags (`selectorKind: tags`, e.g. `[tag:category:pictures, tag:category:health]`).
+The owner demands categories, expressed as category tags (`tag:category:pictures`,
+`tag:category:health`, …).
 
-- Checking a category adds its tag (new version); unchecking removes it.
+- `requiredTagIds` is an `allOf` match, so each category is its own demand
+  record: `domain: content`, `requiredTagIds: [tag:category:<id>]`,
+  `status: active`.
+- Checking a category creates or reactivates its demand; unchecking writes a new
+  version with `status: withdrawn`.
 - Demand never names a folder, an item, a saved set, or a person. Narrower
-  wishes are expressed by what suppliers choose to supply, not by demand.
-- Removing a tag deletes nothing, revokes nothing on the supplier side, and keeps
+  wishes are expressed by what suppliers choose to supply.
+- Withdrawing deletes nothing, revokes nothing on the supplier side, and keeps
   received objects. The category leaves the root listing.
 
 ### Supply decides visibility
 
-- A supplier publishes `SyncSupply` for what it is willing to provide, backed by
-  `ScopedTrieRoot`s (for tags: the per-tag sync tries).
+- A supplier (Cube, fotos.one, another Filer) publishes its `RuntimeSupply` with
+  the category tags it supplies in `governedTagIds`.
 - Within the owner's IoM, an own supplier matches the owner's category demand at
   `inner-circle` trust and grants, so content arrives without a manual share step.
 - For anyone else, nothing is visible unless the owner supplies it to them.
@@ -245,23 +260,18 @@ the events; every report reads them and none is written alongside them.
 
 | Event | Record that already exists |
 | --- | --- |
-| Demand created or changed | `SyncDemand` versions |
-| Supply created or changed | `SyncSupply` versions |
-| Match and grant | `SyncMatch`, the grant object, `TagBinding`/`TagGovernance` versions |
+| Demand created or changed | `RuntimeDemand` versions |
+| Supply created or changed | `RuntimeSupply` versions |
+| Grant | the grant object, `TagGovernance` versions |
 | Tagging and approval | tag.core Journal entries (`tag:bound`, `tag:approved`, …) |
 
 - **Status** in `status.json` is a report: current folder state per category,
   computed from these records.
-- **A doctor's report** is a report over one share: the grant fixes what was
+- **A doctor's report** is a report over a share: the grant fixes what was
   shared, and the tag sync-trie roots referenced by that share fix the exact
   membership. Later re-tagging does not change what the share covered, so no
-  separate snapshot is taken at sending time.
-  - Time-ordered: photos, measurements, and documents in one timeline.
-  - Stated vs inferred: manual bindings and approved suggestions are the
-    patient's statements; imported metadata is labeled as recorded data.
-  - Filer shows rendered reports read-only under `<category>/Berichte/`.
-
-Report format and who renders it are open (question 3).
+  separate snapshot is taken at sending time. Filer shows such reports
+  read-only under `<category>/Berichte/`.
 
 ## Required tag.core changes
 
@@ -270,7 +280,7 @@ Report format and who renders it are open (question 3).
 | `TagSelector.unionOfSets?: string[]`, included in `makeTagSetId` normalization, resolved with a visited set in `TagSetService` | Folder includes (D4). Today a selector is one conjunction. |
 | `TagSetDefinition.state?: 'active' \| 'retired'` (absent = active), mirroring `TagBinding.state` | Removing a saved folder without deleting history. |
 | Namespaced slugs `category:`, `time:`, `place:`, `person:` as a documented convention | Category roots, demand, and axis folders. `canonicalizeTagSlug` already keeps `:`; the README already uses `person:<personId>`. |
-| Slug canonicalization of non-ASCII letters | `canonicalizeTagSlug` replaces everything outside `[a-z0-9:._/-]`, so `München` becomes `m-nchen` and `Ärztin` becomes `rztin`. German labels collide or degrade. Transliterate (`ä→ae`, `ß→ss`) or keep Unicode letters. |
+| Slug canonicalization of non-ASCII letters | System tags are English, but user tags keep the user's own label: `canonicalizeTagSlug` replaces everything outside `[a-z0-9:._/-]`, so a user tag `München` becomes `m-nchen` and `Ärztin` becomes `rztin`. Transliterate (`ä→ae`, `ß→ss`) or keep Unicode letters. |
 | README status | It says "Planned package" while recipes and services exist. |
 
 ## Ownership boundaries
@@ -279,17 +289,17 @@ Report format and who renders it are open (question 3).
 | --- | --- |
 | Filer (`../one/packages/filer.core`, `refinio.api/src/filer`) | Category registry, path resolution, Finder gesture → binding mapping, demand writes, derived folder state, status, report placement. |
 | `tag.core` | Tags, bindings, saved sets, approval, governance metadata, tries, Journal audit. |
-| Shared platform (`../one/packages`) | `SyncDemand`/`SyncSupply`/`ScopedTrieRoot`/`SyncMatch`, `trust.abac` grants, CHUM. |
-| Domain providers (Fotos, health) | Imports and type validation, imported time/place bindings, suggested person bindings, report rendering. |
+| Shared platform (`../one/packages`) | Generic demand/supply (`matching.core`, `RuntimeDemand`/`RuntimeSupply`), `trust.abac` grants, CHUM, translation of English system tags. |
+| Domain providers (Fotos, health) | Imports and type validation, category/time/place bindings, suggested person bindings. |
 | Native bridges (`one.provider`, `one.fuse3`, `one.projfs`) | Unchanged; they map native callbacks onto `IFileSystem`. |
 
 ## Migration
 
 1. Register category tags and map existing settings once: `files` →
    `tag:category:files`, `fotos` → `tag:category:pictures`, `health.flexibel` →
-   `tag:category:health`; `visible`/`auto` put the tag in demand, `hidden` leaves
-   it out. Then retire the `filer.folders` section; it is not kept beside the
-   demand.
+   `tag:category:health`; `visible`/`auto` create an active demand for the tag,
+   `hidden` creates none. Then retire the `filer.folders` section; it is not
+   kept beside the demand.
 2. `/Files` becomes `/Dateien`. Whether Finder aliases survive depends on File
    Provider item identifiers staying stable; verify on macOS before shipping the
    rename.
@@ -301,25 +311,16 @@ Report format and who renders it are open (question 3).
 ## Out of scope
 
 Smart folders beyond `allOf`/`anyOf`/`noneOf` plus includes; demand narrower
-than category tags; automatic sharing; clinical authorization changes;
-localized path names; Finder tags (`tagData`); Linux and Windows layout
-differences beyond the shared `IFileSystem`.
-
-## Open questions
-
-1. **Literal names.** Which names the category and axis paths use (`Dateien`,
-   `Bilder`, `Gesundheit`, `Zeit`, `Orte`, `Personen` as drafted here, or
-   English), chosen once since paths are literal.
-2. **SyncDemand vs GlueDemand.** Proposed: separate (sync scope vs market
-   trade), bridged later if needed.
-3. **Reports.** Format (PDF only, or also structured data such as FHIR) and
-   who renders them (patient, health provider, or AI).
+than category tags; Filer-specific demand or supply types; automatic sharing;
+clinical authorization changes; Finder tags (`tagData`); Linux and Windows
+layout differences beyond the shared `IFileSystem`.
 
 ## Delivery order
 
-1. tag.core changes (includes, namespaces, non-ASCII slugs).
-2. `SyncDemand`/`SyncSupply`/`ScopedTrieRoot`/`SyncMatch` with matching and
-   grants in `../one`, tested between two instances of one owner.
+1. tag.core changes (includes, saved-folder state, namespaces, non-ASCII slugs).
+2. Content demand and supply on `RuntimeDemand`/`RuntimeSupply` with
+   `matching.core`, and the tag-based grant path, tested between two instances
+   of one owner.
 3. Filer category registry, path resolution, gesture → binding mapping, and
    demand-derived folders; migrate `filer.folders`.
 4. Fotos: JSON → tags conversion, imported time/place bindings, suggested person
@@ -339,9 +340,10 @@ Disposable independent ONE instances with a local relay, as in `pnpm test:files`
 - A saved folder including `../Familie/Hochzeit`, with a cycle back to itself,
   lists the union once; renaming the included folder keeps the include.
 - A pending face suggestion does not appear under `Personen/` until approved.
-- Checking pictures on Filer adds `tag:category:pictures` to demand, and an own
-  fotos.one instance grants with no manual share; unchecking removes the tag
-  and keeps received objects.
+- Checking pictures on Filer writes an active `RuntimeDemand` for
+  `tag:category:pictures`, and an own fotos.one instance whose `RuntimeSupply`
+  governs that tag grants with no manual share; unchecking writes
+  `status: withdrawn` and keeps received objects.
 - Another person's demand for `tag:category:pictures` makes nothing visible to
   them until the owner supplies it.
 - A tag-based grant reaches the recipient over CHUM like the content it covers.
