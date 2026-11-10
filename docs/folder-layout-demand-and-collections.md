@@ -164,7 +164,7 @@ the last segment of a path folder, or the single `allOf` tag of a saved folder.
 | Drop a new file from outside Filer | The category provider imports it (e.g. Fotos photo import), then the copy rule applies. A provider may refuse a type (`EINVAL`). |
 | Delete an item | Revoke the owner's manual binding of the folder's own tag. If that tag comes only from `imported`/`suggested` bindings (e.g. EXIF year), `EPERM` with the reason; reject a suggestion in the app instead. If the item appears only through an include, `EPERM` ("lives in ../Familie"). |
 | Rename a folder | A saved folder gets a new `TagSetDefinition` version with the new label and the same `id`; its tags are unchanged. A plain path folder is first saved, then renamed. `TagDefinition`s are never relabeled from Finder: their `id` comes from the slug and is shared with everyone who uses that tag. |
-| Delete an empty folder | A saved folder is retired (new version, `state: retired`). A plain path folder has nothing to remove and leaves the listing once empty. `TagDefinition`s stay; vocabulary is not deleted. |
+| Delete an empty folder | Deleting a saved folder writes a tombstone object for its set id; the set keeps its history but no longer resolves. A plain path folder has nothing to remove and leaves the listing once empty. `TagDefinition`s stay; vocabulary is not deleted. |
 | Rename an item | `EPERM`; item names come from the source. |
 | Write inside `Geteilt/`, `Berichte/`, or axis roots | `EPERM`. Copying a received item into an own folder is allowed (D7). |
 
@@ -278,7 +278,7 @@ the events; every report reads them and none is written alongside them.
 | Change | Why |
 | --- | --- |
 | `TagSelector.unionOfSets?: string[]`, included in `makeTagSetId` normalization, resolved with a visited set in `TagSetService` | Folder includes (D4). Today a selector is one conjunction. |
-| `TagSetDefinition.state?: 'active' \| 'retired'` (absent = active), mirroring `TagBinding.state` | Removing a saved folder without deleting history. |
+| A tombstone object for a deleted saved folder (own recipe, referencing the set id; a plain object like `BookTombstone`) | Removing a saved folder without deleting history. A tombstoned include no longer resolves (the loader returns undefined), so including sets skip it. |
 | Namespaced slugs `category:`, `time:`, `place:`, `person:` as a documented convention | Category roots, demand, and axis folders. `canonicalizeTagSlug` already keeps `:`; the README already uses `person:<personId>`. |
 | Slug canonicalization of non-ASCII letters | Done: `canonicalizeTagSlug` transliterates (`ä→ae`, `ö→oe`, `ü→ue`, `ß→ss`, `æ→ae`, `œ→oe`, `ø→o`, `å→a`), then NFKD-strips remaining marks, so a user tag `München` becomes `muenchen`. Labels keep the user's own spelling; only slugs stay ASCII. |
 | README status | Done: README now says the package is implemented. |
@@ -317,7 +317,7 @@ layout differences beyond the shared `IFileSystem`.
 
 ## Delivery order
 
-1. tag.core changes (includes, saved-folder state, namespaces, non-ASCII slugs).
+1. tag.core changes (includes, saved-folder tombstones, namespaces, non-ASCII slugs).
 2. Content demand and supply on `RuntimeDemand`/`RuntimeSupply` with
    `matching.core`, and the tag-based grant path, tested between two instances
    of one owner.
