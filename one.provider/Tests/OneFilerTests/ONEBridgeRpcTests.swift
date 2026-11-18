@@ -4,6 +4,39 @@ import FileProvider
 @testable import OneFilerHostSupport
 
 final class ONEBridgeRpcTests: XCTestCase {
+    /// Child startup must not inherit an ambient directory outside its runtime package.
+    func testRuntimeLaunchUsesOwnedEntryDirectory() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let entryDirectory = directory.appendingPathComponent("package/dist/src/filer")
+        try FileManager.default.createDirectory(at: entryDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let executable = directory.appendingPathComponent("node-fixture")
+        try Data("""
+        #!/bin/sh
+        IFS= read -r bootstrap
+        printf '%s\\n' '{"ready":true,"owner":"\(String(repeating: "a", count: 64))","instance":"\(String(repeating: "b", count: 64))"}'
+        IFS= read -r request
+        printf '{"requestId":"cwd","success":true,"result":{"cwd":"%s"}}\\n' "$PWD"
+        while IFS= read -r ignored; do :; done
+
+        """.utf8).write(to: executable)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: executable.path)
+        let runtime = NodeRuntimeProcess(node: executable, entry: entryDirectory.appendingPathComponent("main.js"),
+                                         preload: entryDirectory.appendingPathComponent("preload.cjs"))
+        do {
+            try await runtime.start(configuration: [:])
+            let response = try await runtime.invoke(JSONSerialization.data(withJSONObject: ["requestId": "cwd"]))
+            let envelope = try XCTUnwrap(JSONSerialization.jsonObject(with: response) as? [String: Any])
+            let result = try XCTUnwrap(envelope["result"] as? [String: String])
+            let cwd = try XCTUnwrap(result["cwd"])
+            XCTAssertEqual(URL(fileURLWithPath: cwd).resolvingSymlinksInPath(), entryDirectory.resolvingSymlinksInPath())
+        } catch {
+            await runtime.shutdown()
+            throw error
+        }
+        await runtime.shutdown()
+    }
+
     func testQAOperationMappingIsBoundedToRegisteredSurfaces() throws {
         XCTAssertEqual(try RuntimeService.qaOperation(method: "getDiagnostics"), "filer-qa:getDiagnostics")
         XCTAssertEqual(try RuntimeService.qaOperation(method: "getFotosSnapshot"), "filer-qa:getFotosSnapshot")

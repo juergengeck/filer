@@ -1,6 +1,7 @@
 """Validate both Private IPC peers with real signatures, without touching installed domains."""
 import os
 import plistlib
+import platform
 from pathlib import Path
 import select
 import shutil
@@ -10,13 +11,18 @@ import uuid
 
 provider = Path(__file__).resolve().parent.parent
 identity = os.environ.get('SIGNING_IDENTITY', 'Developer ID Application: Refinio GmbH (26W8AC52QS)')
+architecture = platform.machine()
+if architecture not in {'arm64', 'x86_64'}:
+    raise RuntimeError(f'Unsupported macOS probe architecture: {architecture}')
+target = f'{architecture}-apple-macos13.5'
 with tempfile.TemporaryDirectory(prefix='filer-ipc-security-') as temp:
     root = Path(temp)
     probe = root / 'probe'
-    subprocess.run(['xcrun', 'swiftc', '-target', 'arm64-apple-macos13.0',
+    subprocess.run(['xcrun', 'swiftc', '-target', target,
         str(provider / 'Sources/OneFilerShared/RuntimeProtocol.swift'),
         str(provider / 'Sources/OneFilerShared/PrivateSocket.swift'),
         str(provider / 'Sources/OneFilerHost/NodeRuntimeProcess.swift'),
+        str(provider / 'Sources/OneFilerHost/FilerQAProgress.swift'),
         str(provider / 'Tests/Security/PrivateSocketProbe.swift'), '-o', str(probe)], check=True)
     binaries = {}
     for role, identifier in [('host', 'one.filer'), ('extension', 'one.filer.extension'), ('wrong', 'one.filer.wrong'), ('adhoc', 'one.filer.extension')]:
@@ -44,10 +50,11 @@ if profile_app:
     with tempfile.TemporaryDirectory(prefix='filer-ipc-sandbox-') as temp:
         root = Path(temp)
         probe = root / 'probe'
-        subprocess.run(['xcrun', 'swiftc', '-target', 'arm64-apple-macos13.0',
+        subprocess.run(['xcrun', 'swiftc', '-target', target,
             str(provider / 'Sources/OneFilerShared/RuntimeProtocol.swift'),
             str(provider / 'Sources/OneFilerShared/PrivateSocket.swift'),
             str(provider / 'Sources/OneFilerHost/NodeRuntimeProcess.swift'),
+            str(provider / 'Sources/OneFilerHost/FilerQAProgress.swift'),
         str(provider / 'Tests/Security/PrivateSocketProbe.swift'), '-o', str(probe)], check=True)
         binaries = {}
         for role, identifier, profile in [
@@ -78,16 +85,23 @@ if profile_app:
         finally:
             server.terminate()
             server.wait(timeout=10)
-            endpoint.unlink(missing_ok=True)
+            # App-group data vaults require the authorized sandbox peer to remove
+            # its socket; the unsandboxed Python driver has no group entitlement.
+            subprocess.run([str(binaries['host']), 'cleanup', str(endpoint)], check=True, timeout=10)
 
         runtime_path = os.environ.get('FILER_TEST_RUNTIME')
-        if runtime_path:
+        runtime_app = os.environ.get('FILER_TEST_RUNTIME_APP')
+        if runtime_path or runtime_app:
             contents = root / 'host.app/Contents'
             (contents / 'Resources').mkdir(exist_ok=True)
-            shutil.copytree(Path(runtime_path) / 'runtime', contents / 'Resources/runtime', symlinks=True)
-            shutil.copy2(Path(runtime_path) / 'node', contents / 'MacOS/node')
-            subprocess.run(['codesign', '--force', '--sign', identity, '--options', 'runtime', '--entitlements',
-                str(provider / 'Resources/Node.entitlements'), str(contents / 'MacOS/node')], check=True)
+            runtime_source = Path(runtime_app) / 'Contents/Resources/runtime' if runtime_app else Path(runtime_path) / 'runtime'
+            node_source = Path(runtime_app) / 'Contents/MacOS/node' if runtime_app else Path(runtime_path) / 'node'
+            shutil.copytree(runtime_source, contents / 'Resources/runtime', symlinks=True)
+            shutil.copy2(node_source, contents / 'MacOS/node')
+            if not runtime_app:
+                subprocess.run(['codesign', '--force', '--sign', identity, '--options', 'runtime', '--entitlements',
+                    str(provider / 'Resources/Node.entitlements'), str(contents / 'MacOS/node')], check=True)
+            subprocess.run(['codesign', '--verify', '--strict', str(contents / 'MacOS/node')], check=True)
             entitlements = root / 'host.entitlements'
             properties = plistlib.loads(entitlements.read_bytes())
             properties['com.apple.security.network.client'] = True

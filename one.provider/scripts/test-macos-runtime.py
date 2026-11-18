@@ -3,6 +3,7 @@
 import contextlib
 import importlib.util
 import io
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -48,6 +49,15 @@ class ReleaseValidationTests(unittest.TestCase):
         self.compile('addon.node', architectures=('arm64',)).chmod(0o644)
         with self.assertRaisesRegex(ValueError, 'expected arm64'):
             self.check()
+
+    def test_bundler_rejects_thin_input_before_packaging(self):
+        binary = self.compile('thin-node', architectures=('arm64',))
+        output = self.root / 'runtime-output'
+        result = subprocess.run(['node', str(Path(__file__).with_name('bundle-runtime.mjs')), str(output)],
+                                env={**os.environ, 'NODE_BINARY': str(binary)}, text=True, capture_output=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('Bundle a universal Node.js release', result.stderr)
+        self.assertFalse(output.exists())
 
     def test_understated_os_requirement_is_rejected(self):
         self.compile(minimum='14.0')

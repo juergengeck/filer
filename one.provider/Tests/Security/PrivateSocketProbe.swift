@@ -4,7 +4,11 @@ import Darwin
 @main struct PrivateSocketProbe {
     static func main() throws {
         let path = CommandLine.arguments[2]
-        if CommandLine.arguments[1] == "runtime" {
+        if CommandLine.arguments[1] == "cleanup" {
+            guard unlink(path) == 0 || errno == ENOENT else {
+                throw PrivateSocket.failure("Unable to remove the sandbox test socket.")
+            }
+        } else if CommandLine.arguments[1] == "runtime" {
             Task {
                 do { try await checkRuntime(); exit(0) }
                 catch { fputs("Sandbox runtime failed: \(error)\n", stderr); exit(4) }
@@ -57,6 +61,27 @@ import Darwin
         await child.shutdown()
         try FileManager.default.removeItem(at: directory)
         print("PASS: sandboxed bundled Node and canonical ONE runtime")
+        try checkThumbnail(bundle: bundle, runtime: root)
     }
 
+    /// Test the real system image converter under the Node child's inherited sandbox.
+    static func checkThumbnail(bundle: Bundle, runtime: URL) throws {
+        let process = Process()
+        process.executableURL = bundle.executableURL!.deletingLastPathComponent().appendingPathComponent("node")
+        process.currentDirectoryURL = runtime.appendingPathComponent("node_modules/@refinio/api")
+        process.arguments = ["--jitless", "--input-type=module", "-e", """
+            import {pathToFileURL} from 'node:url';
+            const {createSipsFotosThumbnail} = await import(pathToFileURL(process.argv[1]));
+            const image = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aJ1sAAAAASUVORK5CYII=', 'base64');
+            const jpeg = new Uint8Array(await createSipsFotosThumbnail(image.buffer.slice(image.byteOffset, image.byteOffset + image.byteLength), 'image/png'));
+            if (jpeg[0] !== 0xff || jpeg[1] !== 0xd8) throw new Error('Signed Node system sips check did not produce JPEG');
+            console.log('PASS: sandboxed signed Node system sips thumbnail');
+            """, runtime.appendingPathComponent("node_modules/@refinio/api/dist/src/filer/FotosThumbnail.js").path]
+        process.environment = ["HOME": NSHomeDirectory(), "TMPDIR": NSTemporaryDirectory(), "NODE_ENV": "production"]
+        try process.run()
+        process.waitUntilExit()
+        guard process.terminationReason == .exit && process.terminationStatus == 0 else {
+            throw PrivateSocket.failure("Sandboxed signed Node thumbnail check failed.")
+        }
+    }
 }

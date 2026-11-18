@@ -8,11 +8,7 @@ TEAM_ID="${TEAM_ID:-26W8AC52QS}"
 DEVELOPER_ID="${DEVELOPER_ID:-Developer ID Application: Refinio GmbH (26W8AC52QS)}"
 NOTARY_PROFILE="${NOTARY_PROFILE:-OneFiler Notarization}"
 if [[ -z "${NOTARYTOOL:-}" ]]; then
-  if [[ -x /Library/Developer/CommandLineTools/usr/bin/notarytool ]]; then
-    NOTARYTOOL=/Library/Developer/CommandLineTools/usr/bin/notarytool
-  else
-    NOTARYTOOL="$(xcrun -f notarytool)"
-  fi
+  NOTARYTOOL="$(xcrun -f notarytool)"
 fi
 VERSION="${VERSION:-$(node -p "require('./package.json').version")}"
 BUILD_NUMBER="${BUILD_NUMBER:-$(sed -n 's/^  CURRENT_PROJECT_VERSION: "\([0-9]*\)"/\1/p' project.yml)}"
@@ -53,7 +49,12 @@ check_prerequisites() {
     echo 'Missing CURRENT_PROJECT_VERSION in project.yml' >&2
     exit 1
   fi
-  lipo -verify_arch arm64 x86_64 "${NODE_BINARY:?Set NODE_BINARY to the universal Node.js release}"
+  local node_architectures
+  node_architectures="$(lipo -archs "${NODE_BINARY:?Set NODE_BINARY to the universal Node.js release}")"
+  if [[ "$node_architectures" != 'arm64 x86_64' && "$node_architectures" != 'x86_64 arm64' ]]; then
+    echo "Node.js must contain exactly arm64 and x86_64 slices, found: $node_architectures" >&2
+    exit 1
+  fi
   if [[ "$BUILD_ONLY" == false ]]; then
     "$NOTARYTOOL" history --keychain-profile "$NOTARY_PROFILE" >/dev/null
   fi
@@ -185,20 +186,10 @@ verify_exported_app() {
   verify_app_group_profile "$APP_PATH"
   verify_app_group_profile "$extension_path"
 
-  # Exercise the final hardened-runtime Node signature, including its system
-  # image converter child. The runtime check uses an isolated temporary store.
-  "$APP_PATH/Contents/MacOS/node" --jitless --require \
-    "$APP_PATH/Contents/Resources/runtime/console-to-stderr.cjs" \
-    "$APP_PATH/Contents/Resources/runtime/node_modules/@refinio/api/dist/src/filer/stdio-main.js" --check-runtime
-  "$APP_PATH/Contents/MacOS/node" --jitless --input-type=module - \
-    "$APP_PATH/Contents/Resources/runtime/node_modules/@refinio/api/dist/src/filer/FotosThumbnail.js" <<'NODE'
-import {pathToFileURL} from 'node:url';
-const {createSipsFotosThumbnail} = await import(pathToFileURL(process.argv[2]));
-const image = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aJ1sAAAAASUVORK5CYII=', 'base64');
-const jpeg = new Uint8Array(await createSipsFotosThumbnail(image.buffer.slice(image.byteOffset, image.byteOffset + image.byteLength), 'image/png'));
-if (jpeg[0] !== 0xff || jpeg[1] !== 0xd8) throw new Error('Signed Node system sips check did not produce JPEG');
-console.log('Signed Node system sips thumbnail check passed');
-NODE
+  # Node's inherit entitlement requires a provisioned sandbox parent. Exercise
+  # the exact exported child signature with the existing isolated security probe.
+  FILER_PROFILE_APP="$APP_PATH" FILER_TEST_RUNTIME_APP="$APP_PATH" \
+    SIGNING_IDENTITY="$DEVELOPER_ID" python3 scripts/test-private-ipc.py
 }
 
 notarize_app() {

@@ -24,6 +24,9 @@ final class NodeRuntimeProcess: @unchecked Sendable {
         self.onChange = onChange
         self.onQAProgress = onQAProgress
         process.executableURL = node
+        // Node resolves preload package scopes from its working directory.
+        // Keep that lookup within the owned runtime instead of the launcher's CWD.
+        process.currentDirectoryURL = entry.deletingLastPathComponent()
         process.arguments = ["--jitless", "--require", preload.path, entry.path]
         // Do not inherit NODE_OPTIONS, NODE_PATH, inspector settings, or injected loaders.
         process.environment = ["HOME": NSHomeDirectory(), "TMPDIR": NSTemporaryDirectory(), "NODE_ENV": "production"]
