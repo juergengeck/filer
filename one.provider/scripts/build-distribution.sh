@@ -15,7 +15,14 @@ if [[ -z "${NOTARYTOOL:-}" ]]; then
   fi
 fi
 VERSION="${VERSION:-$(node -p "require('./package.json').version")}"
-BUILD_NUMBER="${BUILD_NUMBER:-1}"
+BUILD_NUMBER="${BUILD_NUMBER:-$(sed -n 's/^  CURRENT_PROJECT_VERSION: "\([0-9]*\)"/\1/p' project.yml)}"
+BUILD_ONLY=false
+if [[ "${1:-}" == '--build-only' && $# == 1 ]]; then
+  BUILD_ONLY=true
+elif [[ $# != 0 ]]; then
+  echo "Usage: $0 [--build-only]" >&2
+  exit 1
+fi
 BUILD_DIR="$PROJECT_DIR/build/distribution"
 ARCHIVE_PATH="$BUILD_DIR/OneFiler.xcarchive"
 EXPORT_DIR="$BUILD_DIR/export"
@@ -31,7 +38,7 @@ require_command() {
 }
 
 check_prerequisites() {
-  for command in codesign hdiutil npm security spctl xcodebuild xcodegen xcrun; do
+  for command in codesign hdiutil lipo npm otool python3 security spctl xcodebuild xcodegen xcrun; do
     require_command "$command"
   done
 
@@ -42,11 +49,17 @@ check_prerequisites() {
     exit 1
   fi
 
-  "$NOTARYTOOL" history --keychain-profile "$NOTARY_PROFILE" >/dev/null
+  if [[ -z "$BUILD_NUMBER" ]]; then
+    echo 'Missing CURRENT_PROJECT_VERSION in project.yml' >&2
+    exit 1
+  fi
+  lipo -verify_arch arm64 x86_64 "${NODE_BINARY:?Set NODE_BINARY to the universal Node.js release}"
+  if [[ "$BUILD_ONLY" == false ]]; then
+    "$NOTARYTOOL" history --keychain-profile "$NOTARY_PROFILE" >/dev/null
+  fi
 }
 
 build_archive() {
-  npm ci
   npm run prepare:runtime
   xcodegen generate
 
@@ -61,6 +74,8 @@ build_archive() {
     -allowProvisioningUpdates \
     MARKETING_VERSION="$VERSION" \
     CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+    ARCHS='arm64 x86_64' \
+    ONLY_ACTIVE_ARCH=NO \
     ENABLE_HARDENED_RUNTIME=YES \
     REGISTER_APP_GROUPS=YES \
     clean archive
@@ -90,16 +105,14 @@ sign_exported_app() {
     if [[ "$file_path" == "$host_executable" || "$file_path" == "$extension_executable" ]]; then
       continue
     fi
-    if file "$file_path" | grep -q 'Mach-O'; then
-      codesign \
-        --force \
-        --sign "$DEVELOPER_ID" \
-        --timestamp \
-        --options runtime \
-        --preserve-metadata=entitlements \
-        "$file_path"
-    fi
-  done < <(find "$APP_PATH" -type f \( -name '*.dylib' -o -perm -111 \) -print0)
+    codesign \
+      --force \
+      --sign "$DEVELOPER_ID" \
+      --timestamp \
+      --options runtime \
+      --preserve-metadata=entitlements \
+      "$file_path"
+  done < <(python3 scripts/verify-macos-runtime.py "$APP_PATH" --list-mach-o)
 
   codesign \
     --force \
@@ -156,6 +169,7 @@ verify_app_group_profile() {
 verify_exported_app() {
   local extension_path="$APP_PATH/Contents/PlugIns/OneFilerExtension.appex"
   local signing_details
+  python3 scripts/verify-macos-runtime.py "$APP_PATH"
   codesign --verify --deep --strict --verbose=4 "$APP_PATH"
   signing_details="$(codesign -dvv "$APP_PATH" 2>&1)"
 
@@ -170,6 +184,21 @@ verify_exported_app() {
 
   verify_app_group_profile "$APP_PATH"
   verify_app_group_profile "$extension_path"
+
+  # Exercise the final hardened-runtime Node signature, including its system
+  # image converter child. The runtime check uses an isolated temporary store.
+  "$APP_PATH/Contents/MacOS/node" --jitless --require \
+    "$APP_PATH/Contents/Resources/runtime/console-to-stderr.cjs" \
+    "$APP_PATH/Contents/Resources/runtime/node_modules/@refinio/api/dist/src/filer/stdio-main.js" --check-runtime
+  "$APP_PATH/Contents/MacOS/node" --jitless --input-type=module - \
+    "$APP_PATH/Contents/Resources/runtime/node_modules/@refinio/api/dist/src/filer/FotosThumbnail.js" <<'NODE'
+import {pathToFileURL} from 'node:url';
+const {createSipsFotosThumbnail} = await import(pathToFileURL(process.argv[2]));
+const image = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aJ1sAAAAASUVORK5CYII=', 'base64');
+const jpeg = new Uint8Array(await createSipsFotosThumbnail(image.buffer.slice(image.byteOffset, image.byteOffset + image.byteLength), 'image/png'));
+if (jpeg[0] !== 0xff || jpeg[1] !== 0xd8) throw new Error('Signed Node system sips check did not produce JPEG');
+console.log('Signed Node system sips thumbnail check passed');
+NODE
 }
 
 notarize_app() {
@@ -228,6 +257,10 @@ main() {
   build_archive
   sign_exported_app
   verify_exported_app
+  if [[ "$BUILD_ONLY" == true ]]; then
+    echo "Signed app ready for notarization (not a distributable release): $APP_PATH"
+    return
+  fi
   notarize_app
   create_dmg
   notarize_dmg

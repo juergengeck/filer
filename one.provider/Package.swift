@@ -5,7 +5,7 @@ import PackageDescription
 let package = Package(
     name: "OneFiler",
     platforms: [
-        .macOS(.v13)
+        .macOS("13.5")
     ],
     products: [
         .library(

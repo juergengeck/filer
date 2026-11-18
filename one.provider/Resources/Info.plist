@@ -24,7 +24,7 @@
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSMinimumSystemVersion</key>
-	<string>13.0</string>
+	<string>13.5</string>
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSFileProviderDomainUsageDescription</key>

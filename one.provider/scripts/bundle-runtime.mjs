@@ -10,6 +10,7 @@ const api = path.resolve(provider, '../../one/packages/refinio.api');
 const output = path.resolve(process.argv[2] ?? path.join(provider, 'build/native-runtime'));
 const binary = process.env.NODE_BINARY;
 if (!binary || !path.isAbsolute(binary)) throw new Error('Set NODE_BINARY to the absolute path of the Node.js release to bundle');
+execFileSync('lipo', ['-verify_arch', 'arm64', 'x86_64', binary]);
 const version = execFileSync(binary, ['--version'], {encoding: 'utf8'}).trim();
 if (!/^v(22|24)\./.test(version)) throw new Error('Bundle a maintained Node.js 22 or 24 LTS release');
 await access(path.join(api, 'dist/src/filer/stdio-main.js'));
@@ -88,4 +89,8 @@ execFileSync(path.join(output, 'node'), ['--jitless', '--input-type=module', '-e
   } finally { server.close(); }
 `], {encoding: 'utf8', timeout: 15000});
 
+const minimumMacOS = execFileSync('/usr/libexec/PlistBuddy', ['-c', 'Print :LSMinimumSystemVersion',
+  path.join(provider, 'Resources/Info.plist')], {encoding: 'utf8'}).trim();
+execFileSync('python3', [path.join(provider, 'scripts/verify-macos-runtime.py'), output,
+  '--minimum-macos', minimumMacOS], {stdio: 'inherit'});
 console.log(`Bundled Node ${version} and ${packages.length} runtime packages at ${output}`);

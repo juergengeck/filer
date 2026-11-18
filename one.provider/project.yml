@@ -2,14 +2,14 @@ name: OneFiler
 options:
   bundleIdPrefix: one.filer
   deploymentTarget:
-    macOS: "13.0"
+    macOS: "13.5"
   developmentLanguage: en
 
 settings:
   SWIFT_VERSION: "5.9"
-  MARKETING_VERSION: "1.0.1"
-  CURRENT_PROJECT_VERSION: "5"
-  MACOSX_DEPLOYMENT_TARGET: "13.0"
+  MARKETING_VERSION: "1.0.2"
+  CURRENT_PROJECT_VERSION: "6"
+  MACOSX_DEPLOYMENT_TARGET: "13.5"
   DEVELOPMENT_TEAM: "26W8AC52QS"
   CODE_SIGN_STYLE: Automatic
   CODE_SIGN_IDENTITY: "Apple Development"
@@ -21,7 +21,7 @@ targets:
   OneFilerHost:
     type: application
     platform: macOS
-    deploymentTarget: "13.0"
+    deploymentTarget: "13.5"
     sources:
       - path: Sources/OneFilerShared
       - path: Sources/OneFilerHost
@@ -71,7 +71,7 @@ targets:
   OneFilerExtension:
     type: app-extension
     platform: macOS
-    deploymentTarget: "13.0"
+    deploymentTarget: "13.5"
     sources:
       - path: Sources/OneFilerShared
       - path: Sources/OneFiler

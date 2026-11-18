@@ -30,7 +30,8 @@ RPC representation. See [native runtime and hash audit](../docs/native-runtime-a
 ## Build and test
 
 Build the canonical shared dependencies in `../../one` first. Select a maintained
-Node 22 or 24 executable for the target architecture; it is copied into the app.
+universal Node 22 or 24 executable containing both `arm64` and `x86_64`; it is
+copied into the app. The bundled Node 24 release requires macOS 13.5 or later.
 
 ```bash
 NODE_BINARY=/absolute/path/to/node npm run prepare:runtime
@@ -176,6 +177,10 @@ are rejected. This maintenance mode does not start models or network connections
 
 ## Distribution
 
+Install dependencies and complete the root workspace builds in `../../one`
+and the Fotos workspace first. Packaging consumes that canonical installed and
+built dependency graph; this provider package has no separate Node dependencies.
+
 ```bash
 NODE_BINARY=/absolute/path/to/node npm run dist:mac
 npm run publish:refinio
@@ -184,3 +189,14 @@ npm run publish:refinio
 This is the existing Developer ID, notarized DMG pipeline. Mac App Store signing,
 submission, privacy metadata, migration, and full Finder lifecycle validation
 remain release work; a successful local build does not establish Store readiness.
+
+The archive builds both architectures. Packaging and publication reject any
+bundled Mach-O file (including native Node modules) that lacks either slice,
+requires a newer macOS than the app advertises, or links to a library outside the
+bundle and macOS system libraries. Publication also checks the mounted app's
+version and signature and the disk image's notarization ticket.
+Run `python3 scripts/test-macos-runtime.py` to check this gate with native fixtures.
+
+`npm run dist:mac -- --build-only` prepares and verifies a signed app without
+submitting to Apple or creating a disk image. This is useful when notarization
+credentials or agreements need attention; its output is not a public release.
