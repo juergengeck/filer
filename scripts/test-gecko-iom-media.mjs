@@ -12,9 +12,11 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const fotosUi = path.resolve(root, '../fotos/fotos.browser/browser-ui');
 const require = createRequire(path.join(fotosUi, 'package.json'));
 const {chromium} = require('playwright');
+const automatic = process.env.IOM_AUTOMATIC_REPLICATION === '1';
 const checkpoint = process.env.IOM_RESUME_REPORT
     ? JSON.parse(await readFile(process.env.IOM_RESUME_REPORT, 'utf8')) : undefined;
-const run = checkpoint?.run ?? randomUUID().slice(0, 8);
+if (automatic) assert.ok(checkpoint, 'Automatic replication checks reuse a proven enrolled account');
+const run = automatic ? randomUUID().slice(0, 8) : (checkpoint?.run ?? randomUUID().slice(0, 8));
 assert.match(run, /^[a-f0-9]{8}$/);
 const directory = process.env.IOM_EVIDENCE_DIRECTORY ?? `/tmp/gecko-iom-${run}`;
 const build = process.env.FOTOS_BUILD_DIRECTORY ?? path.join(fotosUi, 'dist');
@@ -26,7 +28,8 @@ if (checkpoint) {
     assert.equal(checkpoint.identity, identity);
     assert.equal(checkpoint.domain, domain);
 }
-const report = {run, identity, domain, status: 'starting', steps: [...(checkpoint?.steps ?? [])], directory};
+const report = {run, identity, domain, mode: automatic ? 'automatic-owned-library' : 'shared-collection',
+    status: 'starting', steps: automatic ? [] : [...(checkpoint?.steps ?? [])], directory};
 const exec = promisify(execFile);
 let context;
 
@@ -45,7 +48,14 @@ async function native(args, input) {
     }
     return await new Promise((resolve, reject) => {
         const child = execFile(host, args, {timeout: 75_000, maxBuffer: 4 * 1024 * 1024}, (error, stdout) => {
-            if (error) reject(new Error(`Signed-host ${args[0]} failed (exit ${error.code ?? 'unknown'})`));
+            if (error) {
+                let detail = '';
+                if (args[0] === '--qa-domain') {
+                    try { detail = `: ${JSON.parse(stdout).error?.message ?? 'QA operation failed'}`; }
+                    catch { /* Retain the exit result when the host did not return JSON. */ }
+                }
+                reject(new Error(`Signed-host ${args[0]} failed (exit ${error.code ?? 'unknown'})${detail}`));
+            }
             else resolve(stdout);
         });
         child.stdin.end(input);
@@ -107,8 +117,9 @@ try {
         await record('discovery', {personId: owner, nativeVerificationPending: true});
     }
 
-    context = await chromium.launchPersistentContext(path.join(directory, 'chrome-fotos'), {
-        channel: 'chrome', headless: false, serviceWorkers: 'block', viewport: {width: 1440, height: 1000},
+    context = await chromium.launchPersistentContext(process.env.IOM_BROWSER_PROFILE ?? path.join(directory, 'chrome-fotos'), {
+        // Follow the real window: an emulated taller viewport hides the bottom of scroll panes.
+        channel: 'chrome', headless: false, serviceWorkers: 'block', viewport: null,
         // This is a real Mac TrustKey ceremony, so use its normal credential providers.
         ignoreDefaultArgs: ['--use-mock-keychain', '--password-store=basic'],
     });
@@ -126,9 +137,26 @@ try {
     await page.goto(`${origin}/app/?task=settings`);
     await page.waitForFunction(() => typeof window.__api === 'function');
     await operation(page, 'fotos-qa', 'waitForAppReady', {timeoutMs: 120_000});
+    const windowSize = await page.evaluate(() => ({innerHeight, outerHeight}));
+    assert.equal(page.viewportSize(), null, 'The test browser must use its native window viewport');
+    assert.ok(windowSize.innerHeight <= windowSize.outerHeight, 'Fotos content must fit the real Chrome window');
+    await record('browser-window', windowSize);
     const fixtureRoot = path.join(fotosUi, 'src/lib/__fixtures__/photos');
-    const forward = await readFile(path.join(fixtureRoot, 'rose-detail.png'));
-    const reverse = await readFile(path.join(fixtureRoot, 'rose-center.jpg'));
+    let forward = await readFile(path.join(fixtureRoot, 'rose-detail.png'));
+    let reverse = await readFile(path.join(fixtureRoot, 'rose-center.jpg'));
+    if (automatic) {
+        // New pixel dimensions produce fresh test media without touching the source fixtures.
+        const height = 120 + parseInt(run.slice(0, 4), 16) % 360;
+        const width = 120 + parseInt(run.slice(4), 16) % 360;
+        const forwardInput = path.join(directory, 'automatic-browser-input.png');
+        const reverseInput = path.join(directory, 'automatic-finder-input.jpg');
+        await exec('/usr/bin/sips', ['--resampleHeightWidth', String(height), String(width), '-s', 'format', 'png',
+            path.join(fixtureRoot, 'rose-detail.png'), '--out', forwardInput], {timeout: 15_000});
+        await exec('/usr/bin/sips', ['--resampleHeightWidth', String(height + 31), String(width + 7), '-s', 'format', 'jpeg',
+            path.join(fixtureRoot, 'rose-center.jpg'), '--out', reverseInput], {timeout: 15_000});
+        forward = await readFile(forwardInput);
+        reverse = await readFile(reverseInput);
+    }
     const setup = await readFile(path.join(fixtureRoot, 'rose-top-left.jpg'));
     const forwardName = `fotos-to-filer-${run}.png`;
     let reverseName = `filer-to-fotos-${run}${checkpoint ? '-' + randomUUID().slice(0, 6) : ''}.jpg`;
@@ -183,9 +211,9 @@ try {
     assert.equal(nativeIdentity.success, true);
     assert.equal(nativeIdentity.result.ownerId, owner);
     let storedReverse = false;
-    if (checkpoint) {
+    if (checkpoint && !automatic) {
         const pattern = new RegExp(`^filer-to-fotos-${run}(?:-[a-f0-9]{6})?\\.jpg$`);
-        const originals = nativeIdentity.result.collections.filter(item => item.path === '/Fotos/My Photos')
+        const originals = nativeIdentity.result.collections.filter(item => item.path === '/Fotos')
             .flatMap(item => item.files).filter(file => pattern.test(file.name)
                 && file.sha256 === digest(reverse) && file.size === reverse.length);
         assert.ok(originals.length <= 1, 'Reverse checkpoint must identify one exact stored original');
@@ -198,17 +226,31 @@ try {
     if (checkpoint) {
         const enrolled = checkpoint.steps.findLast(step => step.step === 'iom-enrollment');
         const previousOwner = checkpoint.steps.findLast(step => step.step === 'fotos-native-owner');
-        const previousForward = checkpoint.steps.findLast(step => step.step === 'fotos-to-filer');
         assert.equal(enrolled?.result.status, 'committed');
         assert.equal(enrolled.result.sameOwner, owner);
         assert.equal(previousOwner?.result.instanceId, fotosIdentity.deviceInstanceId);
-        assert.equal(previousForward?.result.sha256, digest(forward));
-        const collection = nativeIdentity.result.collections.find(item => item.path !== '/Fotos/My Photos'
-            && item.files.some(file => file.name === forwardName && file.sha256 === digest(forward) && file.size === forward.length));
-        assert.ok(collection, 'The previously transferred original must still exist in its verified native shared collection');
         await record('iom-resume', {sameOwner: owner, instanceId: fotosIdentity.deviceInstanceId, enrollment: 'retained'});
-        await record('fotos-to-filer', {name: forwardName, bytes: forward.length, sha256: digest(forward),
-            collectionPath: collection.path, verifiedBy: 'native runtime original read after resume'});
+        if (automatic) {
+            const waiting = native(['--qa-domain', domain, 'waitForFotos'], JSON.stringify({
+                collectionPath: '/Fotos', files: [{name: forwardName, sha256: digest(forward)}],
+                allowAdditionalFiles: true, timeoutMs: 60_000,
+            }));
+            void waiting.catch(() => {});
+            await operation(page, 'fotos-qa', 'importPhotoFixture', {
+                name: forwardName, mimeType: 'image/png', bytesBase64: forward.toString('base64'),
+            });
+            assert.equal(JSON.parse(await waiting).success, true);
+            await record('fotos-to-filer', {name: forwardName, bytes: forward.length, sha256: digest(forward),
+                collectionPath: '/Fotos', verifiedBy: 'automatic ONE owned-library replication; native original read'});
+        } else {
+            const previousForward = checkpoint.steps.findLast(step => step.step === 'fotos-to-filer');
+            assert.equal(previousForward?.result.sha256, digest(forward));
+            const collection = nativeIdentity.result.collections.find(item => item.path !== '/Fotos'
+                && item.files.some(file => file.name === forwardName && file.sha256 === digest(forward) && file.size === forward.length));
+            assert.ok(collection, 'The previously transferred original must still exist in its verified native shared collection');
+            await record('fotos-to-filer', {name: forwardName, bytes: forward.length, sha256: digest(forward),
+                collectionPath: collection.path, verifiedBy: 'native runtime original read after resume'});
+        }
     } else {
         const invitation = await operation(page, 'fotos-qa', 'createDeviceEnrollmentInvitation');
         const enrollmentUrl = new URL(invitation.url);
@@ -243,7 +285,7 @@ try {
     void arrival.catch(() => {});
     if (!storedReverse) {
         await writeFile(reverseFile, reverse, {mode: 0o600});
-        await exec('/bin/cp', [reverseFile, path.join(mount, photos, 'My Photos', reverseName)], {timeout: 60_000});
+        await exec('/bin/cp', [reverseFile, path.join(mount, photos, reverseName)], {timeout: 60_000});
     }
     const photo = await arrival;
     await record('filer-to-fotos-catalog', {name: reverseName, hash: photo.hash});
