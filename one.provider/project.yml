@@ -61,7 +61,7 @@ targets:
           - $(SRCROOT)/build/native-runtime/runtime/manifest.json
         outputFiles:
           - $(TARGET_BUILD_DIR)/$(EXECUTABLE_FOLDER_PATH)/node
-          - $(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Resources/runtime
+          - $(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Resources/runtime/manifest.json
         basedOnDependencyAnalysis: false
     dependencies:
       - target: OneFilerExtension

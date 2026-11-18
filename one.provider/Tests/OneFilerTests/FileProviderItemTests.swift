@@ -247,6 +247,41 @@ final class FileProviderItemTests: XCTestCase {
         XCTAssertTrue(item.fileSystemFlags.contains(.userWritable))
     }
 
+    func testImportFolderIsWritableWithoutBroaderItemCapabilities() {
+        var object = ONEObject(id: "Fotos/My Photos", name: "My Photos", type: .folder)
+        object.contentHash = "manifest-content"
+        object.metadataHash = "manifest-metadata"
+        object.permissions = [.read]
+        let readOnly = FileProviderItem(oneObject: object)
+        object.canAddChildren = true
+        let importer = FileProviderItem(oneObject: object)
+
+        XCTAssertTrue(importer.capabilities.contains(.allowsAddingSubItems))
+        XCTAssertTrue(importer.fileSystemFlags.contains(.userWritable))
+        XCTAssertTrue(importer.fileSystemFlags.contains(.userExecutable))
+        XCTAssertFalse(importer.capabilities.contains(.allowsRenaming))
+        XCTAssertFalse(importer.capabilities.contains(.allowsReparenting))
+        XCTAssertFalse(importer.capabilities.contains(.allowsDeleting))
+        XCTAssertFalse(importer.capabilities.contains(.allowsTrashing))
+        XCTAssertEqual(importer.itemVersion.contentVersion, readOnly.itemVersion.contentVersion)
+        XCTAssertNotEqual(importer.itemVersion.metadataVersion, readOnly.itemVersion.metadataVersion)
+        XCTAssertEqual(importer.itemVersion.metadataVersion, FileProviderItem(oneObject: object).itemVersion.metadataVersion)
+    }
+
+    func testReadOnlyFolderRetainsReadOnlyFilesystemFlags() {
+        let item = FileProviderItem(oneObject: ONEObject(id: "received", name: "Received", type: .folder))
+        XCTAssertFalse(item.fileSystemFlags.contains(.userWritable))
+        XCTAssertFalse(item.capabilities.contains(.allowsAddingSubItems))
+    }
+
+    func testChildCapabilityCannotMakeAnOriginalFileWritable() {
+        var object = ONEObject(id: "original", name: "original.jpg", type: .file)
+        object.canAddChildren = true
+        let item = FileProviderItem(oneObject: object)
+        XCTAssertFalse(item.fileSystemFlags.contains(.userWritable))
+        XCTAssertFalse(item.capabilities.contains(.allowsAddingSubItems))
+    }
+
     // MARK: - Download Status
 
     func testItemDownloadStatus() {

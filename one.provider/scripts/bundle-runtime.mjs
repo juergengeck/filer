@@ -21,7 +21,9 @@ await copyFile(path.join(provider, 'scripts/console-to-stderr.cjs'), path.join(o
 const installed = new Map();
 const packages = [];
 // API can be installed without Fotos, but this concrete Filer entrypoint imports it.
-const filerRequiredPeers = new Set(['@refinio/fotos.core']);
+const filerRequiredPeers = new Set(['@refinio/fotos.core', '@glueone/glue.core',
+  '@refinio/device.core', '@refinio/llm.one', '@refinio/qa.protocol',
+  '@refinio/settings.core', '@refinio/settings.devices']);
 
 /** Resolve a dependency according to Node's directory lookup, including workspace peer links. */
 async function resolvePackage(name, from) {
@@ -41,7 +43,9 @@ async function copyPackage(source) {
   if (installed.has(source)) return installed.get(source);
   const manifest = JSON.parse(await readFile(path.join(source, 'package.json'), 'utf8'));
   const key = createHash('sha256').update(source).digest('hex').slice(0, 16);
-  const destination = path.join(output, 'runtime/packages', key);
+  // Keep a real installed package position so self imports also resolve from
+  // nested package scopes, without introducing node_modules self-link cycles.
+  const destination = path.join(output, 'runtime/packages', key, 'node_modules', manifest.name);
   installed.set(source, destination);
   const skipped = new Set(['node_modules', '.git', '.turbo', '.build', 'test', 'tests', '__tests__']);
   await cp(source, destination, {recursive: true, dereference: true, filter: file => file === source || (!path.basename(file).startsWith('.') && !skipped.has(path.basename(file)))});
@@ -66,11 +70,11 @@ await mkdir(path.dirname(link), {recursive: true});
 await symlink(path.relative(path.dirname(link), main), link);
 await writeFile(path.join(output, 'runtime/manifest.json'), JSON.stringify({node: version, packages}, null, 2) + '\n');
 
-// Link the actual Filer entrypoint, including installed optional peer packages
-// used by this composition. Empty stdin exercises startup without creating an instance.
+// Exercise the actual Filer composition against an isolated store, including
+// its optional peers, recipe registration, cold startup and offline reopen.
 execFileSync(path.join(output, 'node'), ['--jitless', '--require',
   path.join(output, 'runtime/console-to-stderr.cjs'),
-  path.join(main, 'dist/src/filer/stdio-main.js'), '--check-runtime'], {input: '', encoding: 'utf8', timeout: 15000});
+  path.join(main, 'dist/src/filer/stdio-main.js'), '--check-runtime'], {input: '', encoding: 'utf8', timeout: 30000});
 
 // Exercise real HTTP with the same transport and JIT settings as the signed host.
 execFileSync(path.join(output, 'node'), ['--jitless', '--input-type=module', '-e', `

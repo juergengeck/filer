@@ -91,8 +91,18 @@ The installed signed host also provides these commands:
 
 ```bash
 /Applications/OneFiler.app/Contents/MacOS/OneFilerHost --register-domain "Cube" --email demo@demo.de
-/Applications/OneFiler.app/Contents/MacOS/OneFilerHost --pair-domain "Cube" < invitation.txt
+/Applications/OneFiler.app/Contents/MacOS/OneFilerHost --enroll-domain "Cube" --owner PERSON_ID < invitation.txt
+/Applications/OneFiler.app/Contents/MacOS/OneFilerHost --list-domains
+/Applications/OneFiler.app/Contents/MacOS/OneFilerHost --inspect "Cube"
 ```
+
+`PERSON_ID` is the Cube owner's 64-character lowercase hex person id. Invoking
+`--enroll-domain` with it is the CLI's device-enrollment consent, matching the
+Pair dialog's Enroll confirmation; the invitation's enrollment owner must equal
+`--owner` and its account email must match the domain's stored email.
+`--pair-domain` is partner-only and rejects Cube IoM device-enrollment
+invitations. `--list-domains` and `--inspect` are read-only. Every new command
+prints one machine-readable JSON envelope with the host protocol version.
 
 The invitation file contains a secret: keep it private and use a fresh invitation
 from the peer. The command contacts the running host through the same authenticated
@@ -145,6 +155,24 @@ Finder locations belong to `com.one.filer.extension`, whereas this app provides
 `one.filer.extension`. Those locations still report a missing app. Finder does pick
 up the new sidebar artwork after refreshing its bundle metadata; the icon update
 does not resolve or migrate the old provider domains.
+
+## Auditing an unstamped canonical store
+
+If the current runtime reports `SF-OPEN2`, quit Filer and verify that all of its
+previous Node runtime processes have exited before running this explicit
+maintenance command:
+
+```bash
+/Applications/OneFiler.app/Contents/MacOS/OneFilerHost --admit-domain Gecko
+```
+
+The signed command resolves the configured store itself and holds the host lock
+until its sole maintenance child has exited. The operator must keep all other
+writers stopped throughout the audit. Ordinary startup never enables admission.
+The audit checks exact content addresses and canonical object syntax, without
+rewriting objects or identities. Only a successful audit adds the format marker;
+different recorded formats, corruption, changing stores, and unsupported layouts
+are rejected. This maintenance mode does not start models or network connections.
 
 ## Distribution
 

@@ -6,10 +6,36 @@ let arguments = CommandLine.arguments
 if arguments.count > 1 {
     let registration = arguments.count >= 3 && arguments[1] == "--register-domain"
     let qaCommand = arguments.count == 4 && arguments[1] == "--qa-domain"
-    guard registration || qaCommand || (arguments.count == 3 &&
+    let enrollCommand = arguments.count == 5 && arguments[1] == "--enroll-domain" && arguments[3] == "--owner"
+    let listCommand = arguments.count == 2 && arguments[1] == "--list-domains"
+    let inspectCommand = arguments.count == 3 && arguments[1] == "--inspect"
+    let admissionCommand = arguments.count == 3 && arguments[1] == "--admit-domain"
+    guard registration || qaCommand || enrollCommand || listCommand || inspectCommand || admissionCommand || (arguments.count == 3 &&
           ["--register-domain", "--unregister-domain", "--pair-domain", "--refresh-domain"].contains(arguments[1])) else {
-        fputs("Usage: OneFilerHost --register-domain NAME [--email EMAIL] [--comm-server URL] | --unregister-domain NAME | --refresh-domain NAME | --pair-domain NAME < invitation.txt | --qa-domain NAME runFullProtocol|getStatus|resume|stop|getProtocolReport|getInspectionReport|getDiagnostics|getFotosSnapshot|waitForFotos [< parameters.json]\n", stderr)
+        fputs("Usage: OneFilerHost --register-domain NAME [--email EMAIL] [--comm-server URL] | --unregister-domain NAME | --refresh-domain NAME | --pair-domain NAME < invitation.txt | --enroll-domain NAME --owner PERSON_ID < invitation.txt | --list-domains | --inspect NAME | --admit-domain NAME (offline audit; drain all old runtime processes first) | --qa-domain NAME runFullProtocol|getStatus|resume|stop|getProtocolReport|getInspectionReport|getDiagnostics|getFotosSnapshot|waitForFotos [< parameters.json]\n", stderr)
         exit(2)
+    }
+    if enrollCommand || listCommand || inspectCommand {
+        let input: Data
+        if enrollCommand {
+            guard let data = try? FileHandle.standardInput.read(upToCount: 65537),
+                  data.count <= 65536 else {
+                FileHandle.standardOutput.write(EnrollDomainCommand.failure("Supply one pairing invitation URL on standard input.") + Data("\n".utf8))
+                exit(1)
+            }
+            input = data
+        } else {
+            input = Data()
+        }
+        do {
+            let (output, code) = try EnrollDomainCommand.run(arguments: arguments, standardInput: input)
+            FileHandle.standardOutput.write(output + Data("\n".utf8))
+            exit(code)
+        } catch {
+            let message = (error as NSError).localizedDescription
+            FileHandle.standardOutput.write(EnrollDomainCommand.failure(message) + Data("\n".utf8))
+            exit(1)
+        }
     }
     let manager = DomainManager()
     let name = arguments[2]
@@ -22,7 +48,15 @@ if arguments.count > 1 {
         exit(0)
     }
     do {
-        if qaCommand {
+        if admissionCommand {
+            Task {
+                do {
+                    try await RuntimeService.admitDomain(name)
+                    print("Canonical storage audit completed: \(name)")
+                    exit(0)
+                } catch { finish(error) }
+            }
+        } else if qaCommand {
             let method = arguments[3]
             let operation = try RuntimeService.qaOperation(method: method)
             var parameters: [String: Any] = [:]

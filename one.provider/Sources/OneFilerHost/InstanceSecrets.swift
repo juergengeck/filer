@@ -4,6 +4,15 @@ import Security
 /// The app owns secrets in its Keychain; extensions receive only operation results.
 enum InstanceSecrets {
     static func getOrCreate(instance: UUID) throws -> String {
+        try get(instance: instance, allowCreation: true)
+    }
+
+    /// Maintenance must validate existing custody without adding a replacement credential.
+    static func getExisting(instance: UUID) throws -> String {
+        try get(instance: instance, allowCreation: false)
+    }
+
+    private static func get(instance: UUID, allowCreation: Bool) throws -> String {
         let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: "one.filer.instance", kSecAttrAccount as String: instance.uuidString]
         var item: CFTypeRef?
@@ -14,6 +23,7 @@ enum InstanceSecrets {
             return secret
         }
         guard status == errSecItemNotFound else { throw failure(status) }
+        guard allowCreation else { throw failure(errSecItemNotFound) }
         var bytes = [UInt8](repeating: 0, count: 32)
         let randomStatus = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
         guard randomStatus == errSecSuccess else { throw failure(randomStatus) }

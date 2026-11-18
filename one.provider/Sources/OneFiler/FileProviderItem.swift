@@ -1,5 +1,6 @@
 import FileProvider
 import UniformTypeIdentifiers
+import CryptoKit
 
 class FileProviderItem: NSObject, NSFileProviderItem {
     
@@ -98,7 +99,16 @@ class FileProviderItem: NSObject, NSFileProviderItem {
         let metadataString = oneObject.metadataHash.isEmpty
             ? "\(oneObject.id):\(oneObject.name)" : oneObject.metadataHash
         let displayedMetadata = filename == oneObject.name ? metadataString : "\(metadataString):\(filename)"
-        let metadataData = displayedMetadata.data(using: .utf8) ?? Data()
+        let metadataData: Data
+        if oneObject.type == .folder && oneObject.canAddChildren {
+            // Version the native permission presentation as well as the owner's
+            // metadata so a cached read-only directory receives its writable flags.
+            let presentation = ["native-directory-metadata-v1", displayedMetadata,
+                                String(fileSystemFlags.rawValue), String(capabilities.rawValue)].joined(separator: "\0")
+            metadataData = Data(SHA256.hash(data: Data(presentation.utf8)))
+        } else {
+            metadataData = displayedMetadata.data(using: .utf8) ?? Data()
+        }
 
         return NSFileProviderItemVersion(
             contentVersion: contentData,
@@ -180,7 +190,7 @@ class FileProviderItem: NSObject, NSFileProviderItem {
             flags.insert(.userReadable)
         }
         
-        if oneObject.permissions.contains(.write) {
+        if oneObject.permissions.contains(.write) || (oneObject.type == .folder && oneObject.canAddChildren) {
             flags.insert(.userWritable)
         }
         

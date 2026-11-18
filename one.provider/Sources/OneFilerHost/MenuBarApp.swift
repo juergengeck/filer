@@ -13,6 +13,9 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
     private var qaProgress: [String: FilerQAProgress] = [:]
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // No visible menu bar, but the hidden Edit menu is what routes
+        // Cmd+C/V/X/A/Z to text fields in modal dialogs.
+        MainMenu.install()
         do { try runtimeService.start() }
         catch {
             let alert = Self.createAlert(error: error)
@@ -319,13 +322,28 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
         alert.accessoryView = field
         alert.addButton(withTitle: "Pair")
         alert.addButton(withTitle: "Cancel")
+        // The dialog is opened from the status menu; take activation so key
+        // equivalents (Cmd+V) route to this app instead of the previous one.
+        NSApp.activate(ignoringOtherApps: true)
         guard alert.runModal() == .alertFirstButtonReturn else { return }
         let url = field.stringValue
+        // Enrollment binds this domain to the invitation's owner identity and
+        // needs explicit consent beyond pasting the link.
+        var enrollConsented = false
+        if case .deviceEnrollment(let email, _) = (try? PairingInvitation.kind(url: url)) ?? .partner {
+            let confirm = Self.createAlert()
+            confirm.messageText = "Enroll Device"
+            confirm.informativeText = "This invitation enrolls this domain as a new device of \(email ?? "another identity"). The domain's identity email must match that account. Continue?"
+            confirm.addButton(withTitle: "Enroll")
+            confirm.addButton(withTitle: "Cancel")
+            guard confirm.runModal() == .alertFirstButtonReturn else { return }
+            enrollConsented = true
+        }
         pairingDomains.insert(domain)
         updateMenu()
         Task {
             var failure: Error?
-            do { try await runtimeService.pair(domain: domain, invitationURL: url) }
+            do { try await runtimeService.pair(domain: domain, invitationURL: url, enrollConsented: enrollConsented) }
             catch { failure = error }
             let error = failure
             await MainActor.run {

@@ -16,8 +16,19 @@ final class RuntimeService {
     private var socketPath: String?
 
     /// The menu uses the same runtime owner as Finder; it never opens a second instance.
-    func pair(domain: String, invitationURL: String) async throws {
-        let request = try PairingInvitation.request(url: invitationURL)
+    /// Device enrollment additionally requires the Pair dialog's explicit consent.
+    func pair(domain: String, invitationURL: String, enrollConsented: Bool = false) async throws {
+        let kind = try PairingInvitation.kind(url: invitationURL)
+        let request: Data
+        switch kind {
+        case .partner:
+            request = try PairingInvitation.request(url: invitationURL)
+        case .deviceEnrollment:
+            guard let email = try DomainManager().listDomains()[domain]?.email else {
+                throw PrivateSocket.failure("This domain is no longer registered with Filer.")
+            }
+            request = try PairingInvitation.enrollRequest(url: invitationURL, domainEmail: email, consented: enrollConsented)
+        }
         try PairingInvitation.validateResponse(await runtimes.perform(domain: domain, request: request))
     }
 
@@ -145,14 +156,43 @@ final class RuntimeService {
 
     /// All paths and credentials are resolved by the owner, never supplied by an IPC caller.
     private static func createRuntime(domain: String, config: LocalDomainConfiguration) async throws -> any OwnedRuntime {
+        try await createRuntime(domain: domain, config: config, admitCanonicalStorage: false)
+    }
+
+    /// Explicit maintenance command, used only after the operator has drained all old writers.
+    /// Ordinary host startup never opts legacy stores into admission.
+    static func admitDomain(_ domain: String) async throws {
+        guard let config = try DomainManager().listDomains()[domain] else {
+            throw PrivateSocket.failure("Unknown domain.")
+        }
+        let directory = try RuntimeSecurity.container()
+        let lock = Darwin.open(directory.appendingPathComponent("runtime.lock").path, O_CREAT | O_RDWR | O_CLOEXEC | O_NOFOLLOW, 0o600)
+        guard lock >= 0 else { throw PrivateSocket.failure("Cannot lock the local runtime.") }
+        defer { Darwin.close(lock) }
+        guard flock(lock, LOCK_EX | LOCK_NB) == 0 else {
+            throw PrivateSocket.failure("Quit the Filer host and drain its runtime processes before auditing storage.")
+        }
+        let child = try await createRuntime(domain: domain, config: config, admitCanonicalStorage: true)
+        await child.shutdown()
+    }
+
+    private static func createRuntime(domain: String, config: LocalDomainConfiguration, admitCanonicalStorage: Bool) async throws -> any OwnedRuntime {
         let bundle = Bundle.main
         guard let executable = bundle.executableURL, let resources = bundle.resourceURL else { throw CocoaError(.fileNoSuchFile) }
         let root = resources.appendingPathComponent("runtime")
         let directory = try RuntimeSecurity.container().appendingPathComponent("instances").appendingPathComponent(config.storageId.uuidString)
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        if admitCanonicalStorage {
+            var isDirectory = ObjCBool(false)
+            guard FileManager.default.fileExists(atPath: directory.path, isDirectory: &isDirectory), isDirectory.boolValue else {
+                throw PrivateSocket.failure("Storage admission requires an existing domain store.")
+            }
+        } else {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        }
         let child = NodeRuntimeProcess(node: executable.deletingLastPathComponent().appendingPathComponent("node"),
             entry: root.appendingPathComponent("node_modules/@refinio/api/dist/src/filer/stdio-main.js"),
             preload: root.appendingPathComponent("console-to-stderr.cjs"), onChange: { containers in
+                if admitCanonicalStorage { return }
                 let traceStarted = ProcessInfo.processInfo.systemUptime
                 os_log("[FilerShareTrace] notification.received storage=%{public}@ containers=%{public}@", config.storageId.uuidString, containers.joined(separator: ","))
                 Task {
@@ -183,9 +223,17 @@ final class RuntimeService {
                 }
             })
         do {
-            try await child.start(configuration: ["directory": directory.path, "email": config.email,
-                "secret": InstanceSecrets.getOrCreate(instance: config.storageId), "name": domain,
-                "commServerUrl": config.commServerUrl ?? "wss://comm10.dev.refinio.one", "inviteUrlPrefix": "https://refinio.one/invite"])
+            let secret: String
+            if admitCanonicalStorage {
+                secret = try InstanceSecrets.getExisting(instance: config.storageId)
+            } else {
+                secret = try InstanceSecrets.getOrCreate(instance: config.storageId)
+            }
+            var configuration = ["directory": directory.path, "email": config.email,
+                "secret": secret, "name": domain,
+                "commServerUrl": config.commServerUrl ?? "wss://comm10.dev.refinio.one", "inviteUrlPrefix": "https://refinio.one/invite"]
+            if admitCanonicalStorage { configuration["admitUnstampedCanonicalStorage"] = "exclusive-host" }
+            try await child.start(configuration: configuration)
             return child
         } catch { await child.shutdown(); throw error }
     }
