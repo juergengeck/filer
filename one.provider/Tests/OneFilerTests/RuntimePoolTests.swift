@@ -14,6 +14,7 @@ private final class FakeOwnedRuntime: OwnedRuntime, @unchecked Sendable {
     var isRunning: Bool { lock.withLock { running } }
     var stops: Int { lock.withLock { stopCount } }
     var calls: Int { lock.withLock { callCount } }
+    func simulateExit() { lock.withLock { running = false } }
     func invoke(_ request: Data) async throws -> Data { lock.withLock { callCount += 1 }; return request }
     func shutdown() async { lock.withLock { stopCount += 1; running = false } }
 }
@@ -34,6 +35,60 @@ private actor StartupGate {
 }
 
 final class RuntimePoolTests: XCTestCase {
+    func testStateInspectionDoesNotStartRuntimeAndReportsOwnedLifecycle() async throws {
+        let config = LocalDomainConfiguration(storageId: UUID(), email: "a@filer.local")
+        let child = FakeOwnedRuntime()
+        let gate = StartupGate()
+        var starts = 0
+        let pool = RuntimePool(configuration: { ["a": config] }, factory: { _, _ in
+            starts += 1
+            await gate.hold()
+            return child
+        })
+        let initial = try await pool.states()
+        XCTAssertEqual(initial["a"], .notStarted)
+        XCTAssertEqual(starts, 0, "Opening the menu must not bootstrap an instance")
+
+        let request = Task { try await pool.perform(domain: "a", request: Data()) }
+        await gate.waitForStart()
+        let starting = try await pool.states()
+        XCTAssertEqual(starting["a"], .starting, "Inspection must not wait for bootstrap")
+        await gate.release()
+        _ = try await request.value
+        let running = try await pool.states()
+        XCTAssertEqual(running["a"], .running)
+
+        child.simulateExit()
+        let exited = try await pool.states()
+        XCTAssertEqual(exited["a"], .stopped, "Registration cannot imply a running process")
+        await pool.stop()
+        let stopped = try await pool.states()
+        XCTAssertEqual(stopped["a"], .stopped)
+        XCTAssertEqual(starts, 1)
+    }
+
+    func testFailedBootstrapIsReportedUntilAnExplicitOperationRestartsIt() async throws {
+        let config = LocalDomainConfiguration(storageId: UUID(), email: "a@filer.local")
+        let child = FakeOwnedRuntime()
+        var starts = 0
+        let pool = RuntimePool(configuration: { ["a": config] }, factory: { _, _ in
+            starts += 1
+            if starts == 1 { throw CocoaError(.fileReadUnknown) }
+            return child
+        })
+        do {
+            _ = try await pool.perform(domain: "a", request: Data())
+            XCTFail("Bootstrap should fail")
+        } catch {}
+        let failed = try await pool.states()
+        XCTAssertEqual(failed["a"], .failed)
+        XCTAssertEqual(starts, 1, "Inspection must not silently retry a failed runtime")
+        _ = try await pool.perform(domain: "a", request: Data())
+        let restarted = try await pool.states()
+        XCTAssertEqual(restarted["a"], .running)
+        await pool.stop()
+    }
+
     func testRemovalStopsOnlyItsRuntimeAndRejectsFurtherCalls() async throws {
         let config = LocalDomainConfiguration(storageId: UUID(), email: "a@filer.local")
         let box = RuntimeConfigurationBox(["a": config])

@@ -14,11 +14,22 @@ extension NodeRuntimeProcess: OwnedRuntime {}
 
 /// Serializes ownership while allowing asynchronous startup, requests, and shutdown.
 actor RuntimePool {
+    /// Local process ownership only; this does not describe peer connectivity or sync.
+    enum State: String {
+        case notStarted = "Not started"
+        case starting = "Starting…"
+        case running = "Running"
+        case stopped = "Stopped"
+        case stopping = "Stopping…"
+        case failed = "Failed to start"
+    }
+
     typealias Configuration = [String: LocalDomainConfiguration]
     typealias Factory = (String, LocalDomainConfiguration) async throws -> any OwnedRuntime
     private struct Entry {
         let generation: UUID
         let task: Task<any OwnedRuntime, Error>
+        var runtime: (any OwnedRuntime)?
     }
     private struct Retirement {
         let generation: UUID
@@ -28,6 +39,7 @@ actor RuntimePool {
     private let configuration: () throws -> Configuration
     private let factory: Factory
     private var entries: [UUID: Entry] = [:]
+    private var failedStarts = Set<UUID>()
     private var stopped = false
 
     init(configuration: @escaping () throws -> Configuration, factory: @escaping Factory) {
@@ -47,17 +59,22 @@ actor RuntimePool {
             entry = current
         } else {
             let factory = self.factory
-            entry = Entry(generation: UUID(), task: Task { try await factory(domain, config) })
+            failedStarts.remove(config.storageId)
+            entry = Entry(generation: UUID(), task: Task { try await factory(domain, config) }, runtime: nil)
             entries[config.storageId] = entry
         }
         let child: any OwnedRuntime
         do { child = try await entry.task.value }
         catch {
-            if entries[config.storageId]?.generation == entry.generation { entries.removeValue(forKey: config.storageId) }
+            if entries[config.storageId]?.generation == entry.generation {
+                entries.removeValue(forKey: config.storageId)
+                failedStarts.insert(config.storageId)
+            }
             throw error
         }
         // Configuration can change while startup is suspended. Never revive a removed owner.
         guard !stopped, entries[config.storageId]?.generation == entry.generation else { throw Self.unregistered() }
+        entries[config.storageId]?.runtime = child
         guard try configuration()[domain]?.storageId == config.storageId else {
             await retire(id: config.storageId, entry: entry).value
             throw Self.unregistered()
@@ -69,9 +86,23 @@ actor RuntimePool {
         return try await child.invoke(request)
     }
 
+    /// Inspect the owner without starting a runtime, sending requests, or waiting for bootstrap.
+    func states() throws -> [String: State] {
+        try configuration().mapValues { config in
+            if stopped { return .stopped }
+            if closing[config.storageId] != nil { return .stopping }
+            if let entry = entries[config.storageId] {
+                guard let runtime = entry.runtime else { return .starting }
+                return runtime.isRunning ? .running : .stopped
+            }
+            return failedStarts.contains(config.storageId) ? .failed : .notStarted
+        }
+    }
+
     /// Called after a configuration filesystem event, including changes made by the signed CLI.
     func reconcile() async throws {
         let active = Set(try configuration().values.map(\.storageId))
+        failedStarts.formIntersection(active)
         let removed = entries.filter { !active.contains($0.key) }
         let retirements = removed.map { retire(id: $0.key, entry: $0.value) }
         for task in retirements { await task.value }

@@ -6,11 +6,12 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
 
     private var statusItem: NSStatusItem!
     private var menu: NSMenu!
-    private var statusMonitor: StatusMonitor!
+    private var statusMonitor = StatusMonitor()
     private var domainManager: DomainManager!
     private let runtimeService = RuntimeService()
     private var pairingDomains = Set<String>()
     private var qaProgress: [String: FilerQAProgress] = [:]
+    private var runtimeInspection = UUID()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // No visible menu bar, but the hidden Edit menu is what routes
@@ -41,11 +42,10 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
 
         // Create menu
         menu = NSMenu()
+        menu.delegate = self
 
         // Initialize managers
         domainManager = DomainManager()
-        statusMonitor = StatusMonitor(domainManager: domainManager)
-        statusMonitor.delegate = self
         NotificationCenter.default.addObserver(self, selector: #selector(integrationProgress(_:)), name: .filerQAProgress, object: nil)
 
         // Build initial menu
@@ -53,9 +53,6 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
 
         // Assign menu to status item
         statusItem.menu = menu
-
-        // DISABLED: Start monitoring (causes permission dialog loop)
-        // statusMonitor.startMonitoring()
 
         NSLog("OneFiler menu bar app started")
     }
@@ -66,10 +63,6 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
             await MainActor.run { sender.reply(toApplicationShouldTerminate: true) }
         }
         return .terminateLater
-    }
-
-    func applicationWillTerminate(_ notification: Notification) {
-        statusMonitor.stopMonitoring()
     }
 
     // MARK: - Menu Building
@@ -159,8 +152,9 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
 
                     // Status
                     let status = statusMonitor.getStatus(for: identifier)
-                    let statusItem = NSMenuItem(title: "Status: \(status.description)", action: nil, keyEquivalent: "")
+                    let statusItem = NSMenuItem(title: "Runtime: \(status)", action: nil, keyEquivalent: "")
                     statusItem.isEnabled = false
+                    statusItem.toolTip = statusMonitor.errorDescription
                     domainMenu.addItem(statusItem)
 
                     let endpointItem = NSMenuItem(title: "Local ONE runtime", action: nil, keyEquivalent: "")
@@ -173,11 +167,6 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
                     pairItem.representedObject = identifier
                     pairItem.isEnabled = !pairingDomains.contains(identifier)
                     domainMenu.addItem(pairItem)
-
-                    let refreshFiles = NSMenuItem(title: "Refresh Files", action: #selector(refreshDomainFiles(_:)), keyEquivalent: "")
-                    refreshFiles.target = self
-                    refreshFiles.representedObject = identifier
-                    domainMenu.addItem(refreshFiles)
 
                     let qaState = qaProgress[identifier]
                     let qaStatus = NSMenuItem(title: "Integration: \(qaState?.status ?? "idle")\(qaState?.currentStep.map { " · \($0.title)" } ?? "")", action: nil, keyEquivalent: "")
@@ -227,11 +216,6 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
         menu.addItem(registerItem)
 
         menu.addItem(NSMenuItem.separator())
-
-        // Refresh
-        let refreshItem = NSMenuItem(title: "Refresh", action: #selector(refreshMenu), keyEquivalent: "r")
-        refreshItem.target = self
-        menu.addItem(refreshItem)
 
         // Open logs
         let logsItem = NSMenuItem(title: "Open Logs...", action: #selector(openLogs), keyEquivalent: "")
@@ -390,10 +374,6 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
         }
     }
 
-    @objc private func refreshMenu() {
-        updateMenu()
-    }
-
     @objc private func openLogs() {
         guard let containerURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: "group.one.filer"
@@ -405,45 +385,46 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
         NSWorkspace.shared.open(logsURL)
     }
 
-    @objc private func refreshDomainFiles(_ sender: NSMenuItem) {
-        guard let name = sender.representedObject as? String else { return }
-        do {
-            try domainManager.refreshDomain(name: name) { error in
-                if let error { DispatchQueue.main.async { Self.createAlert(error: error).runModal() } }
-            }
-        } catch { Self.createAlert(error: error).runModal() }
-    }
-
     @objc private func quit() {
         NSApplication.shared.terminate(nil)
     }
 
-    // MARK: - Icon Updates
-
-    private func updateIcon(state: StatusMonitor.ConnectionState) {
-        guard let button = statusItem.button else { return }
-
-        // Update tooltip to reflect state
-        switch state {
-        case .connected:
-            button.toolTip = "OneFiler - Connected"
-        case .disconnected:
-            button.toolTip = "OneFiler - Disconnected"
-        case .syncing:
-            button.toolTip = "OneFiler - Syncing"
-        case .error:
-            button.toolTip = "OneFiler - Error"
-        }
-    }
 }
 
-// MARK: - StatusMonitorDelegate
+// MARK: - Menu snapshots
 
-extension MenuBarApp: StatusMonitorDelegate {
-    func statusDidChange(for domain: String, state: StatusMonitor.ConnectionState) {
-        DispatchQueue.main.async {
-            self.updateMenu()
-            self.updateIcon(state: state)
+extension MenuBarApp: NSMenuDelegate {
+    /// Refresh local ownership once per menu opening, without starting a runtime.
+    func menuWillOpen(_ menu: NSMenu) {
+        let inspection = UUID()
+        runtimeInspection = inspection
+        statusMonitor = StatusMonitor()
+        updateMenu()
+        Task {
+            do {
+                let states = try await runtimeService.runtimeStates()
+                await MainActor.run {
+                    guard self.runtimeInspection == inspection else { return }
+                    self.statusMonitor = StatusMonitor(states: states)
+                    self.updateRuntimeStatusItems()
+                }
+            } catch {
+                NSLog("Cannot inspect local runtime ownership: %@", error.localizedDescription)
+                await MainActor.run {
+                    guard self.runtimeInspection == inspection else { return }
+                    self.statusMonitor = StatusMonitor(errorDescription: error.localizedDescription)
+                    self.updateRuntimeStatusItems()
+                }
+            }
+        }
+    }
+
+    /// Keep the active menu hierarchy intact when the asynchronous snapshot arrives.
+    private func updateRuntimeStatusItems() {
+        for domainItem in menu.items {
+            guard let statusItem = domainItem.submenu?.items.first else { continue }
+            statusItem.title = "Runtime: \(statusMonitor.getStatus(for: domainItem.title))"
+            statusItem.toolTip = statusMonitor.errorDescription
         }
     }
 }

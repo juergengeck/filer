@@ -15,6 +15,11 @@ final class RuntimeService {
     private var lockFD: Int32 = -1
     private var socketPath: String?
 
+    /// Menu-open inspection of the same process owner used by Finder.
+    func runtimeStates() async throws -> [String: RuntimePool.State] {
+        try await runtimes.states()
+    }
+
     /// The menu uses the same runtime owner as Finder; it never opens a second instance.
     /// Device enrollment additionally requires the Pair dialog's explicit consent.
     func pair(domain: String, invitationURL: String, enrollConsented: Bool = false) async throws {
