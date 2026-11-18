@@ -15,6 +15,13 @@ import {FotosFileSystem} from '@refinio/fotos.core/filesystem';
 import {createFotosShareManifest, createActiveFotosShareCertificate, createRevokedFotosShareCertificate,
   createFotosShareCertificateChain, buildFotosShareCertificateChainId, buildFotosShareManifestId} from '@refinio/fotos.core';
 import {FilesFileSystem, FilesObjectPlan} from '../../one/packages/filer.core/dist/index.js';
+import {CategoryDemandPlan} from '../../one/packages/filer.core/dist/index.js';
+import {matchRuntimeDemandSupply} from '../../one/packages/matching.core/dist/index.js';
+import {createTagGrantCertificate} from '../../one/packages/trust.abac/dist/index.js';
+import {RuntimeDemandRecipe, RuntimeSupplyRecipe} from '../../one/packages/discovery.core/dist/recipes/index.js';
+import {AccessCertificateRecipe} from '../../one/packages/trust.abac/dist/recipes/AccessCertificate.js';
+import {makeTagGovernanceId} from '../../one/packages/tag.core/dist/recipes/TagGovernance.js';
+import {addRecipeToRuntime, hasRecipe} from '@refinio/one.core/lib/object-recipes.js';
 
 const config = JSON.parse(process.env.FILER_COLLECTIONS_CONFIG);
 const runtime = new FilerRuntime(config);
@@ -31,8 +38,16 @@ for (const [field, method] of [['multiUser', 'loginOrRegister'], ['leuteModel', 
 }
 const fs = await runtime.init();
 console.log('BOOT runtime complete');
-const rpc = new FileProviderOperations(fs, new Map(), runtime.getModelWeightsPlan().getProjection(), runtime.resolveImportPath.bind(runtime));
+const rpc = new FileProviderOperations(fs, new Map(), runtime.getModelWeightsPlan().getProjection());
+// The headless sharing endpoint (/objects, /contacts) is served apart from the Filer UI.
+const headlessObjects = await runtime.getHeadlessObjectsEndpoint();
+const headlessRpc = new FileProviderOperations(headlessObjects.getFileSystem(), new Map(), undefined,
+  headlessObjects.resolveImportPath.bind(headlessObjects));
 const owner = getInstanceOwnerIdHash();
+for (const recipe of [RuntimeDemandRecipe, RuntimeSupplyRecipe, AccessCertificateRecipe]) {
+  if (!hasRecipe(recipe.name)) addRecipeToRuntime(recipe);
+}
+const demandPlan = new CategoryDemandPlan(owner);
 const originals = new FotosFileSystem('fotos', true);
 await originals.init();
 const stop = runtime.onPublishedFilesChanged(containers => process.send({event: 'changed', containers}));
@@ -54,12 +69,18 @@ objectEvents.onNewVersion(result => process.send({event: result.obj.$type$, idHa
 objectEvents.onNewVersion(result => process.send({event: result.obj.$type$, idHash: result.idHash,
   hash: result.hash, observedAt: new Date().toISOString()}),
   'Received object receipt integration evidence', 'FilerReceivedObjectsRoot');
+for (const type of ['RuntimeDemand', 'RuntimeSupply', 'AccessCertificate']) {
+  objectEvents.onNewVersion(result => process.send({event: result.obj.$type$, idHash: result.idHash,
+    hash: result.hash, observedAt: new Date().toISOString()}),
+    'Demand supply grant integration evidence', type);
+}
 
 process.on('message', async ({id, method, params = {}}) => {
   try {
     let result;
     switch (method) {
       case 'rpc': result = await rpc.handle({jsonrpc: '2.0', id: 1, ...params}); break;
+      case 'headlessRpc': result = await headlessRpc.handle({jsonrpc: '2.0', id: 1, ...params}); break;
       case 'objectBytes': {
         const root = (await getObjectByIdHash(params.idHash)).obj;
         const entry = await getObject(root.entry);
@@ -138,6 +159,63 @@ process.on('message', async ({id, method, params = {}}) => {
       }
       case 'receivedObjectRecords': {
         result = await new FilesObjectPlan(new FilesFileSystem(owner), owner).getReceivedRecords();
+        break;
+      }
+      case 'demandCategory': {
+        result = await demandPlan.setCategoryDemand(params.tagId, params.active);
+        break;
+      }
+      case 'publishSupply': {
+        const now = Date.now();
+        result = await storeVersionedObject({$type$: 'RuntimeSupply', domain: 'content',
+          supplierPersonId: owner, runtimeInstanceId: `${owner}#fotos`,
+          status: 'active', runtimeKind: 'fotos-provider', platform: params.platform ?? 'test',
+          capabilityKeywords: [], governedTagIds: params.governedTagIds,
+          createdAt: now, updatedAt: now});
+        break;
+      }
+      case 'grantAccess': {
+        await createAccess([{id: params.idHash, person: [params.person], mode: SET_ACCESS_MODE.ADD}]);
+        result = {idHash: params.idHash, person: params.person};
+        break;
+      }
+      case 'matchAndGrant': {
+        const demand = (await getObjectByIdHash(params.demandIdHash)).obj;
+        const supply = (await getObjectByIdHash(params.supplyIdHash)).obj;
+        if (demand.$type$ !== 'RuntimeDemand' || supply.$type$ !== 'RuntimeSupply') {
+          throw new Error('matchAndGrant needs a RuntimeDemand and a RuntimeSupply');
+        }
+        if (!matchRuntimeDemandSupply(demand, supply)) {
+          result = {matched: false};
+          break;
+        }
+        let certIdHash;
+        const grant = await createTagGrantCertificate({issuerPersonId: owner, subjectPersonId: params.subject,
+          governance: {$type$: 'TagGovernance',
+            id: makeTagGovernanceId({targetKind: 'tag', targetId: params.tagId}),
+            targetKind: 'tag', targetId: params.tagId, enabled: true,
+            createdAt: Date.now(), updatedAt: Date.now()},
+          grantedTagIds: [params.tagId],
+          storeObject: async obj => {
+            const stored = await storeVersionedObject(obj);
+            certIdHash = stored.idHash;
+            return stored;
+          }});
+        await createAccess([{id: certIdHash, person: [params.subject], mode: SET_ACCESS_MODE.ADD}]);
+        result = {matched: true, certIdHash, certHash: grant.certHash, certId: grant.certId};
+        break;
+      }
+      case 'idAccessEvidence': {
+        const [idGranted, idAccessible] = await Promise.all([
+          isIdGrantedBy(params.person, params.idHash),
+          isIdAccessibleBy(params.person, params.idHash)]);
+        result = {person: params.person, idHash: params.idHash, idGranted, idAccessible,
+          observedAt: new Date().toISOString()};
+        break;
+      }
+      case 'objectByIdHash': {
+        const found = await getObjectByIdHash(params.idHash);
+        result = {idHash: params.idHash, hash: found.hash, obj: found.obj};
         break;
       }
       case 'stop': stop(); await runtime.shutdown(); break;

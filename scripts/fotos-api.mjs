@@ -21,7 +21,7 @@ export async function createFotosApi(config) {
     const fileSystem = await runtime.init();
     if (!config.readOnly) await fotos.init();
     const server = new RestServer(new OperationRegistry(), {
-        host: '127.0.0.1', port: config.port,
+        host: '127.0.0.1', port: config.port, ownerToken: config.token,
         fileProviderRpc: new FileProviderRpc(fileSystem, config.token),
     });
     await server.start();

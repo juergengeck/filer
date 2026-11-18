@@ -91,14 +91,24 @@ async function startWorker(name, commServerUrl, previous) {
 
 /** Read filesystem responses through the same RPC handler the native provider uses. */
 async function rpc(worker, method, params) {
-  const result = await worker.command('rpc', {method, params});
+  return await rpcThrough(worker, 'rpc', method, params);
+}
+
+/** Use the headless sharing endpoint (/objects, /contacts), which the Filer UI does not mount. */
+async function headlessRpc(worker, method, params) {
+  return await rpcThrough(worker, 'headlessRpc', method, params);
+}
+
+/** Send one JSON-RPC call to the named worker transport and unwrap its result. */
+async function rpcThrough(worker, transport, method, params) {
+  const result = await worker.command(transport, {method, params});
   if (result.error) throw new Error(result.error.message);
   return result.result;
 }
 
 /** Capture a filesystem probe as evidence without making today's projection gap an expected contract. */
-async function rpcOutcome(worker, method, params) {
-  try { return {ok: true, result: await rpc(worker, method, params)}; }
+async function headlessRpcOutcome(worker, method, params) {
+  try { return {ok: true, result: await headlessRpc(worker, method, params)}; }
   catch (error) { return {ok: false, error: error instanceof Error ? error.message : String(error)}; }
 }
 
@@ -126,7 +136,8 @@ try {
   await Promise.all(['a.txt', 'b.txt'].map(name => rpc(recipient, 'writeFile', {path: `/Files/Folder/${name}`, content: 'aGVsbG8='})));
   assert.deepEqual((await rpc(recipient, 'readDir', {path: '/Files/Folder'})).children, ['a.txt', 'b.txt']);
   assert.equal((await rpc(recipient, 'stat', {path: '/Files'})).canAddChildren, true);
-  assert.deepEqual((await rpc(recipient, 'readDir', {path: '/Fotos'})).children, []);
+  // docs/dynamic-folder-configuration.md: /Fotos appears only once a verified share has content.
+  await assert.rejects(rpc(recipient, 'readDir', {path: '/Fotos'}), /ENOENT/);
 
   console.log('2. ONE pairing delivers a signed collection, separate from the sender library');
   const fixture = path.resolve(root, '../fotos/fotos.browser/browser-ui/src/lib/__fixtures__/photos/rose-detail.png');
@@ -140,7 +151,7 @@ try {
   assert.equal(contactNames.length, 1);
   const contactHtml = (await rpc(recipient, 'readFile', {path: `/contacts/${contactNames[0]}/index.html`})).content;
   const objectPath = '/objects/document.bin';
-  assert.equal((await rpc(recipient, 'stat', {path: objectPath})).mode & 0o170000, 0o40000);
+  assert.equal((await headlessRpc(recipient, 'stat', {path: objectPath})).mode & 0o170000, 0o40000);
   const grantStarted = tracePoint();
   const receiptStored = waitMessage(source.child, message => message.event === 'FilerReceivedObjectsRoot')
     .then(message => ({message, observed: tracePoint()}));
@@ -149,7 +160,7 @@ try {
     .then(message => ({message, observed: tracePoint()}));
   const objectReceived = waitMessage(source.child, message => message.event === 'FilerObjectRoot')
     .then(message => ({message, observed: tracePoint()}));
-  const imported = await rpc(recipient, 'writeFile', {path: `${objectPath}/Shared with/index.html`, content: contactHtml});
+  const imported = await headlessRpc(recipient, 'writeFile', {path: `${objectPath}/Shared with/index.html`, content: contactHtml});
   const grantReturned = tracePoint();
   assert.equal(imported.path, `${objectPath}/Shared with/${contactNames[0]}`);
   const sharedObject = await objectReceived;
@@ -163,8 +174,8 @@ try {
   assert.equal(receiverRead.byteLength, bytes.length);
   assert.equal(receiverRead.blobHash, createHash('sha256').update(bytes).digest('hex'));
   const receivedFiles = await rpc(source, 'readDir', {path: '/Files'});
-  const receivedObjects = await rpc(source, 'readDir', {path: '/objects'});
-  const projectedRead = await rpcOutcome(source, 'readFile', {path: `${objectPath}/document.bin`});
+  const receivedObjects = await headlessRpc(source, 'readDir', {path: '/objects'});
+  const projectedRead = await headlessRpcOutcome(source, 'readFile', {path: `${objectPath}/document.bin`});
   const receivedRecords = await source.command('receivedObjectRecords');
   const journalPath = '/ONE/System/journal';
   const journalEntries = (await rpc(source, 'readDir', {path: journalPath})).children;
@@ -216,7 +227,7 @@ try {
   const accessRevoked = waitMessage(recipient.child, message => message.event === 'IdAccess' &&
     message.accessId === sharedObject.message.idHash && !message.recipients?.includes(source.ready.person))
     .then(message => ({message, observed: tracePoint()}));
-  await rpc(recipient, 'rmdir', {path: imported.path});
+  await headlessRpc(recipient, 'rmdir', {path: imported.path});
   const revokeReturned = tracePoint();
   const storedRevocation = await accessRevoked;
   const accessCheckStarted = tracePoint();
@@ -229,9 +240,9 @@ try {
   assert.equal(accessAfterRevoke.rootAccessible, false);
   assert.equal(accessAfterRevoke.entryAccessible, false);
   assert.equal(accessAfterRevoke.blobAccessible, false);
-  assert.deepEqual((await rpc(recipient, 'readDir', {path: `${objectPath}/Shared with`})).children, []);
-  assert.deepEqual((await rpc(source, 'readDir', {path: '/objects'})).children, ['document.bin']);
-  assert.deepEqual(Buffer.from((await rpc(source, 'readFile', {path: `${objectPath}/document.bin`})).content, 'base64'), bytes);
+  assert.deepEqual((await headlessRpc(recipient, 'readDir', {path: `${objectPath}/Shared with`})).children, []);
+  assert.deepEqual((await headlessRpc(source, 'readDir', {path: '/objects'})).children, ['document.bin']);
+  assert.deepEqual(Buffer.from((await headlessRpc(source, 'readFile', {path: `${objectPath}/document.bin`})).content, 'base64'), bytes);
   trace('generic-object-revocation', {surface: 'FileProviderOperations.handle over test child-process IPC',
     nativeFinderExercised: false, revokeRpc: {started: revokeStarted, returned: revokeReturned,
       durationMs: traceDuration(revokeStarted, revokeReturned)},
@@ -242,9 +253,9 @@ try {
     effectiveAccessCheck: {started: accessCheckStarted, completed: accessCheckCompleted,
       roundTripMs: traceDuration(accessCheckStarted, accessCheckCompleted), ...accessAfterRevoke},
     retainedCopyGuarantee: 'Previously received immutable objects remain in receiver storage; future root versions are no longer id-accessible'});
-  await rpc(recipient, 'writeFile', {path: `${objectPath}/People in photo/index.html`, content: contactHtml});
-  assert.deepEqual((await rpc(recipient, 'readDir', {path: `${objectPath}/Shared with`})).children, []);
-  assert.deepEqual((await rpc(recipient, 'readDir', {path: `${objectPath}/People in photo`})).children, contactNames);
+  await headlessRpc(recipient, 'writeFile', {path: `${objectPath}/People in photo/index.html`, content: contactHtml});
+  assert.deepEqual((await headlessRpc(recipient, 'readDir', {path: `${objectPath}/Shared with`})).children, []);
+  assert.deepEqual((await headlessRpc(recipient, 'readDir', {path: `${objectPath}/People in photo`})).children, contactNames);
   const received = waitMessage(recipient.child, message => message.event === 'FotosShareCertificateChain');
   await source.command('share', {person: recipient.ready.person, collection: 'Summer', entries});
   await received;
@@ -274,8 +285,8 @@ try {
   await recipient.stop();
   const reopened = await startWorker('recipient-reopened', commServerUrl, recipient.config);
   assert.deepEqual(Buffer.from((await rpc(reopened, 'readFile', {path: '/Files/document.bin'})).content, 'base64'), bytes);
-  assert.deepEqual((await rpc(reopened, 'readDir', {path: `${objectPath}/Shared with`})).children, []);
-  assert.deepEqual((await rpc(reopened, 'readDir', {path: `${objectPath}/People in photo`})).children, contactNames);
+  assert.deepEqual((await headlessRpc(reopened, 'readDir', {path: `${objectPath}/Shared with`})).children, []);
+  assert.deepEqual((await headlessRpc(reopened, 'readDir', {path: `${objectPath}/People in photo`})).children, contactNames);
   assert.deepEqual(Buffer.from((await rpc(reopened, 'readFile', {path: photoPath})).content, 'base64'), photo);
   console.log('Restart restored Files and the received collection; reconnecting for revocation');
   const reconnected = waitMessage(reopened.child, message => message.event === 'paired');
@@ -289,8 +300,8 @@ try {
   console.log('Generic received object remains projected after recipient restart');
   await source.stop();
   const sourceReopened = await startWorker('source-reopened', commServerUrl, source.config);
-  assert.deepEqual((await rpc(sourceReopened, 'readDir', {path: '/objects'})).children, ['document.bin']);
-  assert.deepEqual(Buffer.from((await rpc(sourceReopened, 'readFile', {path: `${objectPath}/document.bin`})).content, 'base64'), bytes);
+  assert.deepEqual((await headlessRpc(sourceReopened, 'readDir', {path: '/objects'})).children, ['document.bin']);
+  assert.deepEqual(Buffer.from((await headlessRpc(sourceReopened, 'readFile', {path: `${objectPath}/document.bin`})).content, 'base64'), bytes);
   assert.equal((await sourceReopened.command('receivedObjectRecords')).length, 1);
   assert.deepEqual((await rpc(sourceReopened, 'readDir', {path: journalPath})).children, journalEntries);
   console.log('PASS: Files imports; projected received generic objects; contact HTML object sharing and revocation; independent persisted photo associations; signed collection sharing, updates, and restart');
