@@ -59,6 +59,14 @@ async function operation(page, name, method, params = {}) {
     }, {name, method, params});
 }
 
+/** Wait for the rendered gallery's exporter, which settles after the incoming catalog entry. */
+async function waitForVisiblePhoto(page, hash) {
+    await page.waitForFunction(async hash => {
+        const photos = await window.__api('fotos', 'listVisiblePhotos', {});
+        return photos.some(photo => photo.hash === hash);
+    }, hash, {timeout: 30_000, polling: 100});
+}
+
 /** Resolve only the locally built Fotos assets, keeping real Glue authentication and relay traffic. */
 async function serveBuild(route) {
     const url = new URL(route.request().url());
@@ -123,7 +131,7 @@ try {
     const reverse = await readFile(path.join(fixtureRoot, 'rose-center.jpg'));
     const setup = await readFile(path.join(fixtureRoot, 'rose-top-left.jpg'));
     const forwardName = `fotos-to-filer-${run}.png`;
-    const reverseName = `filer-to-fotos-${run}${checkpoint ? '-' + randomUUID().slice(0, 6) : ''}.jpg`;
+    let reverseName = `filer-to-fotos-${run}${checkpoint ? '-' + randomUUID().slice(0, 6) : ''}.jpg`;
     const digest = bytes => createHash('sha256').update(bytes).digest('hex');
     let fotosIdentity = await operation(page, 'fotos-qa', 'getIdentity');
     const resumed = fotosIdentity.ownerId === owner && fotosIdentity.publicationIdentity === owner
@@ -174,6 +182,19 @@ try {
     const nativeIdentity = JSON.parse(await native(['--qa-domain', domain, 'getFotosSnapshot']));
     assert.equal(nativeIdentity.success, true);
     assert.equal(nativeIdentity.result.ownerId, owner);
+    let storedReverse = false;
+    if (checkpoint) {
+        const pattern = new RegExp(`^filer-to-fotos-${run}(?:-[a-f0-9]{6})?\\.jpg$`);
+        const originals = nativeIdentity.result.collections.filter(item => item.path === '/Fotos/My Photos')
+            .flatMap(item => item.files).filter(file => pattern.test(file.name)
+                && file.sha256 === digest(reverse) && file.size === reverse.length);
+        assert.ok(originals.length <= 1, 'Reverse checkpoint must identify one exact stored original');
+        if (originals.length === 1) {
+            reverseName = originals[0].name;
+            storedReverse = true;
+            await record('native-reverse-retained', {name: reverseName, bytes: reverse.length, sha256: digest(reverse)});
+        }
+    }
     if (checkpoint) {
         const enrolled = checkpoint.steps.findLast(step => step.step === 'iom-enrollment');
         const previousOwner = checkpoint.steps.findLast(step => step.step === 'fotos-native-owner');
@@ -210,6 +231,7 @@ try {
         await record('fotos-to-filer', {name: forwardName, bytes: forward.length, sha256: digest(forward), verifiedBy: 'native runtime original read'});
     }
     const allPhotos = page.getByRole('navigation', {name: 'Breadcrumb'}).getByRole('button', {name: 'Photos', exact: true});
+    await page.getByRole('button', {name: 'Show images', exact: true}).click();
     if (await allPhotos.count()) await allPhotos.click();
 
     const mount = path.join(process.env.HOME, 'Library/CloudStorage', `OneFiler-${domain}`);
@@ -217,11 +239,15 @@ try {
     const photos = roots.find(name => name === 'Photos' || name === 'Fotos');
     assert.ok(photos, 'The native Finder domain must expose its Photos import folder');
     const reverseFile = path.join(directory, reverseName);
-    await writeFile(reverseFile, reverse, {mode: 0o600});
     const arrival = operation(page, 'fotos-qa', 'waitForGalleryPhoto', {name: reverseName, timeoutMs: 120_000});
     void arrival.catch(() => {});
-    await exec('/bin/cp', [reverseFile, path.join(mount, photos, 'My Photos', reverseName)], {timeout: 60_000});
+    if (!storedReverse) {
+        await writeFile(reverseFile, reverse, {mode: 0o600});
+        await exec('/bin/cp', [reverseFile, path.join(mount, photos, 'My Photos', reverseName)], {timeout: 60_000});
+    }
     const photo = await arrival;
+    await record('filer-to-fotos-catalog', {name: reverseName, hash: photo.hash});
+    await waitForVisiblePhoto(page, photo.hash);
     const exported = await operation(page, 'fotos', 'exportVisiblePhoto', {hash: photo.hash});
     const bytes = Buffer.from(exported.dataUrl.slice(exported.dataUrl.indexOf(',') + 1), 'base64');
     assert.deepEqual(bytes, reverse);
@@ -232,6 +258,7 @@ try {
     const reopened = await operation(page, 'fotos-qa', 'getIdentity');
     assert.equal(reopened.ownerId, owner);
     const restored = await operation(page, 'fotos-qa', 'waitForGalleryPhoto', {name: reverseName, timeoutMs: 60_000});
+    await waitForVisiblePhoto(page, restored.hash);
     const restoredExport = await operation(page, 'fotos', 'exportVisiblePhoto', {hash: restored.hash});
     assert.deepEqual(Buffer.from(restoredExport.dataUrl.split(',')[1], 'base64'), reverse);
     await record('reopen', {ownerId: reopened.ownerId, restoredOriginalSha256: digest(reverse)});
