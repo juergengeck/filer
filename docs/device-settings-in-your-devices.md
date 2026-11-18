@@ -1,6 +1,6 @@
 # Device settings in Your devices
 
-**Status:** design, not implemented\
+**Status:** slices 1–2 shipped (see Current state); slices 3+ (akte reach, Assembly-managed settings) still design\
 **Scope:** `../one/packages/device.core`, `settings.core`, `ui.core`, `vger.settings`, `vger.ui`,
 `filer.core`, `refinio.api` (Filer runtime), `../akte/packages/akte.ui`, and the Filer host app
 
