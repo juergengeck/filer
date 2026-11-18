@@ -12,7 +12,7 @@ export interface ReplicantConfig {
     useFiler: boolean;
     filerConfig: FilerConfig;
 
-    connectionsConfig: ConnectionsModelConfiguration;
+    connectionsConfig: Partial<ConnectionsModelConfiguration>;
 }
 
 export const DefaultReplicantConfig: ReplicantConfig = {

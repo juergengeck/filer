@@ -20,7 +20,7 @@
 const fs = require('fs');
 const {basename, dirname, join, sep} = require('path');
 const {promisify} = require('util');
-const {execSync} = require('child_process');
+const {execFileSync} = require('child_process');
 
 // @ts-ignore
 const babel = require('@babel/core');
@@ -254,7 +254,13 @@ async function createDeclarationFiles(targetDir) {
     console.log('Calling tsc to create declaration and map files...');
 
     try {
-        execSync('tsc -p tsconfig.declarations.json --outDir ' + targetDir, {stdio: 'inherit'});
+        execFileSync(process.execPath, [
+            require.resolve('typescript/bin/tsc'),
+            '-p',
+            'tsconfig.declarations.json',
+            '--outDir',
+            targetDir
+        ], {stdio: 'inherit'});
     } finally {
         // Remove extraneous system folders, the target platform's code has been written to system/
         for (const p of Object.keys(PLATFORMS)) {

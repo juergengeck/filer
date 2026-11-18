@@ -5,7 +5,7 @@
 import {isObject} from '@refinio/one.core/lib/util/type-checks-basic';
 import type {ConnectionsModelConfiguration} from '@refinio/one.models/lib/models/ConnectionsModel';
 
-export const DefaultConnectionsModelConfig: ConnectionsModelConfiguration = {
+export const DefaultConnectionsModelConfig: Partial<ConnectionsModelConfiguration> = {
     commServerUrl: 'wss://comm10.dev.refinio.one',
     acceptIncomingConnections: true,
     acceptUnknownInstances: false,
@@ -15,9 +15,7 @@ export const DefaultConnectionsModelConfig: ConnectionsModelConfiguration = {
     pairingTokenExpirationDuration: 2147483647,
     establishOutgoingConnections: true,
     noImport: false,
-    noExport: false,
-    deferIncomingRouteStart: false,
-    restoreDurableRouteAfterPrimedChumClose: false
+    noExport: false
 };
 
 export function checkConnectionsModelConfig(
@@ -45,9 +43,7 @@ export function checkConnectionsModelConfig(
         'allowDebugRequests',
         'establishOutgoingConnections',
         'noImport',
-        'noExport',
-        'deferIncomingRouteStart',
-        'restoreDurableRouteAfterPrimedChumClose'
+        'noExport'
     ]) {
         if (Object.hasOwn(config, param) && typeof config[param] !== 'boolean') {
             throw new Error(`"${param}" of connections configuration needs to be boolean.`);
