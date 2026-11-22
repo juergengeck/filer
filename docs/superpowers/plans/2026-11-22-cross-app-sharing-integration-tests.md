@@ -158,6 +158,11 @@ to two real forked ONE instances over loopback `CommunicationServer`:
 
 Tests VGER as both a **peer sharer** and an **IoM management hub** for Filer:
 
+- The worker loads the sibling VGER build's `NativeHeadlessCore` and the
+  canonical `CoreModule` with the Files and IoM recipe inventory. The
+  harness wires the signed exchange and settings grant to those owners.
+  Build the VGER native artifacts before running this suite.
+
 - **Datatypes:**
   - `FilerShareCut` + `FilerStoredEntry` + `BLOB` (shared project folders).
   - `TagShareCut` (post-Slice 2: shared `TagSetDefinition` + `unionOfSets` +

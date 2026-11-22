@@ -3,7 +3,7 @@ import {createFileProviderOperations, FILER_SETTINGS_MOUNT, FilerRuntime} from '
 import {createAccess} from '@refinio/one.core/lib/access.js';
 import {isChumRootDeclined} from '@refinio/one.core/lib/chum-base.js';
 import {getInstanceIdHash, getInstanceOwnerIdHash} from '@refinio/one.core/lib/instance.js';
-import {getChumSyncDiagnostics} from '@refinio/one.core/lib/chum-sync.js';
+import {getChumSyncDiagnostics, getChumSyncRootMetrics} from '@refinio/one.core/lib/chum-sync.js';
 import {getDefaultKeys} from '@refinio/one.core/lib/keychain/keychain.js';
 import {storeArrayBufferAsBlob} from '@refinio/one.core/lib/storage-blob.js';
 import {SET_ACCESS_MODE} from '@refinio/one.core/lib/storage-base-common.js';
@@ -41,8 +41,11 @@ async function start(config) {
   const shares = runtime.getAcceptedSharesProjection();
   source = await calculateIdHashOfObj({$type$: 'FilerFilesRoot', owner});
   cleanup = [
-    runtime.onPublishedFilesChanged(containers => process.send({event: 'changed', containers,
-      pendingFiles: containers.includes(statusDirectory) && shares.hasPendingArrivals()})),
+    runtime.onPublishedFilesChanged(containers => {
+      const settingsChanged = containers.includes(statusDirectory);
+      process.send({event: 'changed', containers, pendingFiles: settingsChanged && shares.hasPendingArrivals()});
+      if (settingsChanged) void reportFilesMode();
+    }),
     runtime.getConnectionsModel().pairing.onPairingSuccessCommitted.listen(
       (_initiated, _localPerson, _localInstance, person) => process.send({event: 'paired', person})),
     runtime.getAssemblyPlan().onAssemblyAccepted.listen((assembly, origin, observation) => {
@@ -56,6 +59,16 @@ async function start(config) {
     })
   ];
   return {owner, instance: getInstanceIdHash()};
+}
+
+/** Report the mode from the same status file exposed to the native provider. */
+async function reportFilesMode() {
+  const response = await operations.handle({jsonrpc: '2.0', id: null, method: 'readFile',
+    params: {path: `${statusDirectory}/status.json`}});
+  if (response.error) throw new Error(response.error.message);
+  const status = JSON.parse(Buffer.from(response.result.content, 'base64').toString('utf8'));
+  const files = status.folders.find(folder => folder.id === 'files');
+  process.send({event: 'filesMode', mode: files.mode, visible: files.visible});
 }
 
 /** Author normal signed releases while withholding only grants for the cut under test. */
@@ -150,6 +163,8 @@ async function command(method, params, id) {
     case 'stop': return await stop();
     case 'invite': return await runtime.getConnectionsModel().pairing.createInvitation();
     case 'pair': return await runtime.getConnectionsModel().pairing.connectUsingInvitation(params.invitation);
+    case 'enroll': return await runtime.getConnectionsModel().pairing.acceptDeviceEnrollment(params.invitation, params.owner);
+    case 'publishWeights': return await runtime.getModelWeightsPlan().publish(params);
     case 'publish': return await publish(params);
     case 'publishHeadFirst': return await publish(params, true);
     case 'deliverHeldCut': return await deliverHeldCut(params.hash);
@@ -163,7 +178,8 @@ async function command(method, params, id) {
     case 'snapshot': return runtime.getAcceptedSharesProjection().committedSnapshot();
     case 'diagnostics': {
       const {traceEvents} = getChumSyncDiagnostics({traceLimit: 300});
-      return traceEvents.filter(event => /failed|failure|error|exact-root/.test(event.event)).slice(-12);
+      return {trace: traceEvents.filter(event => /failed|failure|error|exact-root/.test(event.event)).slice(-12),
+        failures: getChumSyncRootMetrics({sinceEpochMs: 0}).serviceFailures.slice(-3)};
     }
     case 'retire': return await (deferredReleases ?? runtime.getAssemblyReleasePlan()).retireGraphReleaseSelection({
       source, audience: {type: 'person', id: params.audience}, selection: params.selection
