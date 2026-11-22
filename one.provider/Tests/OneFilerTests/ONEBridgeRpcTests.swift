@@ -120,7 +120,7 @@ final class ONEBridgeRpcTests: XCTestCase {
         )
         let automaticRoot = try await bridge.getChildren(parentId: "/")
         XCTAssertTrue(automaticRoot.contains { $0.name == "Files" })
-        XCTAssertFalse(automaticRoot.contains { $0.name == "Fotos" })
+        XCTAssertTrue(automaticRoot.first { $0.name == "Fotos" }?.canAddChildren == true)
         let children = try await bridge.getChildren(parentId: "chats")
         XCTAssertFalse(children.isEmpty)
         var workingItems: [ONEObject] = []
@@ -130,10 +130,9 @@ final class ONEBridgeRpcTests: XCTestCase {
             workingItems.append(contentsOf: result.items)
             page = result.nextPage
         } while page != nil
-        for mount in ["/Files", "/contacts", "/ONE/System/models", "/ONE/System/journal", "/ONE/System/settings"] {
+        for mount in ["/Files", "/Fotos", "/contacts", "/ONE/System/models", "/ONE/System/journal", "/ONE/System/settings"] {
             XCTAssertTrue(workingItems.contains { $0.path == mount }, mount)
         }
-        XCTAssertFalse(workingItems.contains { $0.path == "/Fotos" })
         XCTAssertFalse(workingItems.contains { $0.path == "/Gesundheit" })
         XCTAssertFalse(workingItems.contains { $0.path == "/objects" })
         XCTAssertTrue(workingItems.first { $0.path == "/Files" }?.canAddChildren == true)
