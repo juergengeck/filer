@@ -144,9 +144,13 @@ to two real forked ONE instances over loopback `CommunicationServer`:
   absent, then demand the category and verify the exact SHA-256 and bytes
   through File Provider operations. Exercise replacement deltas with stable
   IDs, read-only writes, signed retirement, and restart durability.
-- **Additional fault-injection cases:** hold a selected cut until its head
-  arrives, deliver a superseded cut after retirement, and test the projection
-  import filter against separately authorized fixtures.
+- **Fault injection:** hold the sender's grant for the cut Assembly while
+  its signed head arrives. Deliver the raw cut payload and verify the
+  previous snapshot and anchor stay current until the Assembly is accepted.
+  Deliver another held cut after its selection retires and check that
+  the folder stays absent across restart. Offer each valid projection
+  fixture under a separate grant, verify CHUM's decline receipt, and check
+  that the receiver's store contains none of the declined versions.
 
 ---
 

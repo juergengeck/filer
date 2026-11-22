@@ -67,6 +67,19 @@ async function filesReasons(worker) {
   return status.folders.find(folder => folder.id === 'files').reasons;
 }
 
+/** Commit and import the selection head while its cut Assembly stays with the publisher. */
+async function publishHeadFirst(source, recipient, fixture) {
+  const [head, , publication] = await Promise.all([
+    accepted(recipient, 'GraphReleaseSelectionHead', 'active'),
+    recipient.event('changed', message => message.pendingFiles, 'pending Files selection status'),
+    source.command('publishHeadFirst', fixture)
+  ]);
+  assert.equal(head.currentCut, publication.assemblyHash);
+  assert.equal(await recipient.command('stored', {hash: publication.assemblyHash}), false);
+  assert.ok((await filesReasons(recipient)).includes('peer-file-shares-pending'));
+  return {head: head.hash, ...publication};
+}
+
 /** Keep binary fixtures portable across the worker's JSON IPC channel. */
 function content(text) {
   return Buffer.from(text).toString('base64');
@@ -119,14 +132,26 @@ try {
 
     const container = first.parentId;
     const {anchor} = await rpc(recipient, 'getCurrentAnchor', {container});
+    const firstSnapshot = await recipient.command('snapshot');
     const editedBytes = content('second version\0\u00f6\n');
     const addedBytes = content('added');
-    const [replacement, , , publication] = await Promise.all([
+    const publication = await publishHeadFirst(source, recipient, {audience, selection, label,
+      files: {'/shared/a.txt': editedBytes, '/shared/c.txt': addedBytes}});
+    assert.equal(await recipient.command('snapshot'), firstSnapshot);
+    await assertHydration(recipient, first, firstBytes);
+    await source.command('deliverUnacceptedCut', {audience, hash: publication.cutHash});
+    assert.equal(await recipient.command('stored', {hash: publication.cutHash}), true);
+    assert.equal(await recipient.command('stored', {hash: publication.assemblyHash}), false);
+    assert.equal(await recipient.command('snapshot'), firstSnapshot);
+    assert.equal((await rpc(recipient, 'getCurrentAnchor', {container})).anchor, anchor);
+    assert.deepEqual((await enumerate(recipient, container)).map(item => item.id).sort(), [first.id, removed.id].sort());
+    trace('head-before-cut', {head: publication.head, heldCut: publication.assemblyHash,
+      unacceptedPayload: publication.cutHash, retainedSnapshot: firstSnapshot});
+
+    const [replacement] = await Promise.all([
       accepted(recipient, 'GraphReleaseState'),
-      accepted(recipient, 'GraphReleaseSelectionHead', 'active'),
       changed(recipient, container),
-      source.command('publish', {audience, selection, label,
-        files: {'/shared/a.txt': editedBytes, '/shared/c.txt': addedBytes}})
+      source.command('deliverHeldCut', {hash: publication.assemblyHash})
     ]);
     assert.equal(replacement.hash, publication.assemblyHash);
     const delta = await rpc(recipient, 'getChanges', {container, since: anchor});
@@ -158,6 +183,9 @@ try {
     trace('active-snapshot-reopened', {snapshot: activeSnapshot});
 
     await pair(source, reopened);
+    const stale = await publishHeadFirst(source, reopened, {audience, selection, label,
+      files: {'/shared/withdrawn.txt': content('late cut')}});
+    assert.equal(await reopened.command('snapshot'), activeSnapshot);
     const retiredAnchor = (await rpc(reopened, 'getCurrentAnchor', {container: 'workingSet'})).anchor;
     const [retired] = await Promise.all([
       accepted(reopened, 'GraphReleaseSelectionHead', 'retired'),
@@ -168,6 +196,22 @@ try {
     await assert.rejects(rpc(reopened, 'getItem', {id: first.id}), {code: -2});
     await assert.rejects(rpc(reopened, 'getChanges', {container: 'workingSet', since: retiredAnchor}), {code: -32020});
     trace('signed-retirement', {head: retired.hash, origin: retired.origin});
+
+    const [lateCut] = await Promise.all([
+      accepted(reopened, 'GraphReleaseState'),
+      source.command('deliverHeldCut', {hash: stale.assemblyHash})
+    ]);
+    assert.equal(lateCut.hash, stale.assemblyHash);
+    await assertHidden(reopened);
+    assert.equal(await reopened.command('snapshot'), undefined);
+    trace('late-cut-after-retirement', {cut: lateCut.hash, retiredHead: retired.hash, origin: lateCut.origin});
+
+    const blocked = await source.command('probeProjectionImportFilter', {audience});
+    for (const [type, hash] of Object.entries(blocked)) {
+      assert.equal(await reopened.command('stored', {hash}), false, `receiver stored declined ${type}`);
+    }
+    await assertHidden(reopened);
+    trace('receiver-declined-projection-objects', {types: Object.keys(blocked)});
 
     await reopened.stop();
     const afterRetirement = await harness.start(workerEntry, 'recipient', recipient.config);
