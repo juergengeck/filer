@@ -242,3 +242,10 @@ process.on('message', async ({id, method, params}) => {
     process.send({id, error: {message: error.message, code: error.code}});
   }
 });
+
+process.once('disconnect', () => {
+  void stop().then(() => process.exit(0), error => {
+    console.error(error);
+    process.exit(1);
+  });
+});

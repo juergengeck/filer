@@ -74,7 +74,7 @@ function originalAt(items, predicate) {
 try {
   await withHarness(async harness => {
     const fotos = await harness.start(fotosEntry, 'fotos');
-    const filer = await harness.start(filerEntry, 'filer-pictures');
+    let filer = await harness.start(filerEntry, 'filer-pictures');
     const audience = filer.identity.owner;
     assert.notEqual(fotos.identity.owner, audience);
     await pair(fotos, filer);
@@ -136,6 +136,26 @@ try {
     await rpc(filer, 'createFile', {path: '/Files', fileHash: collection.contentVersion,
       fileName: localName, mode: 0o100644});
     assert.equal((await rpc(filer, 'stat', {path: `/Files/${localName}`})).contentHash, collection.contentVersion);
+
+    await filer.stop();
+    const activeReopened = await harness.start(filerEntry, 'filer-pictures', filer.config);
+    assert.deepEqual(activeReopened.identity, filer.identity);
+    const reopenedItems = await enumerate(activeReopened);
+    assert.equal(new Set(reopenedItems.map(item => item.path)).size, reopenedItems.length,
+      'restored picture roots and PublishedWorkingSet must not publish duplicate paths');
+    const reopenedPictures = await pictureItems(activeReopened);
+    assert.deepEqual(reopenedPictures, updated);
+    const reopenedFiles = reopenedPictures.filter(item => item.type === 'file');
+    assert.equal(reopenedFiles.length, 4);
+    for (const item of reopenedFiles) {
+      assert.match(item.id, /^filer:[a-f0-9]{64}$/);
+      await assertHydration(activeReopened, item, content);
+    }
+    assert.deepEqual((await rpc(activeReopened, 'readDir', {path: '/Fotos'})).children.filter(name =>
+      axes.includes(name)).sort(), [...axes].sort());
+    trace('fotos-active-views-reopened', {items: reopenedFiles.map(item => item.id)});
+    filer = activeReopened;
+    await pair(fotos, filer);
 
     const [pendingHead, , pending] = await Promise.all([
       accepted(filer, 'GraphReleaseSelectionHead', 'active'),
