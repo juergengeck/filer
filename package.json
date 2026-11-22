@@ -23,6 +23,7 @@
     "build:harness": "pnpm build:models && pnpm --dir ../one/packages/matching.core build && pnpm --dir ../one/packages/trust.abac build && pnpm --dir ../one/packages/tag.core build",
     "test:integration:files": "pnpm build:models && node scripts/integration/test-files-chum.mjs",
     "test:integration:vger": "pnpm build:models && node scripts/integration/test-vger-integration.mjs",
+    "test:integration:akte": "pnpm build:models && pnpm --dir ../akte --filter @akte/app build && node scripts/integration/test-akte-integration.mjs",
     "test:files": "pnpm build:harness && node scripts/test-files-collections-integration.mjs",
     "test:demand-supply": "pnpm build:harness && node scripts/test-demand-supply-grant-integration.mjs"
   },

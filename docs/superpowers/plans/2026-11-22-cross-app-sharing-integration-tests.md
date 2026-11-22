@@ -241,6 +241,10 @@ multi-view projections under `/Bilder/` (and `/Fotos/` during migration):
 Tests Akte's legal/accounting document case files (`Akten`) and its strict
 document-admission boundary:
 
+- The Akte worker calls the public document intake and case-share APIs from
+  `@akte/app`. It hosts those APIs on the shared Filer runtime's CHUM
+  transport and signed release plans.
+
 - **Datatypes:**
   - `DokumentIntakeRecord` (`status: 'admitted' | 'rejected'`, `sourceBlob`,
     `sourceEntry`, `PdfImportPolicy` provenance).
