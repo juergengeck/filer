@@ -82,19 +82,28 @@ function queueHealthState() {
 async function reportHealthState() {
   async function readDir(path) {
     const reply = await operations.handle({jsonrpc: '2.0', id: null, method: 'readDir', params: {path}});
+    if (reply.error?.code === -2 && path !== '/') return undefined;
     if (reply.error) throw new Error(reply.error.message);
     return reply.result.children;
   }
   const visible = (await readDir('/')).includes('Gesundheit');
   const paths = [];
   if (visible) {
-    for (const product of await readDir('/Gesundheit')) {
+    // A withdrawal can invalidate a directory between listing it and reading
+    // its children. Discard that observation and let the invalidation report it.
+    const products = await readDir('/Gesundheit');
+    if (!products) return;
+    for (const product of products) {
       const productPath = `/Gesundheit/${product}`;
       paths.push(productPath);
-      for (const patient of await readDir(productPath)) {
+      const patients = await readDir(productPath);
+      if (!patients) return;
+      for (const patient of patients) {
         const patientPath = `${productPath}/${patient}`;
         paths.push(patientPath);
-        for (const file of await readDir(patientPath)) paths.push(`${patientPath}/${file}`);
+        const files = await readDir(patientPath);
+        if (!files) return;
+        for (const file of files) paths.push(`${patientPath}/${file}`);
       }
     }
   }
