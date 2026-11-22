@@ -1,6 +1,6 @@
 # Cross-App Integration Testing Plan: Sharing Folders & Datatypes with Fotos, VGER, Akte, and Edda
 
-Status: proposed, ready for review
+Status: in progress (Phase 0–2 + owner-scoped health shipped; Phase 3 Edda 4-instance clinical suite pending)
 Date: 2026-11-22
 Spec: [folder-layout-demand-and-collections.md](../../folder-layout-demand-and-collections.md) (revision 5)
 Related plans: [2026-11-22-tag-core-slice2.md](2026-11-22-tag-core-slice2.md)
@@ -332,7 +332,24 @@ each suite can run independently or as a release gate:
 | **Phase 1** | Phase 0 | **VGER** Files + IoM settings + ModelWeights coexistence (`pnpm test:integration:vger`) and **Akte** admitted/rejected `DokumentIntakeRecord` + case-folder cuts (`pnpm test:integration:akte`). |
 | **Phase 2** | Slice 2 (`tag.core` `TagShareCut` + tombstones) & Slice 3 (multi-view projector) | **Fotos** multi-view `TagShareCut` suite (`pnpm test:integration:fotos`) + add `TagShareCut` & multi-view assertions to VGER and Akte suites. |
 | **Phase 3** | Slice 4–5 (Health/Edda convergence) | **Edda** 4-instance clinical & report suite (`pnpm test:integration:edda`). |
-| **Phase 4** | Phases 0–3 | Umbrella `pnpm test:integration:all` running all four partner suites with JSON trace artifacts under `docs/qa-evidence/`, plus optional signed macOS File Provider smoke gate (`test:provider:ipc`). |
+| **Phase 4** | Phases 0–3 | Shipped umbrella `pnpm test:integration:all` builds dependencies once and runs Files, VGER, Akte, Fotos, and owner-scoped health in sequence. The four-instance Edda clinical suite remains pending. Native Swift gate: `pnpm test:provider:ipc`. |
+
+The shipped owner-scoped health gate is `pnpm test:integration:health`. It covers
+Edda/Flexibel publication, owner IoM access, foreign-person exclusion, exact
+hydration, active restart, and withdrawal. It does not replace the pending
+four-instance StudyCenter clinical suite described in Phase 3.
+
+Run `pnpm test:integration:all` for the five shipped suites with fresh shared
+platform, VGER, Akte, and Edda builds. Each suite accepts `--report <path>` when
+invoked directly, for example:
+
+```bash
+node scripts/integration/test-vger-integration.mjs --report /tmp/filer-vger.json
+node scripts/integration/test-health-chum.mjs --report /tmp/filer-health.json
+```
+
+Reports contain verified transition events with `elapsedMs` timestamps; they
+are written even when a later assertion fails.
 
 ## Definition of Done (per partner suite)
 
