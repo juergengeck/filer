@@ -82,7 +82,9 @@ final class FilerQARuntimeTests: XCTestCase {
             let read = try await call("filer:readFile", ["path": "/Files/retained.txt"])
             XCTAssertEqual((read["result"] as? [String: Any])?["content"] as? String, Data("retained bytes".utf8).base64EncodedString())
             let snapshot = try await call("filer-qa:getFotosSnapshot")
-            XCTAssertEqual((snapshot["collections"] as? [Any])?.count, 0)
+            let collections = try XCTUnwrap(snapshot["collections"] as? [[String: Any]])
+            XCTAssertEqual(collections.map { $0["path"] as? String }, ["/Fotos"])
+            XCTAssertEqual((collections.first?["files"] as? [Any])?.count, 0)
         } catch {
             await runtime.shutdown()
             try? FileManager.default.removeItem(at: directory)
