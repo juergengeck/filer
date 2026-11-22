@@ -3,6 +3,7 @@ import {createFileProviderOperations, FILER_SETTINGS_MOUNT, FilerRuntime} from '
 import {isChumRootDeclined} from '@refinio/one.core/lib/chum-base.js';
 import {getInstanceIdHash, getInstanceOwnerIdHash} from '@refinio/one.core/lib/instance.js';
 import {getChumSyncDiagnostics, getChumSyncRootMetrics} from '@refinio/one.core/lib/chum-sync.js';
+import {onChumSyncActivity} from '@refinio/one.core/lib/chum-sync-activity.js';
 import {storeArrayBufferAsBlob} from '@refinio/one.core/lib/storage-blob.js';
 import {SET_ACCESS_MODE} from '@refinio/one.core/lib/storage-base-common.js';
 import {getObject, storeUnversionedObject} from '@refinio/one.core/lib/storage-unversioned-objects.js';
@@ -25,6 +26,8 @@ let operations;
 let source;
 let deferred;
 let cleanup = [];
+let watchingHealth = false;
+let healthReports = Promise.resolve();
 
 /** Attach read-only evidence listeners to the actual runtime owners. */
 async function start(config) {
@@ -41,6 +44,7 @@ async function start(config) {
       process.send({event: 'changed', containers, pendingFiles: settingsChanged && shares.hasPendingArrivals(),
         pendingPictures: settingsChanged && pictures.hasPendingArrivals()});
       if (settingsChanged) void reportFilesMode();
+      if (watchingHealth) queueHealthState();
     }),
     runtime.getConnectionsModel().pairing.onPairingSuccessCommitted.listen(
       (_initiated, _localPerson, _localInstance, person) => process.send({event: 'paired', person})),
@@ -54,7 +58,47 @@ async function start(config) {
       }
     })
   ];
+  const synced = new Set();
+  cleanup.push(onChumSyncActivity.addListener(lanes => {
+    for (const lane of lanes) {
+      if (!lane.initialSyncComplete || synced.has(lane.connectionId)) continue;
+      synced.add(lane.connectionId);
+      process.send({event: 'chumReady', person: lane.remotePersonId});
+    }
+  }));
   return {owner, instance: getInstanceIdHash()};
+}
+
+/** Serialize native health observations in response to production invalidations only. */
+function queueHealthState() {
+  healthReports = healthReports.then(reportHealthState).catch(error => {
+    console.error('Native health observation failed', error);
+    throw error;
+  });
+  return healthReports;
+}
+
+/** Observe health visibility through the same readDir operations served to Finder. */
+async function reportHealthState() {
+  async function readDir(path) {
+    const reply = await operations.handle({jsonrpc: '2.0', id: null, method: 'readDir', params: {path}});
+    if (reply.error) throw new Error(reply.error.message);
+    return reply.result.children;
+  }
+  const visible = (await readDir('/')).includes('Gesundheit');
+  const paths = [];
+  if (visible) {
+    for (const product of await readDir('/Gesundheit')) {
+      const productPath = `/Gesundheit/${product}`;
+      paths.push(productPath);
+      for (const patient of await readDir(productPath)) {
+        const patientPath = `${productPath}/${patient}`;
+        paths.push(patientPath);
+        for (const file of await readDir(patientPath)) paths.push(`${patientPath}/${file}`);
+      }
+    }
+  }
+  process.send({event: 'healthState', visible, paths});
 }
 
 /** Report the mode from the same status file exposed to the native provider. */
@@ -114,6 +158,7 @@ async function probeProjectionImportFilter(audience) {
 async function stop() {
   for (const unsubscribe of cleanup) unsubscribe();
   cleanup = [];
+  await healthReports;
   await runtime?.shutdown();
   runtime = undefined;
 }
@@ -135,6 +180,7 @@ async function command(method, params, id) {
     });
     case 'probeProjectionImportFilter': return await probeProjectionImportFilter(params.audience);
     case 'stored': return await exists(params.hash);
+    case 'watchHealth': watchingHealth = true; return await queueHealthState();
     case 'demand': return await runtime.getCategoryDemandPlan().setCategoryDemand(filesCategory, true);
     case 'demandPictures': return await runtime.getCategoryDemandPlan().setCategoryDemand('tag:category:pictures', true);
     case 'demanded': return await runtime.isFilesCategoryDemanded();

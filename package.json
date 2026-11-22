@@ -22,6 +22,7 @@
     "build:fotos": "pnpm --dir ../one/packages/one.models build:src && pnpm --dir ../one/packages/filer.core build && pnpm --dir ../fotos/fotos.core build && pnpm --dir ../one/packages/glue.core build && pnpm --dir ../one/packages/settings.core build && pnpm --dir ../one/packages/qa.protocol build && pnpm --dir ../one/packages/tag.core build && pnpm --dir ../one/packages/discovery.core build && pnpm --dir ../one/packages/refinio.api build && pnpm --dir ../one/packages/refinio.api build:filer",
     "build:harness": "pnpm build:models && pnpm --dir ../one/packages/matching.core build && pnpm --dir ../one/packages/trust.abac build",
     "test:integration:files": "pnpm build:models && node scripts/integration/test-files-chum.mjs",
+    "test:integration:health": "pnpm build:models && pnpm --dir ../one/packages/trust.abac build && pnpm --dir ../one.edda/packages/edda.core build && node scripts/integration/test-health-chum.mjs",
     "test:integration:vger": "pnpm build:models && node scripts/integration/test-vger-integration.mjs",
     "test:integration:akte": "pnpm build:models && pnpm --dir ../akte --filter @akte/app build && node scripts/integration/test-akte-integration.mjs",
     "test:integration:fotos": "pnpm build:models && node scripts/integration/test-fotos-integration.mjs",
