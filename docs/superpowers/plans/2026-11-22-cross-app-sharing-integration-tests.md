@@ -197,6 +197,10 @@ Tests VGER as both a **peer sharer** and an **IoM management hub** for Filer:
 Tests Fotos photo libraries, media originals, EXIF/GPS/face metadata, and
 multi-view projections under `/Bilder/` (and `/Fotos/` during migration):
 
+- The first live suite uses the existing `/Fotos` mount. It verifies
+  accepted-cut views, approved bindings, exact original BLOB hydration, and
+  an explicit copy into the local `/Files` root across retirement and restart.
+
 - **Datatypes:**
   - `FotosEntry`, `FotosMediaVariant`, original JPEG/PNG `BLOB`s (reusing real
     EXIF JPEG fixtures from `test-fotos-integration.mjs` / `fotos.core`).

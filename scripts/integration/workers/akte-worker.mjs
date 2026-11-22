@@ -1,10 +1,7 @@
 import '@refinio/one.core/lib/system/load-nodejs.js';
 import {FilerRuntime} from '@refinio/api/filer';
-import {createAccess} from '@refinio/one.core/lib/access.js';
 import {getInstanceIdHash, getInstanceOwnerIdHash} from '@refinio/one.core/lib/instance.js';
-import {getDefaultKeys} from '@refinio/one.core/lib/keychain/keychain.js';
 import {readBlobAsArrayBuffer, storeArrayBufferAsBlob} from '@refinio/one.core/lib/storage-blob.js';
-import {getStorageConsumerActionReceipt} from '@refinio/one.core/lib/storage-consumer-actions.js';
 import {getObject, storeUnversionedObject} from '@refinio/one.core/lib/storage-unversioned-objects.js';
 import {storeVersionedObject} from '@refinio/one.core/lib/storage-versioned-objects.js';
 import {calculateIdHashOfObj} from '@refinio/one.core/lib/util/object.js';
@@ -12,23 +9,21 @@ import {readFile} from 'node:fs/promises';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {join} from 'node:path';
 import {getOneWorkspaceDir} from '../../../test-support/one-workspace-paths.js';
+import {createHeldReleasePlan} from '../held-release.mjs';
 
 const one = getOneWorkspaceDir(fileURLToPath(new URL('.', import.meta.url)));
 const manifest = new URL('../../../../akte/packages/akte.app/package.json', import.meta.url);
 const akte = JSON.parse(await readFile(manifest, 'utf8'));
-const [intake, {publishAkteCaseShare}, {AkteDokumentRecipes}, {SourceCoreRecipes, SourceCoreReverseMaps},
-  {AssemblyReleasePlan}] = await Promise.all([
+const [intake, {publishAkteCaseShare}, {AkteDokumentRecipes}, {SourceCoreRecipes, SourceCoreReverseMaps}] = await Promise.all([
   import(new URL(akte.exports['./document-intake'].import, manifest).href),
   import(new URL(akte.exports['./document-case-share'].import, manifest).href),
   import(new URL('../akte.dokument/dist/recipes.js', manifest).href),
-  import(pathToFileURL(join(one, 'packages/source.core/dist/index.js')).href),
-  import(pathToFileURL(join(one, 'packages/assembly.core/dist/index.js')).href)
+  import(pathToFileURL(join(one, 'packages/source.core/dist/index.js')).href)
 ]);
 let runtime;
 let source;
 let deferred;
 let cleanup = [];
-const grants = new Map();
 
 /** Use shared production CHUM hosting; Akte owns intake and case publication. */
 async function start(config) {
@@ -59,26 +54,6 @@ async function admit({content, ...metadata}) {
     async storeBlob(bytes) { return (await storeArrayBufferAsBlob(bytes.slice().buffer)).hash; }
   }, {...metadata, bytes: Uint8Array.from(Buffer.from(content, 'base64'))});
   return {...result, record: await getObject(result.documentRef)};
-}
-
-/** Withhold a cut grant while publishing the real causal selection head. */
-function deferredReleases() {
-  return deferred ??= new AssemblyReleasePlan({
-    assemblyPlan: runtime.getAssemblyPlan(),
-    async getAuthoringContext() {
-      const signer = getInstanceOwnerIdHash();
-      const {hash: writerPolicy} = await storeUnversionedObject({$type$: 'WriterPolicy', writers: new Set([signer])});
-      return {signer, writerPolicy, signingKeys: await getDefaultKeys(signer), authoredAt: Date.now()};
-    },
-    async publishExactAccess(requests) {
-      const withdrawals = [];
-      for (const request of requests) {
-        if (request.person.length) grants.set(request.object, request);
-        else withdrawals.push(request);
-      }
-      if (withdrawals.length) await createAccess(withdrawals);
-    }
-  });
 }
 
 /** Read only the verified, currently active, exact inbound release into intake. */
@@ -134,19 +109,13 @@ async function command(method, params) {
       owner: params.owner ?? getInstanceOwnerIdHash()});
     case 'publishCase':
     case 'publishHeadFirst': {
-      const releases = method === 'publishHeadFirst' ? deferredReleases() : runtime.getAssemblyReleasePlan();
+      const releases = method === 'publishHeadFirst' ? (deferred ??= createHeldReleasePlan(runtime)).releases : runtime.getAssemblyReleasePlan();
       const {assemblyHash, cutHash} = await publishAkteCaseShare({...params, releases, source,
         owner: getInstanceOwnerIdHash()});
       return {assemblyHash, cutHash};
     }
-    case 'deliverHeldCut': {
-      const request = grants.get(params.hash);
-      if (!request) throw new Error('No held cut grant');
-      await getStorageConsumerActionReceipt(await createAccess([request]));
-      grants.delete(params.hash);
-      return;
-    }
-    case 'retire': return (deferred ?? runtime.getAssemblyReleasePlan()).retireGraphReleaseSelection({
+    case 'deliverHeldCut': return deferred.deliver(params.hash);
+    case 'retire': return (deferred?.releases ?? runtime.getAssemblyReleasePlan()).retireGraphReleaseSelection({
       source, audience: {type: 'person', id: params.audience}, selection: params.selection});
     default: throw new Error(`Unknown Akte worker command: ${method}`);
   }

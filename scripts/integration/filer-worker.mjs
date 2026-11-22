@@ -1,13 +1,10 @@
 import '@refinio/one.core/lib/system/load-nodejs.js';
 import {createFileProviderOperations, FILER_SETTINGS_MOUNT, FilerRuntime} from '@refinio/api/filer';
-import {createAccess} from '@refinio/one.core/lib/access.js';
 import {isChumRootDeclined} from '@refinio/one.core/lib/chum-base.js';
 import {getInstanceIdHash, getInstanceOwnerIdHash} from '@refinio/one.core/lib/instance.js';
 import {getChumSyncDiagnostics, getChumSyncRootMetrics} from '@refinio/one.core/lib/chum-sync.js';
-import {getDefaultKeys} from '@refinio/one.core/lib/keychain/keychain.js';
 import {storeArrayBufferAsBlob} from '@refinio/one.core/lib/storage-blob.js';
 import {SET_ACCESS_MODE} from '@refinio/one.core/lib/storage-base-common.js';
-import {getStorageConsumerActionReceipt} from '@refinio/one.core/lib/storage-consumer-actions.js';
 import {getObject, storeUnversionedObject} from '@refinio/one.core/lib/storage-unversioned-objects.js';
 import {storeVersionedObject} from '@refinio/one.core/lib/storage-versioned-objects.js';
 import {exists} from '@refinio/one.core/lib/system/storage-base.js';
@@ -15,21 +12,18 @@ import {calculateIdHashOfObj} from '@refinio/one.core/lib/util/object.js';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {join} from 'node:path';
 import {getExistingPath, getOneWorkspaceDir} from '../../test-support/one-workspace-paths.js';
+import {createHeldReleasePlan, deliverGrant} from './held-release.mjs';
 
 const one = getOneWorkspaceDir(fileURLToPath(new URL('.', import.meta.url)));
-const [filerCore, {AssemblyReleasePlan}] = await Promise.all(
-  ['filer.core', 'assembly.core'].map(name => import(pathToFileURL(getExistingPath(
-    [join(one, 'packages', name, 'dist/index.js')], `built ${name} module`
-  )).href))
-);
-const {FilerSnapshotStore, publishFilerShareCut, SHARES_PROJECTION_NAMESPACE} = filerCore;
+const {FilerSnapshotStore, publishFilerShareCut, SHARES_PROJECTION_NAMESPACE} =
+  await import(pathToFileURL(getExistingPath([join(one, 'packages/filer.core/dist/index.js')],
+    'built filer.core module')).href);
 const filesCategory = 'tag:category:files';
 const statusDirectory = `${FILER_SETTINGS_MOUNT}/Filer`;
-const heldGrants = new Map();
 let runtime;
 let operations;
 let source;
-let deferredReleases;
+let deferred;
 let cleanup = [];
 
 /** Attach read-only evidence listeners to the actual runtime owners. */
@@ -39,11 +33,13 @@ async function start(config) {
   operations = createFileProviderOperations(runtime);
   const owner = getInstanceOwnerIdHash();
   const shares = runtime.getAcceptedSharesProjection();
+  const pictures = runtime.getAcceptedPictureSharesProjection();
   source = await calculateIdHashOfObj({$type$: 'FilerFilesRoot', owner});
   cleanup = [
     runtime.onPublishedFilesChanged(containers => {
       const settingsChanged = containers.includes(statusDirectory);
-      process.send({event: 'changed', containers, pendingFiles: settingsChanged && shares.hasPendingArrivals()});
+      process.send({event: 'changed', containers, pendingFiles: settingsChanged && shares.hasPendingArrivals(),
+        pendingPictures: settingsChanged && pictures.hasPendingArrivals()});
       if (settingsChanged) void reportFilesMode();
     }),
     runtime.getConnectionsModel().pairing.onPairingSuccessCommitted.listen(
@@ -71,26 +67,6 @@ async function reportFilesMode() {
   process.send({event: 'filesMode', mode: files.mode, visible: files.visible});
 }
 
-/** Author normal signed releases while withholding only grants for the cut under test. */
-function deferredReleasePlan() {
-  const signer = getInstanceOwnerIdHash();
-  return new AssemblyReleasePlan({
-    assemblyPlan: runtime.getAssemblyPlan(),
-    async getAuthoringContext() {
-      const {hash: writerPolicy} = await storeUnversionedObject({$type$: 'WriterPolicy', writers: new Set([signer])});
-      return {signer, writerPolicy, signingKeys: await getDefaultKeys(signer), authoredAt: Date.now()};
-    },
-    async publishExactAccess(requests) {
-      const withdrawals = [];
-      for (const request of requests) {
-        if (request.person.length > 0) heldGrants.set(request.object, request);
-        else withdrawals.push(request);
-      }
-      if (withdrawals.length > 0) await createAccess(withdrawals);
-    }
-  });
-}
-
 /** Publish real immutable entry versions and their signed Person-audience selection. */
 async function publish({audience, selection, label, files}, deferCut = false) {
   const entries = [];
@@ -102,26 +78,12 @@ async function publish({audience, selection, label, files}, deferCut = false) {
     entries.push(entry.hash);
   }
   const releases = deferCut
-    ? (deferredReleases ??= deferredReleasePlan())
+    ? (deferred ??= createHeldReleasePlan(runtime)).releases
     : runtime.getAssemblyReleasePlan();
   const {assemblyHash, cutHash} = await publishFilerShareCut({
     releases, source, audience, selection, label, entries
   });
   return {assemblyHash, cutHash};
-}
-
-/** Await the peer's settlement of one exact access grant on its live CHUM lane. */
-async function deliver(request) {
-  const access = await createAccess([request]);
-  await getStorageConsumerActionReceipt(access);
-}
-
-/** Deliver the original exact grant at the point chosen by the driver. */
-async function deliverHeldCut(hash) {
-  const request = heldGrants.get(hash);
-  if (!request) throw new Error(`No held grant for cut ${hash}`);
-  await deliver(request);
-  heldGrants.delete(hash);
 }
 
 /** Offer separately authorized, valid projection fixtures claiming the recipient's ownership. */
@@ -138,7 +100,7 @@ async function probeProjectionImportFilter(audience) {
   const fixtures = {FilerProjectionHead: head, FilerSnapshot: snapshot, FilerDelta: delta, FilerItem: item};
   for (const [type, object] of Object.entries(fixtures)) {
     try {
-      await deliver({object, person: [audience], mode: SET_ACCESS_MODE.ADD});
+      await deliverGrant({object, person: [audience], mode: SET_ACCESS_MODE.ADD});
     } catch (error) {
       if (isChumRootDeclined(error)) continue;
       throw error;
@@ -167,13 +129,14 @@ async function command(method, params, id) {
     case 'publishWeights': return await runtime.getModelWeightsPlan().publish(params);
     case 'publish': return await publish(params);
     case 'publishHeadFirst': return await publish(params, true);
-    case 'deliverHeldCut': return await deliverHeldCut(params.hash);
-    case 'deliverUnacceptedCut': return await deliver({
+    case 'deliverHeldCut': return await deferred.deliver(params.hash);
+    case 'deliverUnacceptedCut': return await deliverGrant({
       object: params.hash, person: [params.audience], mode: SET_ACCESS_MODE.ADD
     });
     case 'probeProjectionImportFilter': return await probeProjectionImportFilter(params.audience);
     case 'stored': return await exists(params.hash);
     case 'demand': return await runtime.getCategoryDemandPlan().setCategoryDemand(filesCategory, true);
+    case 'demandPictures': return await runtime.getCategoryDemandPlan().setCategoryDemand('tag:category:pictures', true);
     case 'demanded': return await runtime.isFilesCategoryDemanded();
     case 'snapshot': return runtime.getAcceptedSharesProjection().committedSnapshot();
     case 'diagnostics': {
@@ -181,7 +144,7 @@ async function command(method, params, id) {
       return {trace: traceEvents.filter(event => /failed|failure|error|exact-root/.test(event.event)).slice(-12),
         failures: getChumSyncRootMetrics({sinceEpochMs: 0}).serviceFailures.slice(-3)};
     }
-    case 'retire': return await (deferredReleases ?? runtime.getAssemblyReleasePlan()).retireGraphReleaseSelection({
+    case 'retire': return await (deferred?.releases ?? runtime.getAssemblyReleasePlan()).retireGraphReleaseSelection({
       source, audience: {type: 'person', id: params.audience}, selection: params.selection
     });
     case 'rpc': {
