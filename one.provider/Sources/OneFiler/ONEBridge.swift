@@ -1,5 +1,6 @@
 import Foundation
 import FileProvider
+import OneFilerCore
 import os.log
 
 // MARK: - Data Types
@@ -9,70 +10,8 @@ public struct ONEInstanceConfig {
     public init(name: String) { self.name = name }
 }
 
-public struct ONEObject {
-    public let id: String
-    public let name: String
-    public let type: ObjectType
-    public var path: String?
-    public var size: Int = 0
-    public var modified: Date? = Date()
-    public var created: Date?
-    public var accessed: Date?
-    public var parentId: String?
-    public var contentHash: String = ""
-    public var metadataHash: String = ""
-    public var sha256Hash: String?
-    public var typeId: String?
-    public var mimeType: String?
-    public var thumbnail: Data?
-    public var canAddChildren: Bool = false
-    public var permissions: Set<Permission> = [.read]
-    public var downloadOnDemand: Bool = false
-
-    public var fileExtension: String? {
-        guard type == .file else { return nil }
-        let components = name.split(separator: ".")
-        guard components.count > 1 else { return nil }
-        return String(components.last!)
-    }
-
-    public init(id: String, name: String, type: ObjectType, size: Int = 0, modified: Date? = Date(), parentId: String? = nil) {
-        self.id = id
-        self.name = name
-        self.type = type
-        self.size = size
-        self.modified = modified
-        self.parentId = parentId
-    }
-
-    public enum ObjectType {
-        case file
-        case folder
-    }
-
-    public enum Permission {
-        case read
-        case write
-        case delete
-    }
-}
-
-public struct ONEChanges {
-    public let updated: [ONEObject]
-    public let deleted: [String]
-    public let newAnchor: Data
-    public let moreComing: Bool
-
-    public init(updated: [ONEObject] = [], deleted: [String] = [], newAnchor: Data = Data(), moreComing: Bool = false) {
-        self.updated = updated
-        self.deleted = deleted
-        self.newAnchor = newAnchor
-        self.moreComing = moreComing
-    }
-}
-
 /// Thin authenticated RPC client for the refinio.api-owned filesystem.
-public actor ONEBridge {
+public actor ONEBridge: FilerBackend {
 
     private let config: ONEInstanceConfig
     private let logger = Logger(subsystem: "one.filer", category: "ONEBridge")
@@ -153,6 +92,10 @@ public actor ONEBridge {
     }
 
     // MARK: - Public API
+
+    public func getItem(id: String) async throws -> ONEObject {
+        try await getObject(id: id)
+    }
 
     public func getObject(id: String) async throws -> ONEObject {
         if id.hasPrefix("filer:") {
@@ -276,6 +219,13 @@ public actor ONEBridge {
     }
 
     /// Hydrate directly to disk without retaining a model-sized RPC response in memory.
+    public func fetchFileURL(for item: ONEObject, progress: Progress) async throws -> URL {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension(item.fileExtension ?? "dat")
+        try await copyContent(id: item.id, to: url, size: item.size, progress: progress, version: item.contentHash)
+        return url
+    }
+
     public func copyContent(id: String, to destination: URL, size: Int, progress: Progress, version: String? = nil) async throws {
         let item = id.hasPrefix("filer:") ? try await getObject(id: id) : nil
         if let item, item.contentHash != version || item.size != size {

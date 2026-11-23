@@ -1,4 +1,5 @@
 import XCTest
+import OneFilerCore
 @testable import OneFilerExtension
 
 final class FotosBridgeTests: XCTestCase {

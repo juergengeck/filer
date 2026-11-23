@@ -12,12 +12,12 @@ let package = Package(
             name: "OneFilerExtension",
             targets: ["OneFilerExtension"])
     ],
-    dependencies: [],
+    dependencies: [.package(path: "../../one/packages/filer.swift")],
     targets: [
         .target(name: "OneFilerShared", path: "Sources/OneFilerShared"),        // File Provider extension library
         .target(
             name: "OneFilerExtension",
-            dependencies: ["OneFilerShared"],
+            dependencies: ["OneFilerShared", .product(name: "OneFilerCore", package: "filer.swift")],
             path: "Sources/OneFiler"
         ),
 
@@ -31,7 +31,10 @@ let package = Package(
         ),
         .testTarget(
             name: "OneFilerTests",
-            dependencies: ["OneFilerExtension", "OneFilerHostSupport"],
+            dependencies: [
+                "OneFilerExtension", "OneFilerHostSupport",
+                .product(name: "OneFilerCore", package: "filer.swift")
+            ],
             path: "Tests/OneFilerTests"
         )
     ]

@@ -1,5 +1,6 @@
 import XCTest
 import FileProvider
+import OneFilerCore
 @testable import OneFilerExtension
 
 private final class ChangeObserver: NSObject, NSFileProviderChangeObserver {
@@ -177,7 +178,7 @@ final class FileProviderChangesTests: XCTestCase {
             XCTAssertEqual(params["path"] as? String, "/contacts")
             return ["item": row]
         }
-        let enumerator = FilerEnumerator(container: "root", bridge: { client })
+        let enumerator = FilerEnumerator(container: "root", backend: { client })
         defer { enumerator.invalidate() }
         let listed = expectation(description: "root listed")
         let observer = ItemObserver(listed)
@@ -198,7 +199,7 @@ final class FileProviderChangesTests: XCTestCase {
             XCTAssertEqual(params["since"] as? String, "source-anchor")
             return ["updated": [], "deleted": [], "newAnchor": "source-next", "moreComing": false]
         }
-        let enumerator = FilerEnumerator(container: "root", bridge: { client })
+        let enumerator = FilerEnumerator(container: "root", backend: { client })
         defer { enumerator.invalidate() }
         for old in ["source-anchor", "filer-folders-v1:fr:source-anchor"] {
             let finished = expectation(description: "expired")
@@ -238,7 +239,7 @@ final class FileProviderChangesTests: XCTestCase {
             default: throw ONEBridgeError.invalidResponse
             }
         }
-        let enumerator = FilerEnumerator(container: parentID, bridge: { client })
+        let enumerator = FilerEnumerator(container: parentID, backend: { client })
         defer { enumerator.invalidate() }
         let listed = expectation(description: "listed")
         let items = ItemObserver(listed)

@@ -1,5 +1,6 @@
 import XCTest
 import FileProvider
+import OneFilerCore
 @testable import OneFilerExtension
 @testable import OneFilerHostSupport
 
@@ -75,8 +76,13 @@ final class ONEBridgeRpcTests: XCTestCase {
         let bridge = try ONEBridge(config: ONEInstanceConfig(name: "RPC Integration"),
             invoke: { try await pool.perform(domain: "RPC Integration", request: $0) }, close: {})
         try await bridge.connect()
-        let initialSettings = try await bridge.getObject(id: "/ONE/System/settings/Filer/folders.json")
+        let backend: any FilerBackend = bridge
+        let initialSettings = try await backend.getItem(id: "/ONE/System/settings/Filer/folders.json")
         XCTAssertTrue(FileProviderItem(oneObject: initialSettings).capabilities.contains(.allowsWriting))
+        let staged = try await backend.fetchFileURL(for: initialSettings, progress: Progress(totalUnitCount: 100))
+        defer { try? FileManager.default.removeItem(at: staged) }
+        let expectedContent = try await bridge.readContent(id: initialSettings.id)
+        XCTAssertEqual(try Data(contentsOf: staged), expectedContent)
         try await bridge.deleteObject(id: "/Files")
         let rootWithoutFiles = try await bridge.getChildren(parentId: "/")
         XCTAssertFalse(rootWithoutFiles.contains { $0.name == "Files" })
