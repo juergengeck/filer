@@ -10,6 +10,21 @@ public struct ONEInstanceConfig {
     public init(name: String) { self.name = name }
 }
 
+/// Finder custom actions declared in ExtensionInfo.plist (`NSExtensionFileProviderActions`).
+public enum FilerDeviceAction: String {
+    case mount = "one.filer.action.device.mount"
+    case unmount = "one.filer.action.device.unmount"
+}
+
+/// Native badge identifiers declared in ExtensionInfo.plist (`NSFileProviderDecorations`).
+public enum FilerDeviceDecoration: String, CaseIterable {
+    case mounted = "one.filer.decoration.device.mounted"
+    case mounting = "one.filer.decoration.device.mounting"
+    case available = "one.filer.decoration.device.available"
+    case offline = "one.filer.decoration.device.offline"
+    case denied = "one.filer.decoration.device.denied"
+}
+
 /// Thin authenticated RPC client for the refinio.api-owned filesystem.
 public actor ONEBridge: FilerBackend {
 
@@ -153,6 +168,7 @@ public actor ONEBridge: FilerBackend {
         obj.metadataHash = result["metadataHash"] as? String ?? ""
         obj.downloadOnDemand = result["downloadOnDemand"] as? Bool ?? false
         obj.mimeType = result["mimeType"] as? String
+        try Self.decodePresentation(result, into: &obj)
 
         // Set current date as modification/creation date (IFileSystem doesn't provide dates)
         let now = Date()
@@ -362,7 +378,18 @@ public actor ONEBridge: FilerBackend {
             guard let canDelete = capability as? Bool else { throw ONEBridgeError.invalidResponse }
             if canDelete { object.permissions.insert(.delete) }
         }
+        try Self.decodePresentation(item, into: &object)
         return object
+    }
+
+    /// Dispatch a Finder custom action to the runtime's `filer:performAction` handler.
+    /// Opaque identities resolve through their object; legacy paths pass through.
+    public func performAction(identifier: String, itemIdentifiers: [String]) async throws {
+        guard !identifier.isEmpty, !itemIdentifiers.isEmpty else { throw ONEBridgeError.invalidResponse }
+        for itemIdentifier in itemIdentifiers {
+            let path = try await resolvePath(itemIdentifier)
+            _ = try await sendRequest(method: "performAction", params: ["actionId": identifier, "id": path])
+        }
     }
 
     private func optionalCanonicalPath(_ value: Any?) throws -> String? {
@@ -380,6 +407,19 @@ public actor ONEBridge: FilerBackend {
             throw ONEBridgeError.invalidResponse
         }
         return path
+    }
+
+    /// File Provider presentation travels on both item payloads and stat results;
+    /// decode it in one place so direct lookups and enumeration agree.
+    static func decodePresentation(_ item: [String: Any], into object: inout ONEObject) throws {
+        if let presentation = item["userInfo"] {
+            guard let userInfo = presentation as? [String: String] else { throw ONEBridgeError.invalidResponse }
+            object.userInfo = userInfo
+        }
+        if let presentation = item["decorations"] {
+            guard let decorations = presentation as? [String] else { throw ONEBridgeError.invalidResponse }
+            object.decorationIdentifiers = decorations
+        }
     }
 
     /// Persistent identities are resolved by the owner; legacy addresses remain explicit paths.

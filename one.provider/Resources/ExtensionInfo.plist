@@ -50,6 +50,68 @@
 		<string>com.apple.fileprovider-nonui</string>
 		<key>NSExtensionPrincipalClass</key>
 		<string>FileProviderExtension</string>
+		<key>NSExtensionFileProviderActions</key>
+		<array>
+			<dict>
+				<key>NSExtensionFileProviderActionIdentifier</key>
+				<string>one.filer.action.device.mount</string>
+				<key>NSExtensionFileProviderActionTitle</key>
+				<string>Mount Device</string>
+				<key>NSExtensionFileProviderActionActivationRule</key>
+				<string>SUBQUERY(fileproviderItems, $item, $item.userInfo.mountState == 'available').@count == fileproviderItems.@count AND fileproviderItems.@count &gt; 0</string>
+			</dict>
+			<dict>
+				<key>NSExtensionFileProviderActionIdentifier</key>
+				<string>one.filer.action.device.unmount</string>
+				<key>NSExtensionFileProviderActionTitle</key>
+				<string>Unmount Device</string>
+				<key>NSExtensionFileProviderActionActivationRule</key>
+				<string>SUBQUERY(fileproviderItems, $item, $item.userInfo.mountState == 'mounted' OR $item.userInfo.mountState == 'mounting').@count == fileproviderItems.@count AND fileproviderItems.@count &gt; 0</string>
+			</dict>
+		</array>
+		<key>NSFileProviderDecorations</key>
+		<array>
+			<dict>
+				<key>Identifier</key>
+				<string>one.filer.decoration.device.mounted</string>
+				<key>Label</key>
+				<string>Mounted</string>
+				<key>Category</key>
+				<string>Sharing</string>
+			</dict>
+			<dict>
+				<key>Identifier</key>
+				<string>one.filer.decoration.device.mounting</string>
+				<key>Label</key>
+				<string>Mounting…</string>
+				<key>Category</key>
+				<string>Sharing</string>
+			</dict>
+			<dict>
+				<key>Identifier</key>
+				<string>one.filer.decoration.device.available</string>
+				<key>Label</key>
+				<string>Available</string>
+				<key>Category</key>
+				<string>Sharing</string>
+			</dict>
+			<dict>
+				<key>Identifier</key>
+				<string>one.filer.decoration.device.offline</string>
+				<key>Label</key>
+				<string>Offline</string>
+				<key>Category</key>
+				<string>Sharing</string>
+			</dict>
+			<dict>
+				<key>Identifier</key>
+				<string>one.filer.decoration.device.denied</string>
+				<key>Label</key>
+				<string>Denied</string>
+				<key>Category</key>
+				<string>Sharing</string>
+			</dict>
+		</array>
 	</dict>
 </dict>
 </plist>

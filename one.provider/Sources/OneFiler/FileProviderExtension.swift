@@ -5,7 +5,7 @@ import os.log
 
 @available(macOS 11.0, *)
 @objc(FileProviderExtension)
-class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension {
+class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension, NSFileProviderCustomAction {
 
     private struct BridgeSetupContext: Sendable {
         let domainDisplayName: String
@@ -299,6 +299,51 @@ class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension {
                 completionHandler(error)
             }
         }
+
+        return progress
+    }
+
+    // MARK: - Custom Actions
+
+    func performAction(
+        identifier actionIdentifier: NSFileProviderExtensionActionIdentifier,
+        onItemsWithIdentifiers itemIdentifiers: [NSFileProviderItemIdentifier],
+        completionHandler: @escaping (Error?) -> Void
+    ) -> Progress {
+        let progress = Progress(totalUnitCount: 1)
+
+        let task = Task {
+            do {
+                let bridge = try await bridgeManager.getBridge()
+                try Task.checkCancellation()
+                try await bridge.performAction(
+                    identifier: actionIdentifier.rawValue,
+                    itemIdentifiers: itemIdentifiers.map(\.rawValue)
+                )
+                // Mount state changed server-side; ask Finder to re-enumerate
+                // the working set and each acted item so an open window,
+                // badges, and action availability update together.
+                if let manager = NSFileProviderManager(for: self.domain) {
+                    manager.signalEnumerator(for: .workingSet) { _ in
+                        for acted in itemIdentifiers {
+                            manager.signalEnumerator(for: acted) { _ in }
+                        }
+                        completionHandler(nil)
+                        progress.completedUnitCount = 1
+                    }
+                } else {
+                    logger.error("performAction: no FileProviderManager for domain, skipping re-enumeration")
+                    completionHandler(nil)
+                    progress.completedUnitCount = 1
+                }
+            } catch is CancellationError {
+                completionHandler(CocoaError(.userCancelled))
+            } catch {
+                logger.error("performAction \(actionIdentifier.rawValue) failed: \(error.localizedDescription)")
+                completionHandler(error)
+            }
+        }
+        progress.cancellationHandler = { task.cancel() }
 
         return progress
     }
