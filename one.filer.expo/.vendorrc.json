@@ -1,0 +1,85 @@
+{
+  "packages": [
+    {
+      "name": "@refinio/assembly.core",
+      "path": "../../one/packages/assembly.core"
+    },
+    {
+      "name": "@refinio/connection.core",
+      "path": "../../one/packages/connection.core"
+    },
+    {
+      "name": "@refinio/device.core",
+      "path": "../../one/packages/device.core"
+    },
+    {
+      "name": "@refinio/filer.core",
+      "path": "../../one/packages/filer.core"
+    },
+    {
+      "name": "@refinio/filer.expo",
+      "path": "../../one/packages/filer.expo"
+    },
+    {
+      "name": "@glueone/glue.core",
+      "path": "../../one/packages/glue.core"
+    },
+    {
+      "name": "@refinio/matching.core",
+      "path": "../../one/packages/matching.core"
+    },
+    {
+      "name": "@refinio/meaning.core",
+      "path": "../../one/packages/meaning.core"
+    },
+    {
+      "name": "@refinio/one.core",
+      "path": "../../one/packages/one.core"
+    },
+    {
+      "name": "@refinio/one.core-expo",
+      "path": "../../one/packages/one.core-expo"
+    },
+    {
+      "name": "@refinio/one.models",
+      "path": "../../one/packages/one.models"
+    },
+    {
+      "name": "@refinio/settings.core",
+      "path": "../../one/packages/settings.core"
+    },
+    {
+      "name": "@refinio/settings.devices",
+      "path": "../../one/packages/settings.devices"
+    },
+    {
+      "name": "@refinio/sync.core",
+      "path": "../../one/packages/sync.core"
+    },
+    {
+      "name": "@refinio/transport.core",
+      "path": "../../one/packages/transport.core"
+    },
+    {
+      "name": "@refinio/trie.core",
+      "path": "../../one/packages/trie.core"
+    },
+    {
+      "name": "@refinio/trust.core",
+      "path": "../../one/packages/trust.core"
+    },
+    {
+      "name": "@refinio/cube.core",
+      "path": "../../one/packages/cube.core"
+    },
+    {
+      "name": "@refinio/group.core",
+      "path": "../../one/packages/group.core"
+    },
+    {
+      "name": "@refinio/space.core",
+      "path": "../../one/packages/space.core"
+    }
+  ],
+  "transitivePackages": []
+}

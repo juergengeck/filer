@@ -1,0 +1,72 @@
+{
+  "expo": {
+    "name": "ONE Filer",
+    "slug": "one-filer",
+    "scheme": "onefiler",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "one.filer",
+      "appleTeamId": "26W8AC52QS",
+      "buildNumber": "2026112301",
+      "infoPlist": {
+        "NSBonjourServices": [
+          "_one-refinio._udp"
+        ],
+        "NSLocalNetworkUsageDescription": "ONE Filer uses the local network to discover trusted devices for secure peer-to-peer file sync.",
+        "ITSAppUsesNonExemptEncryption": false,
+        "LSApplicationQueriesSchemes": [
+          "shareddocuments"
+        ]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "package": "one.filer.android",
+      "permissions": [
+        "android.permission.CHANGE_WIFI_MULTICAST_STATE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#000000"
+        }
+      ],
+      "./plugins/withIosSceneLifecycle",
+      [
+        "@refinio/filer.expo",
+        {
+          "appGroupIdentifier": "group.one.filer",
+          "iosExtensionBundleIdentifier": "one.filer.extension",
+          "iosDisplayName": "ONE Filer",
+          "androidAuthority": "one.filer.android.documents"
+        }
+      ],
+      "expo-secure-store",
+      "expo-font"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "one-filer-expo"
+      }
+    }
+  }
+}
