@@ -136,8 +136,9 @@ try {
   await Promise.all(['a.txt', 'b.txt'].map(name => rpc(recipient, 'writeFile', {path: `/Files/Folder/${name}`, content: 'aGVsbG8='})));
   assert.deepEqual((await rpc(recipient, 'readDir', {path: '/Files/Folder'})).children, ['a.txt', 'b.txt']);
   assert.equal((await rpc(recipient, 'stat', {path: '/Files'})).canAddChildren, true);
-  // docs/dynamic-folder-configuration.md: /Fotos appears only once a verified share has content.
-  await assert.rejects(rpc(recipient, 'readDir', {path: '/Fotos'}), /ENOENT/);
+  // Auto mode exposes the owned library before pairing. This instance starts empty.
+  assert.deepEqual((await rpc(recipient, 'readDir', {path: '/Fotos'})).children, []);
+  assert.equal((await rpc(recipient, 'stat', {path: '/Fotos'})).canAddChildren, true);
 
   console.log('2. ONE pairing delivers a signed collection, separate from the sender library');
   const fixture = path.resolve(root, '../fotos/fotos.browser/browser-ui/src/lib/__fixtures__/photos/rose-detail.png');

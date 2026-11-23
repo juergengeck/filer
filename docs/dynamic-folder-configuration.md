@@ -26,13 +26,13 @@ cannot overwrite a newer settings version.
 | Setting | Filesystem path | `auto` rule |
 | --- | --- | --- |
 | `files` | `/Files` | Visible by default |
-| `fotos` | `/Fotos` | Visible when a verified Fotos share has content |
+| `fotos` | `/Fotos` | Visible when the owner's library is available. Incoming collections appear after share verification. |
 | `health.flexibel` | `/Gesundheit/Flexibel` | Visible when a verified Flexibel publication exists |
 
 `visible` forces the projection to mount even when it is empty. `hidden` keeps
-it out of the root regardless of content. Filer derives availability only from
-durable, verified shares and publication roots; a transient network connection
-does not change the filesystem layout.
+it out of the root regardless of content. Filer derives availability from the
+owned library and durable, verified publication roots. A transient network
+connection does not change the filesystem layout.
 
 The parent `/Gesundheit` is a category mount. It appears while Flexibel is
 effective and contains the product-owned `Flexibel` child. Future health products

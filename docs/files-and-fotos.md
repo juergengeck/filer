@@ -8,16 +8,17 @@ The native Filer runtime owns two separate content projections:
   preserved, including non-photo files. Reimporting the same bytes at the same
   path is idempotent. A different file at an occupied path is rejected. Imported
   entries are read-only; directory capabilities permit adding children.
-- `/Fotos` lists **collections shared from fotos.one**. It does not create or
-  expose a local Fotos library, gallery-wide share, or person scope. Each
-  collection folder is addressed by its scope ID and issuer, keeping different
-  senders' collections separate. Folder contents follow the sender's current
-  `FotosShareManifest` and explicit original BLOB variants.
+- `/Fotos` combines the signed-in owner's writable Fotos library with read-only
+  collections shared from fotos.one. Each incoming collection folder is
+  addressed by its scope ID and issuer, keeping different senders' collections
+  separate. Incoming contents follow the sender's current `FotosShareManifest`
+  and explicit original BLOB variants.
 
 Use the existing Filer pairing controls to pair Filer with fotos.one, then share
-an individual collection to that Filer identity from fotos.one. Pairing alone
-shares no collection. In the default `auto` mode, `/Fotos` is not mounted until
-a verified shared collection exists. Its visibility can be overridden in
+an individual collection to that Filer identity from fotos.one. A collection
+appears after Filer verifies the share. In the default `auto` mode, `/Fotos`
+opens as soon as the owner's library is available, including an empty library
+before pairing. Its visibility can be overridden in
 `/ONE/System/settings/Filer/folders.json`.
 
 `/Files` is visible by default. Deleting an empty `/Files` folder changes its

@@ -1,15 +1,14 @@
 # Fotos integration
 
-The native app exposes `/Fotos` for collections shared from fotos.one through
-ONE pairing. In the default `auto` mode the mount appears only while at least
-one verified collection exists. It composes the shared collection adapter from
-`fotos.core` into its bundled refinio.api runtime. See [Files and Fotos](files-and-fotos.md)
+The native app exposes the owner's library at `/Fotos` in the default `auto`
+mode. The mount is available before pairing. Incoming read-only collections
+appear after share verification. The bundled refinio.api runtime composes the
+owned and shared adapters from `fotos.core`. See [Files and Fotos](files-and-fotos.md)
 and [Dynamic folder configuration](dynamic-folder-configuration.md).
 
 The HTTP flows below remain external integration fixtures for the original
-writable `/fotos` library adapter. They do not select the native `/Fotos`
-collection mount. The native host owns its instance over private IPC and does
-not accept an endpoint or token when registering a domain.
+writable `/fotos` library adapter. The native host owns the `/Fotos` instance
+over private IPC and registers the domain with that instance.
 
 Run from the Filer workspace:
 
