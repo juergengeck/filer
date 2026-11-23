@@ -5,10 +5,10 @@ import {storeVersionedObject, getObjectByIdHash} from '@refinio/one.core/lib/sto
 import {getObject} from '@refinio/one.core/lib/storage-unversioned-objects.js';
 import {readBlobAsArrayBuffer} from '@refinio/one.core/lib/storage-blob.js';
 import {createAccess} from '@refinio/one.core/lib/access.js';
-import {isAccessibleBy, isIdAccessibleBy, isIdGrantedBy} from '@refinio/one.core/lib/accessManager.js';
+import {getAccessibleRootsForSeed, isAccessibleBy, isIdAccessibleBy, isIdGrantedBy} from '@refinio/one.core/lib/accessManager.js';
 import {SET_ACCESS_MODE} from '@refinio/one.core/lib/storage-base-common.js';
 import {calculateIdHashOfObj} from '@refinio/one.core/lib/util/object.js';
-import {determineChildren} from '@refinio/one.core/lib/util/determine-children.js';
+import {determineChildrenFromHash} from '@refinio/one.core/lib/util/determine-children.js';
 import {sign} from '../../one/packages/one.models/lib/misc/Signature.js';
 import {objectEvents} from '../../one/packages/one.models/lib/misc/ObjectEventDispatcher.js';
 import {FotosFileSystem} from '@refinio/fotos.core/filesystem';
@@ -115,9 +115,10 @@ process.on('message', async ({id, method, params = {}}) => {
           isAccessibleBy(params.person, rootResult.obj.entry),
           isAccessibleBy(params.person, entry.blob)
         ]);
+        const idRoots = await getAccessibleRootsForSeed(params.person, {idHash: params.idHash});
         result = {person: params.person, idHash: params.idHash, rootHash: rootResult.hash,
           entryHash: rootResult.obj.entry, blobHash: entry.blob,
-          idGranted, idAccessible, rootAccessible, entryAccessible, blobAccessible,
+          idGranted, idAccessible, rootAccessible, entryAccessible, blobAccessible, idRootCount: idRoots.length,
           observedAt: new Date().toISOString(), durationMs: Number(process.hrtime.bigint() - started) / 1e6};
         break;
       }
@@ -134,7 +135,7 @@ process.on('message', async ({id, method, params = {}}) => {
         const chainId = await calculateIdHashOfObj({$type$: 'FotosShareCertificateChain', id: buildFotosShareCertificateChainId(owner, params.person, scope)});
         await createAccess([{id: manifestId, person: [params.person], mode: SET_ACCESS_MODE.ADD},
           {id: chainId, person: [params.person], mode: SET_ACCESS_MODE.ADD}]);
-        const children = (await Promise.all(params.entries.map(hash => determineChildren(hash)))).flat();
+        const children = (await Promise.all(params.entries.map(hash => determineChildrenFromHash(hash)))).flat();
         const manifest = await storeVersionedObject(createFotosShareManifest({issuer: owner, scope, entries: params.entries, snapshotChildren: children}));
         const certificate = await storeVersionedObject(createActiveFotosShareCertificate({issuer: owner, subject: params.person, scope}));
         const signature = await sign(certificate.hash, owner);

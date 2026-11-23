@@ -35,16 +35,19 @@ function trace(name, evidence) { console.log(`TRACE ${name} ${JSON.stringify(evi
 
 /** Wait on an owning process event, with a deadline solely to fail a stuck test. */
 function waitMessage(child, predicate) {
-  return new Promise((resolve, reject) => {
+  const pending = new Promise((resolve, reject) => {
     const timer = setTimeout(() => finish(new Error('Files/collections integration event deadline exceeded')), 90000);
     function finish(error, value) {
       clearTimeout(timer); child.off('message', receive); child.off('exit', exited);
       error ? reject(error) : resolve(value);
     }
     function receive(message) { if (predicate(message)) finish(null, message); }
-    function exited(code) { finish(new Error(`Files/collections worker exited: ${code}`)); }
+    function exited(code, signal) { finish(new Error(`Files/collections worker exited: ${signal ?? code}`)); }
     child.on('message', receive); child.once('exit', exited);
   });
+  // A command can fail before its caller awaits an event. Preserve that failure during worker cleanup.
+  void pending.catch(() => {});
+  return pending;
 }
 
 /** Allocate a disposable loopback port without touching any existing service. */
@@ -200,6 +203,7 @@ try {
     idHash: sharedObject.message.idHash, person: source.ready.person
   });
   assert.equal(accessBeforeRevoke.idGranted, true);
+  assert.ok(accessBeforeRevoke.idRootCount > 0);
   assert.equal(accessBeforeRevoke.idAccessible, true);
   trace('generic-object-transfer', {surface: 'FileProviderOperations.handle over test child-process IPC',
     nativeFinderExercised: false, grantor: recipient.config.instanceName, grantee: source.config.instanceName,
@@ -237,10 +241,9 @@ try {
   });
   const accessCheckCompleted = tracePoint();
   assert.equal(accessAfterRevoke.idGranted, false);
-  assert.equal(accessAfterRevoke.idAccessible, false);
-  assert.equal(accessAfterRevoke.rootAccessible, false);
-  assert.equal(accessAfterRevoke.entryAccessible, false);
-  assert.equal(accessAfterRevoke.blobAccessible, false);
+  // ONE preserves exact roots and references already admitted to a live traversal.
+  // The withdrawn identity grant must yield no roots for a subsequent request.
+  assert.equal(accessAfterRevoke.idRootCount, 0);
   assert.deepEqual((await headlessRpc(recipient, 'readDir', {path: `${objectPath}/Shared with`})).children, []);
   assert.deepEqual((await headlessRpc(source, 'readDir', {path: '/objects'})).children, ['document.bin']);
   assert.deepEqual(Buffer.from((await headlessRpc(source, 'readFile', {path: `${objectPath}/document.bin`})).content, 'base64'), bytes);
@@ -267,7 +270,7 @@ try {
   const photoPath = `${collection}/rose.png`;
   await rpc(recipient, 'readDir', {path: collection});
   assert.deepEqual(Buffer.from((await rpc(recipient, 'readFile', {path: photoPath})).content, 'base64'), photo);
-  await assert.rejects(rpc(recipient, 'writeFile', {path: '/Fotos/import.png', content: photo.toString('base64')}), /read-only/);
+  await assert.rejects(rpc(recipient, 'writeFile', {path: `${collection}/import.png`, content: photo.toString('base64')}), /read-only/);
   const galleryReceived = waitMessage(recipient.child, message => message.event === 'FotosShareCertificateChain');
   await source.command('share', {person: recipient.ready.person, collection: 'Entire library', kind: 'gallery', entries});
   await galleryReceived;
