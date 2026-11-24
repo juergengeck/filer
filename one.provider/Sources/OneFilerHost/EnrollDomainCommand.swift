@@ -68,11 +68,14 @@ enum EnrollDomainCommand {
     static func domainView(name: String, config: LocalDomainConfiguration) -> [String: Any] {
         var view: [String: Any] = [
             "name": name,
+            "displayName": config.resolvedDisplayName(fallback: name),
             "storageId": config.storageId.uuidString,
             "email": config.email,
             "effectiveRelay": config.commServerUrl ?? defaultRelay
         ]
         view["commServerUrl"] = config.commServerUrl ?? NSNull()
+        view["instanceName"] = config.instanceName ?? NSNull()
+        view["glueApiBase"] = config.glueApiBase ?? NSNull()
         return view
     }
 

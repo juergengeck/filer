@@ -2,6 +2,7 @@ import Cocoa
 import FileProvider
 import UniformTypeIdentifiers
 
+@MainActor
 class MenuBarApp: NSObject, NSApplicationDelegate {
 
     private var statusItem: NSStatusItem!
@@ -10,8 +11,13 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
     private var domainManager: DomainManager!
     private let runtimeService = RuntimeService()
     private var pairingDomains = Set<String>()
+    private var isSigningInWithGlue = false
     private var qaProgress: [String: FilerQAProgress] = [:]
     private var runtimeInspection = UUID()
+
+    nonisolated override init() {
+        super.init()
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // No visible menu bar, but the hidden Edit menu is what routes
@@ -20,6 +26,7 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
         do { try runtimeService.start() }
         catch {
             let alert = Self.createAlert(error: error)
+            NSApp.activate(ignoringOtherApps: true)
             alert.runModal()
             NSApplication.shared.terminate(nil)
             return
@@ -87,6 +94,7 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
         panel.message = "Choose the JSON configuration for the Glue registrar and the two Fotos app instances."
         panel.allowedContentTypes = [.json]
         panel.allowsMultipleSelection = false
+        NSApp.activate(ignoringOtherApps: true)
         guard panel.runModal() == .OK, let url = panel.url else { return }
         do {
             let data = try Data(contentsOf: url)
@@ -96,16 +104,16 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
             }
             Task {
                 do { _ = try await runtimeService.qa(domain: domain, method: "runFullProtocol", parameters: parameters) }
-                catch { await MainActor.run { _ = Self.createAlert(error: error).runModal() } }
+                catch { await MainActor.run { self.presentErrorAlert(error) } }
             }
-        } catch { Self.createAlert(error: error).runModal() }
+        } catch { presentErrorAlert(error) }
     }
 
     @objc private func stopIntegration(_ sender: NSMenuItem) {
         guard let domain = sender.representedObject as? String else { return }
         Task {
             do { _ = try await runtimeService.qa(domain: domain, method: "stop") }
-            catch { await MainActor.run { _ = Self.createAlert(error: error).runModal() } }
+            catch { await MainActor.run { self.presentErrorAlert(error) } }
         }
     }
 
@@ -113,7 +121,7 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
         guard let domain = sender.representedObject as? String else { return }
         Task {
             do { _ = try await runtimeService.qa(domain: domain, method: "resume") }
-            catch { await MainActor.run { _ = Self.createAlert(error: error).runModal() } }
+            catch { await MainActor.run { self.presentErrorAlert(error) } }
         }
     }
 
@@ -121,12 +129,13 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
         guard let domain = sender.representedObject as? String else { return }
         let panel = NSSavePanel()
         panel.nameFieldStringValue = "filer-integration-report.json"
+        NSApp.activate(ignoringOtherApps: true)
         guard panel.runModal() == .OK, let url = panel.url else { return }
         Task {
             do {
                 let data = try await runtimeService.qa(domain: domain, method: qaProgress[domain]?.waitingForResume == true ? "getInspectionReport" : "getProtocolReport")
                 try data.write(to: url, options: .atomic)
-            } catch { await MainActor.run { _ = Self.createAlert(error: error).runModal() } }
+            } catch { await MainActor.run { self.presentErrorAlert(error) } }
         }
     }
 
@@ -147,7 +156,11 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
                 noDomainsItem.isEnabled = false
                 menu.addItem(noDomainsItem)
             } else {
-                for (identifier, _) in domains.sorted(by: { $0.key < $1.key }) {
+                for (identifier, config) in domains.sorted(by: {
+                    $0.value.resolvedDisplayName(fallback: $0.key)
+                        .localizedCaseInsensitiveCompare($1.value.resolvedDisplayName(fallback: $1.key)) == .orderedAscending
+                }) {
+                    let displayName = config.resolvedDisplayName(fallback: identifier)
                     let domainMenu = NSMenu()
 
                     // Status
@@ -157,9 +170,24 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
                     statusItem.toolTip = statusMonitor.errorDescription
                     domainMenu.addItem(statusItem)
 
-                    let endpointItem = NSMenuItem(title: "Local ONE runtime", action: nil, keyEquivalent: "")
+                    let identityTitle: String
+                    if config.glueApiBase != nil {
+                        identityTitle = "glue.one: \(config.email)"
+                    } else if config.email.hasSuffix("@filer.local") {
+                        identityTitle = "Local ONE runtime"
+                    } else {
+                        identityTitle = "Identity: \(config.email)"
+                    }
+                    let endpointItem = NSMenuItem(title: identityTitle, action: nil, keyEquivalent: "")
                     endpointItem.isEnabled = false
                     domainMenu.addItem(endpointItem)
+
+                    if let glueApiBase = config.glueApiBase {
+                        let glueSyncItem = NSMenuItem(title: "Sync: glue.one IoM + contacts", action: nil, keyEquivalent: "")
+                        glueSyncItem.isEnabled = false
+                        glueSyncItem.toolTip = glueApiBase
+                        domainMenu.addItem(glueSyncItem)
+                    }
 
                     let pairItem = NSMenuItem(title: pairingDomains.contains(identifier) ? "Pairing…" : "Pair with Another Device…",
                                              action: #selector(pairDomain(_:)), keyEquivalent: "")
@@ -167,6 +195,11 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
                     pairItem.representedObject = identifier
                     pairItem.isEnabled = !pairingDomains.contains(identifier)
                     domainMenu.addItem(pairItem)
+
+                    let renameItem = NSMenuItem(title: "Rename Domain…", action: #selector(renameDomain(_:)), keyEquivalent: "")
+                    renameItem.target = self
+                    renameItem.representedObject = identifier
+                    domainMenu.addItem(renameItem)
 
                     let qaState = qaProgress[identifier]
                     let qaStatus = NSMenuItem(title: "Integration: \(qaState?.status ?? "idle")\(qaState?.currentStep.map { " · \($0.title)" } ?? "")", action: nil, keyEquivalent: "")
@@ -194,8 +227,9 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
                     unregisterItem.target = self
                     domainMenu.addItem(unregisterItem)
 
-                    // Add to main menu
-                    let domainItem = NSMenuItem(title: identifier, action: nil, keyEquivalent: "")
+                    // Add to main menu; representedObject keeps the stable identifier even if displayName changes.
+                    let domainItem = NSMenuItem(title: displayName, action: nil, keyEquivalent: "")
+                    domainItem.representedObject = identifier
                     domainItem.submenu = domainMenu
                     menu.addItem(domainItem)
                 }
@@ -210,15 +244,25 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
+        // Sign in with glue.one
+        let glueSignInItem = NSMenuItem(
+            title: isSigningInWithGlue ? "Signing in with glue.one…" : "Sign in with glue.one…",
+            action: #selector(signInWithGlue),
+            keyEquivalent: ""
+        )
+        glueSignInItem.target = self
+        glueSignInItem.isEnabled = !isSigningInWithGlue
+        menu.addItem(glueSignInItem)
+
         // Register new domain
-        let registerItem = NSMenuItem(title: "Register New Domain...", action: #selector(registerNewDomain), keyEquivalent: "")
+        let registerItem = NSMenuItem(title: "Register New Domain…", action: #selector(registerNewDomain), keyEquivalent: "")
         registerItem.target = self
         menu.addItem(registerItem)
 
         menu.addItem(NSMenuItem.separator())
 
         // Open logs
-        let logsItem = NSMenuItem(title: "Open Logs...", action: #selector(openLogs), keyEquivalent: "")
+        let logsItem = NSMenuItem(title: "Open Logs…", action: #selector(openLogs), keyEquivalent: "")
         logsItem.target = self
         menu.addItem(logsItem)
 
@@ -249,49 +293,122 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
         return alert
     }
 
+    private func presentErrorAlert(_ error: Error) {
+        NSApp.activate(ignoringOtherApps: true)
+        Self.createAlert(error: error).runModal()
+    }
+
+    @objc private func signInWithGlue() {
+        guard !isSigningInWithGlue else { return }
+        let alert = Self.createAlert()
+        alert.messageText = "Sign in with glue.one"
+        alert.informativeText = "Enter your registered glue.one name. You will approve this Mac with your glue.one passkey so your Fotos and Files sync automatically with your other devices."
+        alert.alertStyle = .informational
+
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
+        field.placeholderString = "e.g., \(NSUserName().lowercased())"
+        let hasGlueDomain = (try? domainManager.listDomains().values.contains { $0.glueApiBase != nil }) ?? false
+        if !hasGlueDomain {
+            field.stringValue = NSUserName().lowercased()
+        }
+        alert.accessoryView = field
+        alert.addButton(withTitle: "Continue")
+        alert.addButton(withTitle: "Cancel")
+        alert.layout()
+        alert.window.initialFirstResponder = field
+
+        NSApp.activate(ignoringOtherApps: true)
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+
+        let loginHint = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !loginHint.isEmpty else {
+            presentErrorAlert(GlueEnrollmentError.failed("Enter your glue.one name (for example, gecko)."))
+            return
+        }
+
+        isSigningInWithGlue = true
+        updateMenu()
+
+        let manager = domainManager!
+        Task { @MainActor in
+            defer {
+                self.isSigningInWithGlue = false
+                self.updateMenu()
+            }
+            do {
+                let result = try await GlueEnrollmentSession.signIn(loginHint: loginHint, domainManager: manager)
+                self.updateMenu()
+                let success = Self.createAlert()
+                success.messageText = "Connected to glue.one"
+                success.informativeText = "Registered Finder domain '\(result.normalizedDomainName)' for \(result.email). Your Fotos and Files will sync automatically with your other glue.one devices."
+                NSApp.activate(ignoringOtherApps: true)
+                success.runModal()
+            } catch GlueEnrollmentError.cancelled {
+                // User dismissed the passkey prompt; no error alert needed.
+            } catch {
+                self.presentErrorAlert(error)
+            }
+        }
+    }
+
     @objc private func registerNewDomain() {
         let alert = Self.createAlert()
         alert.messageText = "Register New Domain"
-        alert.informativeText = "Enter domain details:"
+        alert.informativeText = "Create a local ONE instance and make its files available in Finder. Keep OneFiler open while using the drive."
         alert.alertStyle = .informational
 
-        // Create input fields
-        let stackView = NSStackView()
-        stackView.orientation = .vertical
-        stackView.spacing = 8
-        stackView.alignment = .leading
-
-        // Name field
-        let nameLabel = NSTextField(labelWithString: "Domain Name:")
-        let nameField = NSTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
-        nameField.placeholderString = "e.g., MyONE"
-
-        stackView.addArrangedSubview(nameLabel)
-        stackView.addArrangedSubview(nameField)
-        let emailField = NSTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
-        emailField.placeholderString = "Use the same email as Cube for device pairing"
-        stackView.addArrangedSubview(NSTextField(labelWithString: "Identity email (optional):"))
-        stackView.addArrangedSubview(emailField)
-        alert.informativeText = "Create a local ONE instance and make its files available in Finder. Keep OneFiler open while using the drive."
-
-        alert.accessoryView = stackView
-        alert.addButton(withTitle: "Register")
+        let registerButton = alert.addButton(withTitle: "Register")
         alert.addButton(withTitle: "Cancel")
 
-        let response = alert.runModal()
-        if response == .alertFirstButtonReturn {
-            let name = nameField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let suggestedName = (try? domainManager.listDomains().isEmpty) == true ? NSUserName() : ""
+        let form = DomainRegistrationForm(suggestedName: suggestedName)
+        form.attach(to: alert, submitButton: registerButton)
 
-            if !name.isEmpty {
-                do {
-                    let email = emailField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-                    try domainManager.registerDomain(name: name, email: email.isEmpty ? nil : email) { error in
-                        self.showDomainResult(error, success: "Domain '\(name)' registered.")
-                    }
-                } catch {
-                    showDomainResult(error, success: "")
-                }
+        // Activate this LSUIElement host so typing and Cmd+V go straight to the dialog.
+        NSApp.activate(ignoringOtherApps: true)
+        let response = alert.runModal()
+        guard response == .alertFirstButtonReturn else { return }
+
+        let name = form.domainName
+        guard !name.isEmpty else {
+            showDomainResult(PrivateSocket.failure("A domain name is required."), success: "")
+            return
+        }
+
+        do {
+            try domainManager.registerDomain(name: name, displayName: name, email: form.identityEmail) { error in
+                self.showDomainResult(error, success: "Domain '\(name)' registered.")
             }
+        } catch {
+            showDomainResult(error, success: "")
+        }
+    }
+
+    @objc private func renameDomain(_ sender: NSMenuItem) {
+        guard let identifier = sender.representedObject as? String else { return }
+        let currentName = (try? domainManager.getDomainConfig(name: identifier)?.resolvedDisplayName(fallback: identifier)) ?? identifier
+
+        let alert = Self.createAlert()
+        alert.messageText = "Rename Domain"
+        alert.informativeText = "Choose the user-visible name for this domain in Finder and the OneFiler menu bar."
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 320, height: 24))
+        field.stringValue = currentName
+        field.placeholderString = "e.g., \(NSUserName())"
+        alert.accessoryView = field
+        alert.addButton(withTitle: "Rename")
+        alert.addButton(withTitle: "Cancel")
+        alert.layout()
+        alert.window.initialFirstResponder = field
+
+        NSApp.activate(ignoringOtherApps: true)
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        let nextName = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        do {
+            try domainManager.renameDomain(name: identifier, displayName: nextName) { error in
+                self.showDomainResult(error, success: "Domain renamed to '\(nextName)'.")
+            }
+        } catch {
+            showDomainResult(error, success: "")
         }
     }
 
@@ -306,6 +423,8 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
         alert.accessoryView = field
         alert.addButton(withTitle: "Pair")
         alert.addButton(withTitle: "Cancel")
+        alert.layout()
+        alert.window.initialFirstResponder = field
         // The dialog is opened from the status menu; take activation so key
         // equivalents (Cmd+V) route to this app instead of the previous one.
         NSApp.activate(ignoringOtherApps: true)
@@ -320,6 +439,7 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
             confirm.informativeText = "This invitation enrolls this domain as a new device of \(email ?? "another identity"). The domain's identity email must match that account. Continue?"
             confirm.addButton(withTitle: "Enroll")
             confirm.addButton(withTitle: "Cancel")
+            NSApp.activate(ignoringOtherApps: true)
             guard confirm.runModal() == .alertFirstButtonReturn else { return }
             enrollConsented = true
         }
@@ -336,6 +456,7 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
                 let result = Self.createAlert()
                 result.messageText = error == nil ? "Device Paired" : "Pairing Failed"
                 result.informativeText = error?.localizedDescription ?? "\(domain) is paired. The other device determines which data is shared; synchronization continues while Filer is open."
+                NSApp.activate(ignoringOtherApps: true)
                 result.runModal()
             }
         }
@@ -351,6 +472,7 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
         alert.addButton(withTitle: "Unregister")
         alert.addButton(withTitle: "Cancel")
 
+        NSApp.activate(ignoringOtherApps: true)
         let response = alert.runModal()
         if response == .alertFirstButtonReturn {
             do {
@@ -370,6 +492,7 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
             alert.messageText = error == nil ? "Domain Updated" : "Domain Update Failed"
             alert.informativeText = error?.localizedDescription ?? success
             alert.alertStyle = error == nil ? .informational : .critical
+            NSApp.activate(ignoringOtherApps: true)
             alert.runModal()
         }
     }
@@ -422,8 +545,9 @@ extension MenuBarApp: NSMenuDelegate {
     /// Keep the active menu hierarchy intact when the asynchronous snapshot arrives.
     private func updateRuntimeStatusItems() {
         for domainItem in menu.items {
-            guard let statusItem = domainItem.submenu?.items.first else { continue }
-            statusItem.title = "Runtime: \(statusMonitor.getStatus(for: domainItem.title))"
+            guard let identifier = domainItem.representedObject as? String,
+                  let statusItem = domainItem.submenu?.items.first else { continue }
+            statusItem.title = "Runtime: \(statusMonitor.getStatus(for: identifier))"
             statusItem.toolTip = statusMonitor.errorDescription
         }
     }

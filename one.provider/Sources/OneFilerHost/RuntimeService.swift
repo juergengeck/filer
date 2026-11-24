@@ -181,10 +181,21 @@ final class RuntimeService {
         await child.shutdown()
     }
 
-    private static func createRuntime(domain: String, config: LocalDomainConfiguration, admitCanonicalStorage: Bool) async throws -> any OwnedRuntime {
-        let bundle = Bundle.main
-        guard let executable = bundle.executableURL, let resources = bundle.resourceURL else { throw CocoaError(.fileNoSuchFile) }
+    /// Resolve the signed bundled Node binary and `@refinio/filer.runtime` entrypoint.
+    static func runtimePaths(bundle: Bundle = .main) throws -> (node: URL, entry: URL, preload: URL) {
+        guard let executable = bundle.executableURL, let resources = bundle.resourceURL else {
+            throw CocoaError(.fileNoSuchFile)
+        }
         let root = resources.appendingPathComponent("runtime")
+        return (
+            node: executable.deletingLastPathComponent().appendingPathComponent("node"),
+            entry: root.appendingPathComponent("node_modules/@refinio/filer.runtime/dist/stdio-main.js"),
+            preload: root.appendingPathComponent("console-to-stderr.cjs")
+        )
+    }
+
+    private static func createRuntime(domain: String, config: LocalDomainConfiguration, admitCanonicalStorage: Bool) async throws -> any OwnedRuntime {
+        let paths = try runtimePaths()
         let directory = try RuntimeSecurity.container().appendingPathComponent("instances").appendingPathComponent(config.storageId.uuidString)
         if admitCanonicalStorage {
             var isDirectory = ObjCBool(false)
@@ -194,18 +205,20 @@ final class RuntimeService {
         } else {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         }
-        let child = NodeRuntimeProcess(node: executable.deletingLastPathComponent().appendingPathComponent("node"),
-            entry: root.appendingPathComponent("node_modules/@refinio/api/dist/src/filer/stdio-main.js"),
-            preload: root.appendingPathComponent("console-to-stderr.cjs"), onChange: { containers in
+        let child = NodeRuntimeProcess(node: paths.node,
+            entry: paths.entry,
+            preload: paths.preload, onChange: { containers in
                 if admitCanonicalStorage { return }
                 let traceStarted = ProcessInfo.processInfo.systemUptime
                 os_log("[FilerShareTrace] notification.received storage=%{public}@ containers=%{public}@", config.storageId.uuidString, containers.joined(separator: ","))
                 Task {
                     do {
                         // A storage owner may back more than one configured domain.
-                        let names = try DomainManager().listDomains().filter { $0.value.storageId == config.storageId }.keys.sorted()
+                        let domains = try DomainManager().listDomains()
+                        let names = domains.filter { $0.value.storageId == config.storageId }.keys.sorted()
                         for name in names {
-                            let providerDomain = NSFileProviderDomain(identifier: NSFileProviderDomainIdentifier(name), displayName: name)
+                            let displayName = domains[name]?.resolvedDisplayName(fallback: name) ?? name
+                            let providerDomain = NSFileProviderDomain(identifier: NSFileProviderDomainIdentifier(name), displayName: displayName)
                             guard let manager = NSFileProviderManager(for: providerDomain) else {
                                 throw PrivateSocket.failure("Cannot resolve the registered File Provider domain.")
                             }
@@ -234,9 +247,18 @@ final class RuntimeService {
             } else {
                 secret = try InstanceSecrets.getOrCreate(instance: config.storageId)
             }
-            var configuration = ["directory": directory.path, "email": config.email,
-                "secret": secret, "name": domain,
-                "commServerUrl": config.commServerUrl ?? "wss://comm10.dev.refinio.one", "inviteUrlPrefix": "https://refinio.one/invite"]
+            var configuration = [
+                "directory": directory.path,
+                "email": config.email,
+                "secret": secret,
+                "name": config.resolvedInstanceName(fallback: domain),
+                "displayName": config.resolvedDisplayName(fallback: domain),
+                "commServerUrl": config.commServerUrl ?? "wss://comm10.dev.refinio.one",
+                "inviteUrlPrefix": "https://refinio.one/invite"
+            ]
+            if let glueApiBase = config.glueApiBase {
+                configuration["glueApiBase"] = glueApiBase
+            }
             if admitCanonicalStorage { configuration["admitUnstampedCanonicalStorage"] = "exclusive-host" }
             try await child.start(configuration: configuration)
             return child

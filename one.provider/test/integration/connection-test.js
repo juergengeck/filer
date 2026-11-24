@@ -6,7 +6,7 @@ import {fileURLToPath} from 'node:url';
 import {access} from 'node:fs/promises';
 const provider = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const bundle = path.join(provider, 'build/native-runtime');
-const entry = path.join(bundle, 'runtime/node_modules/@refinio/api/dist/src/filer/stdio-main.js');
+const entry = path.join(bundle, 'runtime/node_modules/@refinio/filer.runtime/dist/stdio-main.js');
 await access(entry);
 const child = spawn('swift', ['test', '--filter', 'ONEBridgeRpcTests|FilerQAProgressTests|FilerQARuntimeTests'], {
     cwd: provider, stdio: 'inherit', env: {...process.env,

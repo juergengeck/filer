@@ -6,7 +6,8 @@ import {createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 
 const provider = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const api = path.resolve(provider, '../../one/packages/refinio.api');
+const filerRuntime = path.resolve(provider, '../../one/packages/filer.runtime');
+const api = await realpath(path.resolve(provider, '../../one/packages/refinio.api'));
 const output = path.resolve(process.argv[2] ?? path.join(provider, 'build/native-runtime'));
 const binary = process.env.NODE_BINARY;
 if (!binary || !path.isAbsolute(binary)) throw new Error('Set NODE_BINARY to the absolute path of the Node.js release to bundle');
@@ -14,6 +15,7 @@ const architectures = execFileSync('lipo', ['-archs', binary], {encoding: 'utf8'
 if (architectures.join(' ') !== 'arm64 x86_64') throw new Error(`Bundle a universal Node.js release, found ${architectures.join(' ')}`);
 const version = execFileSync(binary, ['--version'], {encoding: 'utf8'}).trim();
 if (!/^v(22|24)\./.test(version)) throw new Error('Bundle a maintained Node.js 22 or 24 LTS release');
+await access(path.join(filerRuntime, 'dist/stdio-main.js'));
 await access(path.join(api, 'dist/src/filer/stdio-main.js'));
 await rm(output, {recursive: true, force: true});
 await mkdir(path.join(output, 'runtime/node_modules'), {recursive: true});
@@ -26,6 +28,22 @@ const packages = [];
 const filerRequiredPeers = new Set(['@refinio/fotos.core', '@glueone/glue.core',
   '@refinio/device.core', '@refinio/llm.one', '@refinio/qa.protocol',
   '@refinio/settings.core', '@refinio/settings.devices']);
+// vger.core and vger.glue declare broad monorepo peers (LLMs, Wikipedia, PDF, etc.)
+// that Filer never imports, while importing cube/connection/sync at runtime.
+const vgerCoreFilerDeps = new Set([
+  '@glueone/glue.core', '@refinio/api', '@refinio/assembly.core',
+  '@refinio/chat.core', '@refinio/connection.core', '@refinio/cube.core',
+  '@refinio/device.core', '@refinio/group.core', '@refinio/one.core',
+  '@refinio/one.models', '@refinio/settings.core', '@refinio/settings.devices',
+  '@refinio/sync.core', '@refinio/trust.abac', '@refinio/trust.core',
+  '@refinio/trust.me', 'node-fetch',
+]);
+const vgerGlueFilerDeps = new Set([
+  '@glueone/glue.core', '@refinio/api', '@refinio/assembly.core',
+  '@refinio/connection.core', '@refinio/one.core', '@refinio/one.models',
+  '@refinio/settings.core', '@refinio/trust.core', '@refinio/trust.me',
+  '@vger/vger.core', 'base64-js',
+]);
 
 /** Resolve a dependency according to Node's directory lookup, including workspace peer links. */
 async function resolvePackage(name, from) {
@@ -52,10 +70,15 @@ async function copyPackage(source) {
   const skipped = new Set(['node_modules', '.git', '.turbo', '.build', 'test', 'tests', '__tests__']);
   await cp(source, destination, {recursive: true, dereference: true, filter: file => file === source || (!path.basename(file).startsWith('.') && !skipped.has(path.basename(file)))});
   packages.push({name: manifest.name, version: manifest.version});
-  const dependencies = {...manifest.dependencies, ...manifest.peerDependencies};
-  for (const name of Object.keys(dependencies)) {
+  const dependencyNames = manifest.name === '@vger/vger.core'
+    ? [...vgerCoreFilerDeps]
+    : manifest.name === '@vger/vger.glue'
+      ? [...vgerGlueFilerDeps]
+      : Object.keys({...manifest.dependencies, ...manifest.peerDependencies});
+  for (const name of dependencyNames) {
     const requiredByFiler = source === api && filerRequiredPeers.has(name);
-    const optional = manifest.peerDependenciesMeta?.[name]?.optional && !manifest.dependencies?.[name];
+    const scopedOverride = manifest.name === '@vger/vger.core' || manifest.name === '@vger/vger.glue';
+    const optional = !scopedOverride && manifest.peerDependenciesMeta?.[name]?.optional && !manifest.dependencies?.[name];
     if (optional && !requiredByFiler) continue;
     const dependency = await resolvePackage(name, source);
     const target = await copyPackage(dependency);
@@ -66,26 +89,35 @@ async function copyPackage(source) {
   return destination;
 }
 
-const main = await copyPackage(api);
-const link = path.join(output, 'runtime/node_modules/@refinio/api');
-await mkdir(path.dirname(link), {recursive: true});
-await symlink(path.relative(path.dirname(link), main), link);
+const main = await copyPackage(filerRuntime);
+const runtimeLink = path.join(output, 'runtime/node_modules/@refinio/filer.runtime');
+await mkdir(path.dirname(runtimeLink), {recursive: true});
+await symlink(path.relative(path.dirname(runtimeLink), main), runtimeLink);
+const apiTarget = installed.get(api);
+if (apiTarget) {
+  const apiLink = path.join(output, 'runtime/node_modules/@refinio/api');
+  await mkdir(path.dirname(apiLink), {recursive: true});
+  await symlink(path.relative(path.dirname(apiLink), apiTarget), apiLink);
+}
 await writeFile(path.join(output, 'runtime/manifest.json'), JSON.stringify({node: version, packages}, null, 2) + '\n');
 
-// Exercise the actual Filer composition against an isolated store, including
-// its optional peers, recipe registration, cold startup and offline reopen.
-execFileSync(path.join(output, 'node'), ['--jitless', '--require',
-  path.join(output, 'runtime/console-to-stderr.cjs'),
-  path.join(main, 'dist/src/filer/stdio-main.js'), '--check-runtime'], {input: '', encoding: 'utf8', timeout: 30000});
+// Exercise both the Glue-wired and plain Filer compositions against isolated stores,
+// including recipe registration, cold startup and offline reopen under --jitless.
+for (const flag of ['--check-runtime', '--check-runtime=plain']) {
+  execFileSync(path.join(output, 'node'), ['--jitless', '--require',
+    path.join(output, 'runtime/console-to-stderr.cjs'),
+    path.join(main, 'dist/stdio-main.js'), flag], {input: '', encoding: 'utf8', timeout: 45000});
+}
 
 // Exercise real HTTP with the same transport and JIT settings as the signed host.
 execFileSync(path.join(output, 'node'), ['--jitless', '--input-type=module', '-e', `
   import {createServer} from 'node:http';
-  import fetch from ${JSON.stringify(path.join(main, 'node_modules/node-fetch/src/index.js'))};
+  import {ensureJitlessFetch} from ${JSON.stringify(path.join(main, 'dist/fetch-polyfill.js'))};
+  ensureJitlessFetch();
   const server = createServer((_request, response) => response.end('filer-runtime-check'));
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   try {
-    const response = await fetch('http://127.0.0.1:' + server.address().port, {signal: AbortSignal.timeout(5000)});
+    const response = await globalThis.fetch('http://127.0.0.1:' + server.address().port, {signal: AbortSignal.timeout(5000)});
     if (await response.text() !== 'filer-runtime-check') throw new Error('Bundled HTTP transport failed');
   } finally { server.close(); }
 `], {encoding: 'utf8', timeout: 15000});

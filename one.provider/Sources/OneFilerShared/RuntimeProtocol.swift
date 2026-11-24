@@ -26,7 +26,33 @@ public struct LocalDomainConfiguration: Codable, Equatable {
     public let storageId: UUID
     public let email: String
     public let commServerUrl: String?
-    public init(storageId: UUID, email: String, commServerUrl: String? = nil) {
-        self.storageId = storageId; self.email = email; self.commServerUrl = commServerUrl
+    public let displayName: String?
+    public let instanceName: String?
+    public let glueApiBase: String?
+
+    public init(
+        storageId: UUID,
+        email: String,
+        commServerUrl: String? = nil,
+        displayName: String? = nil,
+        instanceName: String? = nil,
+        glueApiBase: String? = nil
+    ) {
+        self.storageId = storageId
+        self.email = email
+        self.commServerUrl = commServerUrl
+        self.displayName = displayName
+        self.instanceName = instanceName
+        self.glueApiBase = glueApiBase
+    }
+
+    public func resolvedDisplayName(fallback identifier: String) -> String {
+        let trimmed = displayName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? identifier : trimmed
+    }
+
+    public func resolvedInstanceName(fallback identifier: String) -> String {
+        let trimmed = instanceName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? identifier : trimmed
     }
 }
