@@ -9,15 +9,27 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
     private var menu: NSMenu!
     private var statusMonitor = StatusMonitor()
     private var domainManager: DomainManager!
+    private var updateManager: UpdateManager!
     private let runtimeService = RuntimeService()
     private var pairingDomains = Set<String>()
     private var isSigningInWithGlue = false
     private var qaProgress: [String: FilerQAProgress] = [:]
     private var runtimeInspection = UUID()
+    private var isMenuOpen = false
+    private var updatesSubmenu: NSMenu?
+    private var topLevelUpdateActionItem: NSMenuItem?
+    private var topLevelCancelDownloadItem: NSMenuItem?
 
     nonisolated override init() {
         super.init()
     }
+
+    private static let checkTimeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .none
+        formatter.timeStyle = .short
+        return formatter
+    }()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // No visible menu bar, but the hidden Edit menu is what routes
@@ -53,18 +65,26 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
 
         // Initialize managers
         domainManager = DomainManager()
+        updateManager = UpdateManager(onStateChange: { [weak self] _ in
+            self?.handleUpdateStateChanged()
+        })
         NotificationCenter.default.addObserver(self, selector: #selector(integrationProgress(_:)), name: .filerQAProgress, object: nil)
 
         // Build initial menu
         updateMenu()
+        updateStatusItemToolTip()
 
         // Assign menu to status item
         statusItem.menu = menu
+
+        // Start automatic background update checks if enabled
+        updateManager.startAutomaticChecks()
 
         NSLog("OneFiler menu bar app started")
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        updateManager?.stop()
         Task {
             await runtimeService.stop()
             await MainActor.run { sender.reply(toApplicationShouldTerminate: true) }
@@ -82,7 +102,9 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
             for (domain, configuration) in try domainManager.listDomains() where configuration.storageId == storageId {
                 qaProgress[domain] = progress
             }
-            updateMenu()
+            if !isMenuOpen {
+                updateMenu()
+            }
         } catch { NSLog("Cannot display integration progress: %@", error.localizedDescription) }
     }
 
@@ -139,11 +161,43 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
         }
     }
 
+    private func handleUpdateStateChanged() {
+        updateStatusItemToolTip()
+        if isMenuOpen {
+            refreshOpenUpdateMenuItems()
+        } else {
+            updateMenu()
+        }
+    }
+
+    private func updateStatusItemToolTip() {
+        guard let button = statusItem?.button else { return }
+        let version = updateManager?.currentVersionString ?? ""
+        switch updateManager?.state {
+        case .updateAvailable(let release, _):
+            button.toolTip = "OneFiler \(version) — Update \(release.versionString) available"
+        case .downloading(let release, let received, let total):
+            let percent = total > 0 ? Int((Double(received) / Double(total)) * 100.0) : 0
+            button.toolTip = "OneFiler \(version) — Downloading \(release.versionString) (\(percent)%)"
+        case .readyToInstall(let release, _):
+            button.toolTip = "OneFiler \(version) — Update \(release.versionString) ready to install"
+        default:
+            button.toolTip = version.isEmpty
+                ? "OneFiler - ONE Platform File Provider"
+                : "OneFiler \(version) - ONE Platform File Provider"
+        }
+    }
+
     private func updateMenu() {
         menu.removeAllItems()
+        updatesSubmenu = nil
+        topLevelUpdateActionItem = nil
+        topLevelCancelDownloadItem = nil
 
-        // Title
-        let titleItem = NSMenuItem(title: "OneFiler", action: nil, keyEquivalent: "")
+        // Title with installed version
+        let version = updateManager?.currentVersionString ?? ""
+        let headerTitle = version.isEmpty ? "OneFiler" : "OneFiler \(version)"
+        let titleItem = NSMenuItem(title: headerTitle, action: nil, keyEquivalent: "")
         titleItem.isEnabled = false
         menu.addItem(titleItem)
         menu.addItem(NSMenuItem.separator())
@@ -261,6 +315,11 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
+        // Update management section
+        addUpdateMenuItems(to: menu)
+
+        menu.addItem(NSMenuItem.separator())
+
         // Open logs
         let logsItem = NSMenuItem(title: "Open Logs…", action: #selector(openLogs), keyEquivalent: "")
         logsItem.target = self
@@ -272,6 +331,175 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
         let quitItem = NSMenuItem(title: "Quit OneFiler", action: #selector(quit), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
+    }
+
+    private func addUpdateMenuItems(to targetMenu: NSMenu) {
+        guard let updateManager else { return }
+
+        switch updateManager.state {
+        case .updateAvailable(let release, _):
+            let actionItem = NSMenuItem(
+                title: "Update Available: \(release.versionString)…",
+                action: #selector(downloadAvailableUpdate),
+                keyEquivalent: ""
+            )
+            actionItem.target = self
+            targetMenu.addItem(actionItem)
+            topLevelUpdateActionItem = actionItem
+        case .downloading(let release, let received, let total):
+            let percent = total > 0 ? Int((Double(received) / Double(total)) * 100.0) : 0
+            let progressItem = NSMenuItem(
+                title: "Downloading Update \(release.versionString)… \(percent)%",
+                action: nil,
+                keyEquivalent: ""
+            )
+            progressItem.isEnabled = false
+            targetMenu.addItem(progressItem)
+            topLevelUpdateActionItem = progressItem
+
+            let cancelItem = NSMenuItem(
+                title: "Cancel Update Download",
+                action: #selector(cancelUpdateDownload),
+                keyEquivalent: ""
+            )
+            cancelItem.target = self
+            targetMenu.addItem(cancelItem)
+            topLevelCancelDownloadItem = cancelItem
+        case .readyToInstall(let release, _):
+            let installItem = NSMenuItem(
+                title: "Install Verified Update (\(release.versionString))…",
+                action: #selector(promptInstallReadyUpdate),
+                keyEquivalent: ""
+            )
+            installItem.target = self
+            targetMenu.addItem(installItem)
+            topLevelUpdateActionItem = installItem
+        default:
+            break
+        }
+
+        let submenu = NSMenu()
+        populateUpdatesSubmenu(submenu)
+        updatesSubmenu = submenu
+
+        let updatesItem = NSMenuItem(title: "Updates", action: nil, keyEquivalent: "")
+        updatesItem.submenu = submenu
+        targetMenu.addItem(updatesItem)
+    }
+
+    private func populateUpdatesSubmenu(_ submenu: NSMenu) {
+        submenu.removeAllItems()
+        guard let updateManager else { return }
+
+        let statusTitle: String
+        var statusToolTip: String?
+
+        switch updateManager.state {
+        case .managedByAppStore:
+            statusTitle = "Managed by App Store"
+        case .idle:
+            if let lastChecked = updateManager.lastCheckedAt {
+                statusTitle = "Last Checked: \(Self.checkTimeFormatter.string(from: lastChecked))"
+            } else {
+                statusTitle = "Not Checked Yet"
+            }
+        case .checking:
+            statusTitle = "Checking for Updates…"
+        case .upToDate(let checkedAt, let latestVersion, let fingerprint):
+            statusTitle = "Up to Date (\(latestVersion))"
+            statusToolTip = "Verified at \(Self.checkTimeFormatter.string(from: checkedAt)) · root \(fingerprint)"
+        case .updateAvailable(let release, let checkedAt):
+            statusTitle = "Update Available: \(release.versionString)"
+            statusToolTip = "Verified at \(Self.checkTimeFormatter.string(from: checkedAt)) · root \(release.rootFingerprint)"
+        case .downloading(let release, let received, let total):
+            let percent = total > 0 ? Int((Double(received) / Double(total)) * 100.0) : 0
+            statusTitle = "Downloading \(release.versionString)… \(percent)%"
+        case .readyToInstall(let release, _):
+            statusTitle = "Verified Installer Ready (\(release.versionString))"
+            statusToolTip = "SHA-256 verified · root \(release.rootFingerprint)"
+        case .failed(let message, _):
+            statusTitle = "Update Check Failed"
+            statusToolTip = message
+        }
+
+        let statusItem = NSMenuItem(title: statusTitle, action: nil, keyEquivalent: "")
+        statusItem.isEnabled = false
+        statusItem.toolTip = statusToolTip
+        submenu.addItem(statusItem)
+
+        submenu.addItem(NSMenuItem.separator())
+
+        if updateManager.distribution == .appStore {
+            let appStoreItem = NSMenuItem(title: "Open App Store Updates…", action: #selector(openAppStoreUpdates), keyEquivalent: "")
+            appStoreItem.target = self
+            submenu.addItem(appStoreItem)
+            return
+        }
+
+        let checkItem = NSMenuItem(title: "Check for Updates…", action: #selector(checkForUpdatesInteractive), keyEquivalent: "")
+        checkItem.target = self
+        if case .checking = updateManager.state { checkItem.isEnabled = false }
+        if case .downloading = updateManager.state { checkItem.isEnabled = false }
+        submenu.addItem(checkItem)
+
+        switch updateManager.state {
+        case .updateAvailable(let release, _):
+            let downloadItem = NSMenuItem(title: "Download Update (\(release.versionString))…", action: #selector(downloadAvailableUpdate), keyEquivalent: "")
+            downloadItem.target = self
+            submenu.addItem(downloadItem)
+        case .downloading:
+            let cancelItem = NSMenuItem(title: "Cancel Download", action: #selector(cancelUpdateDownload), keyEquivalent: "")
+            cancelItem.target = self
+            submenu.addItem(cancelItem)
+        case .readyToInstall(let release, _):
+            let installItem = NSMenuItem(title: "Install Verified Update (\(release.versionString))…", action: #selector(promptInstallReadyUpdate), keyEquivalent: "")
+            installItem.target = self
+            submenu.addItem(installItem)
+        default:
+            break
+        }
+
+        submenu.addItem(NSMenuItem.separator())
+
+        let autoCheckItem = NSMenuItem(title: "Automatically Check for Updates", action: #selector(toggleAutomaticUpdateChecks), keyEquivalent: "")
+        autoCheckItem.target = self
+        autoCheckItem.state = updateManager.automaticChecksEnabled ? .on : .off
+        submenu.addItem(autoCheckItem)
+
+        let downloadsItem = NSMenuItem(title: "Open Downloads Page…", action: #selector(openDownloadsPage), keyEquivalent: "")
+        downloadsItem.target = self
+        submenu.addItem(downloadsItem)
+    }
+
+    /// Update open-menu progress without tearing down the tracked root menu hierarchy.
+    private func refreshOpenUpdateMenuItems() {
+        guard let updateManager else { return }
+        if let submenu = updatesSubmenu {
+            populateUpdatesSubmenu(submenu)
+        }
+        if let actionItem = topLevelUpdateActionItem {
+            switch updateManager.state {
+            case .downloading(let release, let received, let total):
+                let percent = total > 0 ? Int((Double(received) / Double(total)) * 100.0) : 0
+                actionItem.title = "Downloading Update \(release.versionString)… \(percent)%"
+                actionItem.action = nil
+                actionItem.isEnabled = false
+            case .readyToInstall(let release, _):
+                actionItem.title = "Install Verified Update (\(release.versionString))…"
+                actionItem.action = #selector(promptInstallReadyUpdate)
+                actionItem.target = self
+                actionItem.isEnabled = true
+                topLevelCancelDownloadItem?.isHidden = true
+            case .updateAvailable(let release, _):
+                actionItem.title = "Update Available: \(release.versionString)…"
+                actionItem.action = #selector(downloadAvailableUpdate)
+                actionItem.target = self
+                actionItem.isEnabled = true
+                topLevelCancelDownloadItem?.isHidden = true
+            default:
+                break
+            }
+        }
     }
 
     // MARK: - Actions
@@ -497,6 +725,120 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
         }
     }
 
+    // MARK: - Update Actions
+
+    @objc private func checkForUpdatesInteractive() {
+        Task { @MainActor in
+            let state = await updateManager.checkForUpdates()
+            switch state {
+            case .upToDate(_, let latestVersion, let fingerprint):
+                let alert = Self.createAlert()
+                alert.messageText = "OneFiler is Up to Date"
+                alert.informativeText = "OneFiler \(updateManager.currentVersionString) is the latest verified release (published \(latestVersion), root \(fingerprint))."
+                NSApp.activate(ignoringOtherApps: true)
+                alert.runModal()
+            case .updateAvailable(let release, _):
+                presentUpdateAvailablePrompt(release)
+            case .readyToInstall(let release, let fileURL):
+                presentInstallerReadyPrompt(release: release, fileURL: fileURL)
+            case .failed(let message, _):
+                let alert = Self.createAlert()
+                alert.messageText = "Update Check Failed"
+                alert.informativeText = message
+                alert.alertStyle = .critical
+                NSApp.activate(ignoringOtherApps: true)
+                alert.runModal()
+            case .managedByAppStore:
+                openAppStoreUpdates()
+            case .idle, .checking, .downloading:
+                break
+            }
+        }
+    }
+
+    @objc private func downloadAvailableUpdate() {
+        switch updateManager.state {
+        case .updateAvailable(let release, _):
+            presentUpdateAvailablePrompt(release)
+        case .readyToInstall(let release, let fileURL):
+            presentInstallerReadyPrompt(release: release, fileURL: fileURL)
+        default:
+            break
+        }
+    }
+
+    private func presentUpdateAvailablePrompt(_ release: VerifiedRelease) {
+        let sizeText = ByteCountFormatter.string(fromByteCount: release.artifact.sizeBytes, countStyle: .file)
+        let alert = Self.createAlert()
+        alert.messageText = "Update Available: OneFiler \(release.versionString)"
+        alert.informativeText = "You are running OneFiler \(updateManager.currentVersionString). Version \(release.versionString) (\(sizeText)) is signed by Refinio (root \(release.rootFingerprint)). Download and verify the installer now?"
+        alert.addButton(withTitle: "Download Update")
+        alert.addButton(withTitle: "Later")
+
+        NSApp.activate(ignoringOtherApps: true)
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+
+        Task { @MainActor in
+            do {
+                let fileURL = try await updateManager.downloadUpdate(release)
+                presentInstallerReadyPrompt(release: release, fileURL: fileURL)
+            } catch {
+                if (error as? CancellationError) != nil || (error as NSError).code == NSURLErrorCancelled {
+                    return
+                }
+                let failure = Self.createAlert()
+                failure.messageText = "Update Download Failed"
+                failure.informativeText = error.localizedDescription
+                failure.alertStyle = .critical
+                NSApp.activate(ignoringOtherApps: true)
+                failure.runModal()
+            }
+        }
+    }
+
+    @objc private func promptInstallReadyUpdate() {
+        guard case .readyToInstall(let release, let fileURL) = updateManager.state else { return }
+        presentInstallerReadyPrompt(release: release, fileURL: fileURL)
+    }
+
+    private func presentInstallerReadyPrompt(release: VerifiedRelease, fileURL: URL) {
+        let alert = Self.createAlert()
+        alert.messageText = "OneFiler \(release.versionString) Verified & Ready"
+        alert.informativeText = "The disk image passed Refinio signature and SHA-256 verification. Quit OneFiler before dragging OneFiler.app to Applications so local ONE storage closes cleanly."
+        alert.addButton(withTitle: "Open Installer & Quit")
+        alert.addButton(withTitle: "Open Installer")
+        alert.addButton(withTitle: "Later")
+
+        NSApp.activate(ignoringOtherApps: true)
+        let response = alert.runModal()
+        switch response {
+        case .alertFirstButtonReturn:
+            NSWorkspace.shared.open(fileURL)
+            NSApplication.shared.terminate(nil)
+        case .alertSecondButtonReturn:
+            NSWorkspace.shared.open(fileURL)
+        default:
+            break
+        }
+    }
+
+    @objc private func cancelUpdateDownload() {
+        updateManager.cancelDownload()
+    }
+
+    @objc private func toggleAutomaticUpdateChecks() {
+        updateManager.automaticChecksEnabled.toggle()
+        updateMenu()
+    }
+
+    @objc private func openDownloadsPage() {
+        NSWorkspace.shared.open(updateManager.downloadsPageURL)
+    }
+
+    @objc private func openAppStoreUpdates() {
+        NSWorkspace.shared.open(UpdateManager.appStoreUpdatesURL)
+    }
+
     @objc private func openLogs() {
         guard let containerURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: "group.one.filer"
@@ -519,6 +861,8 @@ class MenuBarApp: NSObject, NSApplicationDelegate {
 extension MenuBarApp: NSMenuDelegate {
     /// Refresh local ownership once per menu opening, without starting a runtime.
     func menuWillOpen(_ menu: NSMenu) {
+        guard menu === self.menu else { return }
+        isMenuOpen = true
         let inspection = UUID()
         runtimeInspection = inspection
         statusMonitor = StatusMonitor()
@@ -540,6 +884,11 @@ extension MenuBarApp: NSMenuDelegate {
                 }
             }
         }
+    }
+
+    func menuDidClose(_ menu: NSMenu) {
+        guard menu === self.menu else { return }
+        isMenuOpen = false
     }
 
     /// Keep the active menu hierarchy intact when the asynchronous snapshot arrives.
