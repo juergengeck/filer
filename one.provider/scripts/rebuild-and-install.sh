@@ -19,8 +19,17 @@ rm -rf "$DESTINATION"
 ditto "$APP_PATH" "$DESTINATION"
 # Register the installed bundle: Xcode or a moved backup may otherwise remain
 # the selected File Provider extension, causing enumerator signals to fail.
-/System/Library/Frameworks/CoreServices.framework/Versions/Current/Frameworks/LaunchServices.framework/Versions/Current/Support/lsregister -u "$APP_PATH"
-/System/Library/Frameworks/CoreServices.framework/Versions/Current/Frameworks/LaunchServices.framework/Versions/Current/Support/lsregister -f -R -trusted "$DESTINATION"
-pluginkit -a "$DESTINATION/Contents/PlugIns/OneFilerExtension.appex"
+LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Versions/Current/Frameworks/LaunchServices.framework/Versions/Current/Support/lsregister"
+TARGET_EXT="$DESTINATION/Contents/PlugIns/OneFilerExtension.appex"
+"$LSREGISTER" -u "$APP_PATH" || true
+while IFS= read -r stale_ext; do
+  [ -z "$stale_ext" ] && continue
+  [ "$stale_ext" = "$TARGET_EXT" ] && continue
+  pluginkit -r "$stale_ext" >/dev/null 2>&1 || true
+  "$LSREGISTER" -u "${stale_ext%/Contents/PlugIns/OneFilerExtension.appex}" >/dev/null 2>&1 || true
+done < <(pluginkit -m -A -D -vvv -i one.filer.extension 2>/dev/null | sed -n 's/^[[:space:]]*Path = //p')
+"$LSREGISTER" -f -R -trusted "$DESTINATION"
+pluginkit -a "$TARGET_EXT"
+pluginkit -e use -i one.filer.extension
 open "$DESTINATION"
 echo "Installed $DESTINATION. Register domains from its menu; legacy configurations require explicit migration."
