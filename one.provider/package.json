@@ -1,6 +1,6 @@
 {
   "name": "@refinio/one.provider",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Apple File Provider integration for ONE - macOS filesystem bridge",
   "type": "module",
   "main": "lib/index.js",
