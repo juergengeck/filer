@@ -1,8 +1,9 @@
 # Standalone iOS Filer App (Expo + Shared File Provider)
 
-**Status:** Approved direction, ready for execution  
-**Date:** 2026-11-23  
-**Supersedes:** iOS sections of [`specs/001-apple-file-provider/plan.md`](../../../specs/001-apple-file-provider/plan.md) and Section 5 of [`filer-native-settings.md`](filer-native-settings.md)
+**Status:** Phases 1 & 2 shipped to TestFlight (`1.0.0`, build `2026112402`); awaiting on-device smoke test, Phase 3 (`vger.expo` cleanup), and Phase 4 (v2 write-back)  
+**Date:** 2026-11-23 (updated 2026-11-24)  
+**Supersedes:** iOS sections of [`specs/001-apple-file-provider/plan.md`](../../../specs/001-apple-file-provider/plan.md) and Section 5 of [`filer-native-settings.md`](filer-native-settings.md)  
+**Remediation log:** [2026-11-23-ios-filer-standalone-remediation.md](2026-11-23-ios-filer-standalone-remediation.md) (completed)
 
 ## Architectural Decision
 
@@ -11,7 +12,7 @@ Ship **standalone `one.filer` for iOS** (and Android via the same Expo stack) as
 - **`@refinio/filer.swift`** (`OneFilerCore`, iOS 16+ / macOS 13.5+) — shared Swift File Provider extension core.
 - **`@refinio/filer.expo`** — Expo native module + config plugin + App Group SQLite WAL snapshot catalog + sandboxed `NSFileProviderReplicatedExtension` (`OneFilerExtension`) and Android `DocumentsProvider`.
 - **`@refinio/filer.core`** — `FilerSnapshotStore`, `FilerProjectionHead`, `AcceptedSharesProjection`, `FilerFolderSettings`, `CategoryDemandPlan`.
-- **`@refinio/one.core-expo`** + `@refinio/connection.core` / `@refinio/device.core` / `@refinio/settings.core` / `@glueone/auth.core` — in-process ONE runtime storing objects directly in the App Group container (`group.one.filer/one-storage`).
+- **`@refinio/one.core-expo`** + `@refinio/connection.core` / `@refinio/device.core` / `@refinio/settings.core` — in-process ONE runtime storing objects directly in the App Group container (`group.one.filer/one-storage`). (`@glueone/auth.core` passkey login is deferred past v1.)
 
 ### Why this fixes the previous wrong turns
 
@@ -37,60 +38,48 @@ Ship **standalone `one.filer` for iOS** (and Android via the same Expo stack) as
 
 ## Delivery Phases
 
-### Phase 1 — Extract shared Expo Filer host runtime into `../one/packages/filer.expo`
-Move the reusable share-receiver and projection-publisher services currently living inside `vger.expo` into `@refinio/filer.expo` so `one.filer.expo` stays a thin shell and no host duplicates share verification logic:
+### Phase 1 — Extract shared Expo Filer host runtime into `../one/packages/filer.expo` ✅ Done (`30778a3d6`, `04b294b18`)
+Committed on `../one` (`feat/expo-plan-surface`):
 
-1. Move and generalize from `../vger/packages/vger.expo/ios-ui/services/`:
-   - `vger-file-sharing.ts` → `@refinio/filer.expo/share-receiver` (`createFilerFilesSyncRules`, `startFilerShareReceiver`): verifies `GraphReleaseState` / `GraphReleaseSelectionHead` against trusted publisher keys and feeds `AcceptedSharesProjection`.
-   - `vger-files.ts` → `@refinio/filer.expo/host` (`getFilerOneStorageUri`, `clearFilerHostStorage`, `startFilerHostProjection`): manages App Group `one-storage`, `ProjectionPublisher`, domain registration, reactive `FilerProjectionHead` updates, and catalog clearing on share withdrawal.
-2. Port the unit tests (`filer-share-receiver.test.mjs`, `filer-withdrawal.test.mjs`) into `../one/packages/filer.expo/test/`.
-3. Verify `pnpm build && pnpm test` and `swift test` in `../one/packages/filer.expo`.
+- [x] Extracted `@refinio/filer.expo/share-receiver` (`createFilerFilesSyncRules`, `createFilerChumSyncOptions`, `createFilerBasicImportFilter`, `createFilerBasicExportFilter`, `startFilerShareReceiver`) and `@refinio/filer.expo/host` (`getFilerOneStorageUri`, `clearFilerHostStorage`, `startFilerHostProjection` with `keepDomainRegisteredWhenEmpty`) in `30778a3d6`.
+- [x] Ported and expanded unit tests (`filer-share-receiver.test.mjs`, `filer-withdrawal.test.mjs`); `pnpm build && pnpm test` and `swift test` green.
+- [x] Follow-up iOS fix `04b294b18` (*Resolve App Group aliases for new Filer domains* in `packages/filer.expo/ios/FilerPaths.swift`) and `5c83f925b` in `packages/filer.swift`.
 
-### Phase 2 — Scaffold standalone `filer/one.filer.expo` (v1 Read-Only)
-Create the minimal standalone mobile Filer app following the `fotos.expo` vendor-pack and Expo SDK 57 pattern:
+### Phase 2 — Standalone `filer/one.filer.expo` (v1 Read-Only) 🟡 Uploaded to TestFlight (`1.0.0` / `2026112402`) — Awaiting On-Device Smoke Test
+Committed on `filer` (`main`, `48308d4`, re-vendored `c84dd41`) including all remediation items from [2026-11-23-ios-filer-standalone-remediation.md](2026-11-23-ios-filer-standalone-remediation.md):
 
-1. **Project & packaging setup:**
-   - `one.filer.expo/package.json`, `.vendorrc.json`, `scripts/vendor-pack.js`, `scripts/verify-vendor-install.js` (vendoring canonical `../one/packages/*` including `@refinio/filer.expo` with `stage-swift-core.cjs`).
-   - `one.filer.expo/app.json` with:
-     - `ios.bundleIdentifier: "one.filer"`, `ios.appleTeamId: "26W8AC52QS"`, `NSBonjourServices: ["_one-refinio._udp"]`, `ITSAppUsesNonExemptEncryption: false`.
-     - Plugins: `expo-router`, `expo-secure-store`, `./plugins/withIosSceneLifecycle`, and `@refinio/filer.expo` configured with `appGroupIdentifier: "group.one.filer"`, `iosExtensionBundleIdentifier: "one.filer.extension"`, `iosDisplayName: "ONE Filer"`.
-   - Reuse the olive Filer app icon (`olive.svg` → Expo icon assets).
-2. **Runtime boot (`src/runtime/`):**
-   - Resolve `storageDirectory` from `getFilerOneStorageUri()` (`group.one.filer/one-storage`) **before** `MultiUser` / `one.core-expo` initializes.
-   - Register Filer, Files, Assembly, Tag, Device, and Settings recipes + reverse maps.
-   - Start `ConnectionsModel` / IoM + Glue passkey login / pairing invite acceptance + direct QuicVC / mDNS discovery (reusing `fotos.expo` / `vger.expo` login & transport setup).
-   - Wire `startFilerShareReceiver` + `startFilerHostProjection` so received shares and owned Filer projections publish straight into the App Group SQLite WAL catalog.
-   - Subscribe to `filer.folders` (`settings.core`) so remote IoM edits from desktop VGER/Cube/Akte update folder visibility on the phone, and local toggles sync back.
-3. **Minimal UI (`app/`):**
-   - **Sign-in / Pair screen:** Glue passkey sign-in or device pairing / IoM invitation acceptance.
-   - **Files / Status tab:** File Provider domain status, connected peers, active shared roots, and quick "Open in Files" / troubleshooting state.
-   - **Devices tab:** Paired IoM devices + accept/create pairing invitations.
-   - **Settings tab:** `filer.folders` visibility toggles (`Files`, `Fotos`, `Health/Flexibel`), account/identity info, and reset/clear storage.
-4. **Native iOS verification:**
-   - `pnpm run vendor:setup`
-   - `npx expo prebuild --platform ios --clean` — verify generated `ios/OneFilerExtension` embeds `OneFilerCore`, `group.one.filer`, `one.filer.extension`, and `UIApplicationSceneManifest`.
-   - Build & archive in Xcode for iOS device / TestFlight (`one.filer` + `one.filer.extension`).
-   - On-device smoke test: sign in / pair with macOS Filer or VGER, share a folder cut, open Apple **Files → ONE Filer**, verify browse + hydrate + thumbnails work while the Filer app is force-quit, then withdraw the share and verify removal.
+- [x] Project, vendor-pack setup (20 vendored packages, zero Node shims/stubs in `metro.config.js`), `app.json` (`one.filer` / `one.filer.extension` / `group.one.filer` / Team `26W8AC52QS` / `LSApplicationQueriesSchemes: ["shareddocuments"]`), Xcode 27 `withIosSceneLifecycle`, and exported olive icon set.
+- [x] Runtime boot (`src/runtime/Model.ts`, `filer-platform.ts`, `filer-runtime-recipes.ts`, `invitation-codec.ts`): App Group `one-storage` resolved before `MultiUser`, `ConnectionsModel` on comm-server relay with `createFilerChumSyncOptions()` + prefilters, `startFilerShareReceiver` + `startFilerHostProjection` (`keepDomainRegisteredWhenEmpty: true`), `filer.folders` settings & pause/resume, clean `reset()` order, and partial-init teardown.
+- [x] Minimal UI (`app/_layout.tsx`, `files.tsx`, `devices.tsx`, `settings.tsx`) with local sign-in, standard ONE invitation URL create/share/accept (IoM `same-person` / IoP `distinct-person`), reactive `useFolderModes`/`useOnlineState`, and Open in Files.
+- [x] Automated verification green: `tsc --noEmit`, `node --test`, `pnpm run verify:bundle` (Hermes iOS export), `expo prebuild --platform ios --clean`, and unsigned `xcodebuild` simulator build.
+- [x] Re-vendored (`c84dd41`) and prebuilt with `../one` `04b294b18` (`FilerPaths.swift` App Group alias fix) and `5c83f925b` (`filer.swift`).
+- [x] Archived (`~/Library/Developer/Xcode/Archives/2026-11-24/ONEFiler-2026112402.xcarchive`) and uploaded to App Store Connect / TestFlight (`one.filer` `1.0.0`, build `2026112402`, with `one.filer.extension`).
+- **Explicit v1 deferrals (post-TestFlight):**
+  - Glue passkey login (blocked on `@glueone/auth.core` generalizing past hardcoded `https://fotos.one` / `fotosone://` plus authority registration).
+  - Direct QuicVC / mDNS transports (v1 uses comm-server relay).
+  - Full `SyncFilterFactory` per-channel trust gating and remote IoM settings sync lane.
+- **Remaining to close Phase 2:**
+  - [ ] On-device TestFlight smoke test: sign in, pair with macOS Filer or VGER via invitation URL, share a folder cut, open Apple **Files → ONE Filer**, verify browse + hydrate + thumbnails while the app is force-quit, then withdraw the share and confirm the domain clears cleanly.
 
-### Phase 3 — Clean up `vger.expo` (single canonical Files provider)
-Once standalone `one.filer.expo` is running and verified:
+### Phase 3 — Clean up `vger.expo` (single canonical Files provider) ⬜ Not Started
+Note: `../vger` commit `57ed15a00` linked `vger.expo` to EAS (`one-vger`) with `one.vger.OneFilerExtension` still registered while standalone `one.filer` is validated. Once standalone `one.filer.expo` passes on-device TestFlight smoke testing:
 
-1. Remove the `@refinio/filer.expo` plugin entry and `group.vger.ios.filer` / `one.vger.OneFilerExtension` config from `../vger/packages/vger.expo/app.json`.
-2. Remove `vger-files.ts` / `vger-file-sharing.ts` File Provider registration and App Group `one-storage` redirection from `../vger/packages/vger.expo/app/_layout.tsx`, `Model.ts`, and `settings/index.tsx` (preserving normal VGER CHUM/IoM sharing with Filer).
-3. Regenerate `vger.expo/ios` (`expo prebuild --platform ios --clean`) so `OneFilerExtension` is no longer embedded in `one.vger`.
-4. Note for existing TestFlight testers on `one.vger`: verify whether any existing `vger.expo` install needs storage migration out of `group.vger.ios.filer/one-storage` before removing the App Group entitlement.
+1. [ ] Remove the `@refinio/filer.expo` plugin entry and `group.vger.ios.filer` / `one.vger.OneFilerExtension` config from `../vger/packages/vger.expo/app.json`.
+2. [ ] Remove `vger-files.ts` / `vger-file-sharing.ts` File Provider registration and App Group `one-storage` redirection from `../vger/packages/vger.expo/app/_layout.tsx`, `Model.ts`, and `settings/index.tsx` (preserving normal VGER CHUM/IoM sharing with Filer).
+3. [ ] Regenerate `vger.expo/ios` (`expo prebuild --platform ios --clean`) so `OneFilerExtension` is no longer embedded in `one.vger`.
+4. [ ] Handle existing TestFlight testers on `one.vger`: decide whether they reset/re-pair or need a one-time storage migration out of `group.vger.ios.filer/one-storage` before removing the App Group entitlement.
 
-### Phase 4 — v2 Write-Back from Apple Files (Outbox in `@refinio/filer.expo`)
+### Phase 4 — v2 Write-Back from Apple Files (Outbox in `@refinio/filer.expo`) ⬜ Not Started
 After v1 is live on TestFlight:
 
-1. **Outbox schema in `../one/packages/filer.expo/projection.sql`:** Add a `pending_writes` table and an App Group staging directory (`filer/<domain>/pending/`) writable by `IOSFileProviderExtension`.
-2. **Swift extension write handlers (`IOSFileProviderExtension.swift`):**
+1. [ ] **Outbox schema in `../one/packages/filer.expo/projection.sql`:** Add a `pending_writes` table and an App Group staging directory (`filer/<domain>/pending/`) writable by `IOSFileProviderExtension`.
+2. [ ] **Swift extension write handlers (`IOSFileProviderExtension.swift`):**
    - Implement `createItem`, `modifyItem`, and `deleteItem` for writable containers (e.g. `/Files`) instead of returning `.fileWriteNoPermission`.
    - Stage file bytes into `pending/` (APFS clone/copy), record the intent row in `pending_writes`, return optimistic item metadata to Files, and post a Darwin notification / mark dirty state for the host.
    - Keep read-only views (`Geteilt/<person>/`, retired cuts) strictly non-writable.
-3. **Host outbox drainer (`@refinio/filer.expo` + `one.filer.expo`):**
+3. [ ] **Host outbox drainer (`@refinio/filer.expo` + `one.filer.expo`):**
    - On foregrounding, background refresh (`BGAppRefreshTask`), or notification while active, drain `pending_writes` into ONE (`FilerStoredEntry` / `FilerFilesRoot` / `TagBinding`), republish the committed snapshot, and signal enumerators to reconcile versions.
-4. **Native iOS Settings (optional follow-up):** Add `Settings.bundle` only if OS-level preferences are still needed beyond the in-app Settings tab and IoM `Your devices` settings.
+4. [ ] **Native iOS Settings (optional follow-up):** Add `Settings.bundle` only if OS-level preferences are still needed beyond the in-app Settings tab and IoM `Your devices` settings.
 
 ---
 

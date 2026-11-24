@@ -1,9 +1,9 @@
 # Standalone iOS Filer (`one.filer.expo`) — Review Remediation Plan
 
-**Status:** Ready to execute  
-**Date:** 2026-11-23  
+**Status:** Completed (`../one` `30778a3d6`, `filer` `48308d4`)  
+**Date:** 2026-11-23 (closed 2026-11-24)  
 **Parent plan:** [2026-11-23-ios-filer-standalone-expo.md](2026-11-23-ios-filer-standalone-expo.md)  
-**Scope:** Fix all blockers and high-impact bugs found in the Phase 1 (`../one/packages/filer.expo`) and Phase 2 (`filer/one.filer.expo`) review before Xcode archive, TestFlight upload, and Phase 3 (`vger.expo` cleanup).
+**Scope:** Fix all blockers and high-impact bugs found in the Phase 1 (`../one/packages/filer.expo`) and Phase 2 (`filer/one.filer.expo`) review before Xcode archive, TestFlight upload, and Phase 3 (`vger.expo` cleanup). All 6 tasks plus the 3 review follow-ups (`Model.ts` partial-init teardown, hidden-on-boot skip, `useFilerStatus.ts` sync) are committed and verified.
 
 ---
 

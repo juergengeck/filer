@@ -11,7 +11,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "one.filer",
       "appleTeamId": "26W8AC52QS",
-      "buildNumber": "2026112301",
+      "buildNumber": "2026112402",
       "infoPlist": {
         "NSBonjourServices": [
           "_one-refinio._udp"
