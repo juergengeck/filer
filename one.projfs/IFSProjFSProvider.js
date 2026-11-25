@@ -36,6 +36,7 @@ export class IFSProjFSProvider extends EventEmitter {
         this.fileSystem = options.fileSystem;
         this.virtualRoot = path.resolve(options.virtualRoot);
         this.importLocal = options.importLocal;
+        this.importRoots = options.importRoots;
         this.provider = new NativeProvider();
         this.requests = new Map();
         this.work = new Set();
@@ -69,10 +70,38 @@ export class IFSProjFSProvider extends EventEmitter {
     async describe(target) {
         const info = await this.fileSystem.stat(target);
         if (!Number.isSafeInteger(info.size) || info.size < 0) throw new Error('Invalid file size');
-        return {path: target, name: path.posix.basename(target), size: info.size,
+        const entry = {path: target, name: path.posix.basename(target), size: info.size,
             isDirectory: (info.mode & 0o170000) === 0o40000,
             contentVersion: info.item?.contentVersion ?? info.contentHash ?? '',
             metadataVersion: info.item?.metadataVersion ?? info.metadataHash ?? ''};
+        if (typeof info.ctimeMs === 'number' && Number.isFinite(info.ctimeMs)) entry.ctimeMs = info.ctimeMs;
+        if (typeof info.mtimeMs === 'number' && Number.isFinite(info.mtimeMs)) entry.mtimeMs = info.mtimeMs;
+        return entry;
+    }
+
+    /** Discover mount roots that advertise child ingestion (e.g. /Files, /Fotos, future /chats). */
+    async resolveWritableRoots() {
+        if (!this.importLocal) return [];
+        if (Array.isArray(this.importRoots)) return this.importRoots.map(canonical);
+        const roots = new Set();
+        try {
+            const {children} = await this.fileSystem.readDir('/');
+            for (const name of children) {
+                const candidate = canonical('/' + name);
+                try {
+                    const info = await this.fileSystem.stat(candidate);
+                    if (info.canAddChildren === true || (candidate === '/Files' && info.canAddChildren !== false)) {
+                        roots.add(candidate);
+                    }
+                } catch {
+                    // Skip unreadable/ephemeral entries when probing writable roots.
+                }
+            }
+        } catch {
+            // Fall back to /Files when root enumeration is not yet ready.
+        }
+        if (roots.size === 0) roots.add('/Files');
+        return [...roots];
     }
 
     /** Enumerate metadata sequentially, avoiding unbounded stat fanout. */
@@ -186,7 +215,8 @@ export class IFSProjFSProvider extends EventEmitter {
         this.virtualRoot = path.resolve(virtualRoot);
         await mkdir(this.virtualRoot, {recursive: true});
         this.closing = false;
-        this.provider.start(this.virtualRoot, this.dispatch.bind(this), Boolean(this.importLocal));
+        const writableRoots = await this.resolveWritableRoots();
+        this.provider.start(this.virtualRoot, this.dispatch.bind(this), writableRoots);
     }
     /** Alias used by native provider callers. */
     async mount() { await this.start(); }
@@ -202,6 +232,9 @@ export class IFSProjFSProvider extends EventEmitter {
     /** Refresh clean projected children while preserving locally modified/full files. */
     async refresh(containers) {
         const paths = [...new Set(containers.map(canonical))].sort((a, b) => a.length - b.length);
+        if (this.importLocal && this.isRunning()) {
+            this.provider.setWritableRoots(await this.resolveWritableRoots());
+        }
         const roots = [];
         for (const target of paths) {
             if (!roots.some(root => root === '/' || target.startsWith(root + '/'))) roots.push(target);

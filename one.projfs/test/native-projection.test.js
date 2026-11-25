@@ -15,11 +15,17 @@ test('native projection: cold metadata, ranges above 4 GiB, refresh, imports and
     let text = 'first version';
     const reads = [];
     const imports = [];
+    const inviteCtimeMs = Date.UTC(2026, 8, 12, 18, 20, 29);
+    const inviteMtimeMs = Date.UTC(2026, 8, 13, 9, 44, 40);
     const fileSystem = {
         async stat(target) {
-            if (['/', '/ONE', '/ONE/invites', '/Files', '/Fotos'].includes(target)) return {mode: 0o40555, size: 0};
+            if (target === '/Fotos') return {mode: 0o40555, size: 0, canAddChildren: true};
+            if (['/', '/ONE', '/ONE/invites', '/Files'].includes(target)) return {mode: 0o40555, size: 0};
             if (target === '/large.bin') return {mode: 0o100444, size: largeSize, contentHash: 'large'};
-            if (target === '/ONE/invites/iop_invite.txt') return {mode: 0o100444, size: Buffer.byteLength(text), contentHash: text};
+            if (target === '/ONE/invites/iop_invite.txt') {
+                return {mode: 0o100444, size: Buffer.byteLength(text), contentHash: text,
+                    ctimeMs: inviteCtimeMs, mtimeMs: inviteMtimeMs};
+            }
             if (target === '/failure.bin') return {mode: 0o100444, size: 10};
             throw Object.assign(new Error('Missing'), {code: -2});
         },
@@ -52,6 +58,9 @@ test('native projection: cold metadata, ranges above 4 GiB, refresh, imports and
         assert.equal((await stat(path.join(root, 'LARGE.BIN'))).size, largeSize);
         assert.deepEqual((await readdir(root)).sort(), ['Files', 'Fotos', 'ONE', 'failure.bin', 'large.bin'].sort());
         const invite = path.join(root, 'ONE', 'invites', 'iop_invite.txt');
+        const inviteStats = await stat(invite);
+        assert.equal(Math.trunc(inviteStats.mtimeMs), inviteMtimeMs);
+        assert.equal(Math.trunc(inviteStats.birthtimeMs), inviteCtimeMs);
         assert.equal(await readFile(invite, 'utf8'), text);
         const file = await open(path.join(root, 'large.bin'), 'r');
         try {
@@ -74,6 +83,11 @@ test('native projection: cold metadata, ranges above 4 GiB, refresh, imports and
             "require('node:fs').writeFileSync(process.argv[1], 'import bytes')", path.join(root, 'Files', 'hello.txt')]);
         assert.deepEqual(await imported, ['/Files/hello.txt']);
         assert.equal(imports[0].content.toString(), 'import bytes');
+        const photoImported = once(provider, 'imported', {signal: AbortSignal.timeout(10000)});
+        await promisify(execFile)(process.execPath, ['-e',
+            "require('node:fs').writeFileSync(process.argv[1], 'jpeg bytes')", path.join(root, 'Fotos', 'pic.jpg')]);
+        assert.deepEqual(await photoImported, ['/Fotos/pic.jpg']);
+        assert.equal(imports.find(item => item.target === '/Fotos/pic.jpg')?.content.toString(), 'jpeg bytes');
         await assert.rejects(promisify(execFile)(process.execPath, ['-e',
             "require('node:fs').writeFileSync(process.argv[1], 'overwrite')", invite]));
         await assert.rejects(promisify(execFile)(process.execPath, ['-e',

@@ -3,6 +3,7 @@
 #include <projectedfslib.h>
 #include <shlobj.h>
 #include <algorithm>
+#include <cmath>
 #include <map>
 #include <mutex>
 #include <string>
@@ -44,6 +45,18 @@ void Check(Napi::Env env, HRESULT hr, const char* operation) {
         throw error;
     }
 }
+LARGE_INTEGER ToFileTime(double epochMs) {
+    LARGE_INTEGER result{};
+    constexpr double kEpochDiffMs = 11644473600000.0;
+    if (std::isfinite(epochMs) && epochMs >= -kEpochDiffMs) {
+        result.QuadPart = static_cast<LONGLONG>((epochMs + kEpochDiffMs) * 10000.0);
+    }
+    return result;
+}
+std::string NormalizeRootPrefix(const std::string& raw) {
+    if (raw.empty() || raw[0] != '/') throw std::runtime_error("Expected absolute writable root");
+    return raw.back() == '/' ? raw : raw + "/";
+}
 struct Entry { std::wstring name; PRJ_PLACEHOLDER_INFO info{}; };
 Entry ParseEntry(const Napi::Object& value) {
     Entry entry;
@@ -51,6 +64,17 @@ Entry ParseEntry(const Napi::Object& value) {
     entry.info.FileBasicInfo.IsDirectory = value.Get("isDirectory").As<Napi::Boolean>().Value();
     entry.info.FileBasicInfo.FileSize = value.Get("size").As<Napi::Number>().Int64Value();
     entry.info.FileBasicInfo.FileAttributes = entry.info.FileBasicInfo.IsDirectory ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_READONLY;
+    if (value.Has("ctimeMs") && value.Get("ctimeMs").IsNumber()) {
+        entry.info.FileBasicInfo.CreationTime = ToFileTime(value.Get("ctimeMs").As<Napi::Number>().DoubleValue());
+    }
+    if (value.Has("mtimeMs") && value.Get("mtimeMs").IsNumber()) {
+        auto mtime = ToFileTime(value.Get("mtimeMs").As<Napi::Number>().DoubleValue());
+        entry.info.FileBasicInfo.LastWriteTime = mtime;
+        entry.info.FileBasicInfo.ChangeTime = mtime;
+        if (entry.info.FileBasicInfo.CreationTime.QuadPart == 0) {
+            entry.info.FileBasicInfo.CreationTime = mtime;
+        }
+    }
     for (const auto& field : {std::make_pair("contentVersion", entry.info.VersionInfo.ContentID),
                               std::make_pair("metadataVersion", entry.info.VersionInfo.ProviderID)}) {
         auto version = value.Get(field.first).As<Napi::String>().Utf8Value();
@@ -75,6 +99,7 @@ public:
             InstanceMethod("isRunning", &Bridge::IsRunning), InstanceMethod("complete", &Bridge::Complete),
             InstanceMethod("writeData", &Bridge::WriteData), InstanceMethod("invalidate", &Bridge::Invalidate),
             InstanceMethod("compareNames", &Bridge::CompareNames),
+            InstanceMethod("setWritableRoots", &Bridge::SetWritableRoots),
             InstanceMethod("getStats", &Bridge::GetStats)
         }));
         return exports;
@@ -91,6 +116,38 @@ private:
     uint64_t bytesRead_ = 0, rangeWrites_ = 0;
     bool active_ = false;
     bool importEnabled_ = false;
+    std::vector<std::wstring> writablePrefixes_;
+    static std::vector<std::wstring> ParseWritableRoots(const Napi::Value& arg) {
+        std::vector<std::wstring> prefixes;
+        if (arg.IsBoolean()) {
+            if (arg.As<Napi::Boolean>().Value()) prefixes.push_back(L"Files\\");
+            return prefixes;
+        }
+        if (arg.IsArray()) {
+            auto array = arg.As<Napi::Array>();
+            for (uint32_t i = 0; i < array.Length(); i++) {
+                auto prefix = NormalizeRootPrefix(array.Get(i).As<Napi::String>().Utf8Value());
+                prefixes.push_back(Relative(prefix));
+            }
+            return prefixes;
+        }
+        throw std::runtime_error("Expected boolean or string[] for writable roots");
+    }
+    bool IsWritableRelativePath(PCWSTR relativePath) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (!importEnabled_ || !relativePath) return false;
+        for (const auto& prefix : writablePrefixes_) {
+            if (prefix.empty() || _wcsnicmp(relativePath, prefix.c_str(), prefix.size()) == 0) return true;
+        }
+        return false;
+    }
+    Napi::Value SetWritableRoots(const Napi::CallbackInfo& info) {
+        auto prefixes = ParseWritableRoots(info[0]);
+        std::lock_guard<std::mutex> lock(mutex_);
+        writablePrefixes_ = std::move(prefixes);
+        importEnabled_ = !writablePrefixes_.empty();
+        return info.Env().Undefined();
+    }
     static Bridge* Self(const PRJ_CALLBACK_DATA* data) { return static_cast<Bridge*>(data->InstanceContext); }
     Napi::Value CompareNames(const Napi::CallbackInfo& info) {
         return Napi::Number::New(info.Env(), PrjFileNameCompare(
@@ -179,12 +236,12 @@ private:
             return HRESULT_FROM_WIN32(ERROR_ACCESS_DENIED);
         auto path = VirtualPath(data->FilePathName);
         if (notification == PRJ_NOTIFICATION_NEW_FILE_CREATED || notification == PRJ_NOTIFICATION_FILE_OVERWRITTEN) {
-            if (!Self(data)->importEnabled_ || path.rfind("/Files/", 0) != 0) return HRESULT_FROM_WIN32(ERROR_ACCESS_DENIED);
+            if (!Self(data)->IsWritableRelativePath(data->FilePathName)) return HRESULT_FROM_WIN32(ERROR_ACCESS_DENIED);
         }
         if ((notification == PRJ_NOTIFICATION_NEW_FILE_CREATED && directory) ||
             (!directory && (notification == PRJ_NOTIFICATION_FILE_HANDLE_CLOSED_FILE_MODIFIED ||
                            notification == PRJ_NOTIFICATION_FILE_HANDLE_CLOSED_NO_MODIFICATION))) {
-            if (path.rfind("/Files/", 0) != 0) return S_OK;
+            if (!Self(data)->IsWritableRelativePath(data->FilePathName)) return S_OK;
             // Only full local files need import. Hydrated placeholders are already owned.
             PRJ_FILE_STATE state{};
             auto full = Self(data)->root_ + L"\\" + data->FilePathName;
@@ -208,7 +265,12 @@ private:
     Napi::Value Start(const Napi::CallbackInfo& info) {
         auto env = info.Env(); if (context_) throw Napi::Error::New(env, "Provider already started");
         root_ = Wide(info[0].As<Napi::String>().Utf8Value());
-        importEnabled_ = info[2].As<Napi::Boolean>().Value();
+        {
+            auto prefixes = ParseWritableRoots(info[2]);
+            std::lock_guard<std::mutex> lock(mutex_);
+            writablePrefixes_ = std::move(prefixes);
+            importEnabled_ = !writablePrefixes_.empty();
+        }
         dispatch_ = Napi::ThreadSafeFunction::New(env, info[1].As<Napi::Function>(), "ProjFS requests", 256, 1);
         WIN32_FIND_DATAW rootInfo{};
         HANDLE rootHandle = FindFirstFileW(root_.c_str(), &rootInfo);
