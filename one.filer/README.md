@@ -1,6 +1,11 @@
 # OneFiler
 
-**A Windows-WSL2 file system bridge for seamless ONE database integration through Windows Explorer**
+**Linux/Unix FUSE implementation for ONE database content.**
+
+Linux/FUSE and Debian packaging remain supported. The WSL Windows installation
+instructions in this historical document are retired, and the old Windows
+installer refuses to run. Current Windows development and packaging are documented
+in [native Windows Filer](../windows/README.md).
 
 > Implements a dual-pathway data ingestion system: structured data → ONE objects, unstructured data → BLOB/CLOB with metadata
 

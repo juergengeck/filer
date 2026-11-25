@@ -7,6 +7,7 @@
 
 import Fuse, { ENOENT, EIO } from './index.js';
 import path from 'path';
+import {filerReadBudget, FILER_READ_CHUNK_SIZE} from '@refinio/filer.core/reads';
 
 class IFSFuse3Provider {
     constructor(options) {
@@ -180,18 +181,20 @@ class IFSFuse3Provider {
 
         (async () => {
             try {
-                // IFileSystem readFile returns { content: ArrayBuffer }
-                const result = await this.fileSystem.readFile(filePath);
-                const data = Buffer.from(result.content);
-
-                // Handle offset and length
-                const start = offset;
-                const end = Math.min(offset + length, data.length);
-                const bytesToRead = Math.max(0, end - start);
+                let bytesToRead = 0;
+                while (bytesToRead < length) {
+                    const chunkLength = Math.min(length - bytesToRead, FILER_READ_CHUNK_SIZE);
+                    const count = await filerReadBudget.consume(this.fileSystem, filePath, offset + bytesToRead,
+                        chunkLength, bytes => {
+                            buffer.set(bytes, bytesToRead);
+                            return bytes.byteLength;
+                        });
+                    bytesToRead += count;
+                    // FUSE short reads mean EOF; finish the requested range otherwise.
+                    if (count < chunkLength) break;
+                }
 
                 if (bytesToRead > 0) {
-                    // Copy data to buffer
-                    data.copy(buffer, 0, start, end);
                     this.log('read success:', filePath, bytesToRead, 'bytes');
                     // Node.js style: callback(err, bytesRead)
                     callback(null, bytesToRead);

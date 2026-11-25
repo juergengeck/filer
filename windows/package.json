@@ -1,0 +1,7 @@
+{
+  "name": "filer-windows-packaging",
+  "private": true,
+  "type": "module",
+  "scripts": {"package": "node package.mjs"},
+  "devDependencies": {"esbuild": "0.27.3"}
+}

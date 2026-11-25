@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {fork} from 'node:child_process';
 import {createHash, randomBytes} from 'node:crypto';
-import {mkdtemp, readFile, rm} from 'node:fs/promises';
+import {mkdir, mkdtemp, readdir, readFile, rm} from 'node:fs/promises';
 import {createWriteStream} from 'node:fs';
 import net from 'node:net';
 import os from 'node:os';
@@ -10,6 +10,8 @@ import {fileURLToPath} from 'node:url';
 import CommunicationServer from '../../one/packages/one.models/lib/misc/ConnectionEstablishment/communicationServer/CommunicationServer.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const native = process.argv.includes('--native');
+if (native && process.platform !== 'win32') throw new Error('Native collections test requires Windows');
 const temporary = await mkdtemp(path.join(os.tmpdir(), 'filer-files-collections-'));
 const workers = [];
 const server = new CommunicationServer();
@@ -63,7 +65,9 @@ async function freePort() {
 async function startWorker(name, commServerUrl, previous) {
   const config = previous ?? {directory: path.join(temporary, name), email: `${name}@model-weights.test`,
     secret: randomBytes(32).toString('hex'), instanceName: name, commServerUrl,
+    ...(native ? {mountPoint: path.join(temporary, `${name}-mount`)} : {}),
     inviteUrlPrefix: 'https://refinio.one/invite'};
+  if (config.mountPoint) await mkdir(config.mountPoint, {recursive: true});
   const logPath = path.join(temporary, `${name}-${workers.length}.log`);
   const log = createWriteStream(logPath);
   const child = fork(path.join(root, 'scripts/files-collections-integration-worker.mjs'), [], {
@@ -261,8 +265,9 @@ try {
   assert.deepEqual((await headlessRpc(recipient, 'readDir', {path: `${objectPath}/Shared with`})).children, []);
   assert.deepEqual((await headlessRpc(recipient, 'readDir', {path: `${objectPath}/People in photo`})).children, contactNames);
   const received = waitMessage(recipient.child, message => message.event === 'FotosShareCertificateChain');
+  const receivedManifest = waitMessage(recipient.child, message => message.event === 'FotosShareManifest');
   await source.command('share', {person: recipient.ready.person, collection: 'Summer', entries});
-  await received;
+  await Promise.all([received, receivedManifest]);
   const folders = (await rpc(recipient, 'readDir', {path: '/Fotos'})).children;
   assert.equal(folders.length, 1);
   assert.ok(folders[0].startsWith('Summer '));
@@ -270,6 +275,10 @@ try {
   const photoPath = `${collection}/rose.png`;
   await rpc(recipient, 'readDir', {path: collection});
   assert.deepEqual(Buffer.from((await rpc(recipient, 'readFile', {path: photoPath})).content, 'base64'), photo);
+  if (native) {
+    await recipient.command('nativeSettled');
+    assert.deepEqual(await readFile(path.join(recipient.config.mountPoint, photoPath)), photo);
+  }
   await assert.rejects(rpc(recipient, 'writeFile', {path: `${collection}/import.png`, content: photo.toString('base64')}), /read-only/);
   const galleryReceived = waitMessage(recipient.child, message => message.event === 'FotosShareCertificateChain');
   await source.command('share', {person: recipient.ready.person, collection: 'Entire library', kind: 'gallery', entries});
@@ -282,6 +291,11 @@ try {
   await removed;
   assert.deepEqual((await rpc(recipient, 'readDir', {path: collection})).children, []);
   await assert.rejects(rpc(recipient, 'readFile', {path: photoPath}), /does not exist/);
+  if (native) {
+    await recipient.command('nativeSettled');
+    assert.deepEqual(await readdir(path.join(recipient.config.mountPoint, collection)), []);
+    await assert.rejects(readFile(path.join(recipient.config.mountPoint, photoPath)), {code: 'ENOENT'});
+  }
   const restored = waitMessage(recipient.child, message => message.event === 'FotosShareManifest');
   await source.command('share', {person: recipient.ready.person, collection: 'Summer', entries});
   await restored;
@@ -292,6 +306,7 @@ try {
   assert.deepEqual((await headlessRpc(reopened, 'readDir', {path: `${objectPath}/Shared with`})).children, []);
   assert.deepEqual((await headlessRpc(reopened, 'readDir', {path: `${objectPath}/People in photo`})).children, contactNames);
   assert.deepEqual(Buffer.from((await rpc(reopened, 'readFile', {path: photoPath})).content, 'base64'), photo);
+  if (native) assert.deepEqual(await readFile(path.join(reopened.config.mountPoint, photoPath)), photo);
   console.log('Restart restored Files and the received collection; reconnecting for revocation');
   const reconnected = waitMessage(reopened.child, message => message.event === 'paired');
   await reopened.command('pair', {invitation: await source.command('invite')});
@@ -301,6 +316,11 @@ try {
   await revoked;
   assert.deepEqual((await rpc(reopened, 'readDir', {path: '/Fotos'})).children, []);
   await assert.rejects(rpc(reopened, 'readFile', {path: photoPath}), /does not exist/);
+  if (native) {
+    await reopened.command('nativeSettled');
+    assert.deepEqual(await readdir(path.join(reopened.config.mountPoint, 'Fotos')), []);
+    await assert.rejects(readFile(path.join(reopened.config.mountPoint, photoPath)), {code: 'ENOENT'});
+  }
   console.log('Generic received object remains projected after recipient restart');
   await source.stop();
   const sourceReopened = await startWorker('source-reopened', commServerUrl, source.config);

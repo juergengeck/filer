@@ -1,532 +1,217 @@
-import { EventEmitter } from 'events';
-import { createRequire } from 'module';
-import fs from 'fs';
-import path from 'path';
+import {EventEmitter} from 'node:events';
+import {createRequire} from 'node:module';
+import {mkdir, lstat, chmod} from 'node:fs/promises';
+import path from 'node:path';
+import {setImmediate as yieldToCallbacks} from 'node:timers/promises';
+import {filerReadBudget, FILER_READ_CHUNK_SIZE, assertReadRange} from '@refinio/filer.core/reads';
 
 const require = createRequire(import.meta.url);
 const NativeProvider = require('./build/Release/ifsprojfs.node').IFSProjFSProvider;
 
-const DEFAULT_VIRTUAL_ROOT = 'C:\\OneFiler';
-const INVITES_RETRY_DELAY_MS = 100;
-const INVITES_RETRY_COUNT = 10;
-const ROOT_PATH = '/';
-const ROOT_DIRECTORY_MODE = 16877;
-const DEFAULT_FILE_MODE = 33188;
-
-const enumerationCount = { count: 0 };
-
-function shouldSuppressConsoleLogging() {
-    return process.env.NODE_ENV === 'test' || Boolean(process.env.JEST_WORKER_ID);
-}
-
-function resolveLogFile(instancePath) {
-    if (process.env.ONE_PROJFS_LOG_FILE) {
-        return process.env.ONE_PROJFS_LOG_FILE;
+/** Validate virtual paths without stripping mount names or permitting ADS/traversal. */
+function canonical(value) {
+    if (value === 'root' || value === '/') return '/';
+    if (typeof value !== 'string' || !value.startsWith('/') || value.includes('\\') ||
+        value.slice(1).split('/').some(part => !part || part === '.' || part === '..' || part.endsWith('.') ||
+            part.endsWith(' ') || /[\x00-\x1f:<>"|?*]/.test(part) || /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)/i.test(part))) {
+        throw Object.assign(new Error('Invalid virtual path'), {code: -22});
     }
-
-    if (!instancePath) {
-        return null;
-    }
-
-    return path.join(instancePath, 'logs', 'projfs-operations.log');
+    return value;
 }
 
-function delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+/** Translate owner errors into Windows errors; unknown failures remain I/O errors. */
+function windowsError(error) {
+    if (error?.name === 'AbortError') return 995;
+    if (error?.hresult) return error.hresult & 0xffff;
+    const codes = new Map([[-2, 2], ['ENOENT', 2], ['FSE-ENOENT', 2], [-13, 5],
+        ['EACCES', 5], [-30, 5], [-17, 183], [-22, 87], [-16, 170]]);
+    return codes.get(error?.code) ?? 1117;
 }
 
-function getEntryName(child) {
-    if (typeof child === 'string') {
-        const parts = child.split(/[\\/]/).filter(Boolean);
-        return parts[parts.length - 1] || child;
-    }
-
-    if (child && typeof child === 'object') {
-        return child.name || '';
-    }
-
-    return '';
-}
-
-function isDirectoryMode(mode) {
-    return Boolean(mode && (mode & 0o040000) === 0o040000);
-}
-
-class IFSProjFSProvider extends EventEmitter {
+/** Windows projection of the canonical runtime filesystem. */
+export class IFSProjFSProvider extends EventEmitter {
     constructor(options) {
         super();
-
-        if (typeof options === 'string') {
-            this.instancePath = options;
-            this.virtualRoot = DEFAULT_VIRTUAL_ROOT;
-            this.fileSystem = null;
-            this.debug = false;
-        } else {
-            this.instancePath = options?.instancePath;
-            this.virtualRoot = options?.virtualRoot || DEFAULT_VIRTUAL_ROOT;
-            this.fileSystem = options?.fileSystem ?? null;
-            this.debug = options?.debug === true;
-        }
-
-        this.logFile = resolveLogFile(this.instancePath);
-        this.logStream = null;
-        this.inviteWatcher = null;
-        this.callbacks = {
-            createFile: null,
-            getFileInfo: null,
-            readDirectory: null,
-            readFile: null
-        };
-
-        this.provider = new NativeProvider(this.instancePath);
-        this.provider.registerCallbacks({
-            createFile: this.createFile.bind(this),
-            getFileInfo: this.getFileInfo.bind(this),
-            onDebugMessage: this.onDebugMessage.bind(this),
-            readDirectory: this.readDirectory.bind(this),
-            readFile: this.readFile.bind(this)
-        });
+        if (!options?.fileSystem) throw new Error('fileSystem is required');
+        this.fileSystem = options.fileSystem;
+        this.virtualRoot = path.resolve(options.virtualRoot);
+        this.importLocal = options.importLocal;
+        this.provider = new NativeProvider();
+        this.requests = new Map();
+        this.work = new Set();
+        this.imports = new Map();
+        this.imported = new Set();
+        this.closing = false;
     }
 
-    log(message, force = false) {
-        if (!force && !this.debug) {
+    /** Normalize owner metadata without fabricating timestamps or content versions. */
+    async getFileInfo(value) {
+        return this.describe(await this.resolvePath(value));
+    }
+
+    /** Resolve Windows spelling with ProjFS's comparison, preserving the owner's actual name. */
+    async resolvePath(value) {
+        const target = canonical(value);
+        let directory = '/';
+        if (target === '/') return directory;
+        for (const component of target.slice(1).split('/')) {
+            const {children} = await this.fileSystem.readDir(directory);
+            const names = children.filter(name => this.provider.compareNames(name, component) === 0);
+            if (!names.length) throw Object.assign(new Error('File does not exist'), {code: -2});
+            if (names.length !== 1) throw new Error('Directory contains colliding Windows filenames');
+            canonical('/' + names[0]);
+            directory = path.posix.join(directory, names[0]);
+        }
+        return directory;
+    }
+
+    /** Read metadata at an already resolved owner path. */
+    async describe(target) {
+        const info = await this.fileSystem.stat(target);
+        if (!Number.isSafeInteger(info.size) || info.size < 0) throw new Error('Invalid file size');
+        return {path: target, name: path.posix.basename(target), size: info.size,
+            isDirectory: (info.mode & 0o170000) === 0o40000,
+            contentVersion: info.item?.contentVersion ?? info.contentHash ?? '',
+            metadataVersion: info.item?.metadataVersion ?? info.metadataHash ?? ''};
+    }
+
+    /** Enumerate metadata sequentially, avoiding unbounded stat fanout. */
+    async readDirectory(value) {
+        const target = await this.resolvePath(value);
+        const {children} = await this.fileSystem.readDir(target);
+        const entries = [];
+        const sorted = [...children].sort(this.provider.compareNames.bind(this.provider));
+        let previous;
+        for (const name of sorted) {
+            if (typeof name !== 'string' || name.includes('/') || name.endsWith('.') || name.endsWith(' ')) {
+                throw new Error('Directory contains a nonportable filename');
+            }
+            if (previous !== undefined && this.provider.compareNames(previous, name) === 0) throw new Error('Directory contains colliding Windows filenames');
+            previous = name;
+            canonical('/' + name);
+            entries.push(await this.describe(path.posix.join(target, name)));
+        }
+        return entries;
+    }
+
+    /** Serve each OS request in bounded ranges; hold admission through the native copy. */
+    async readRequest(request, signal) {
+        assertReadRange(request.position, request.length);
+        const info = await this.getFileInfo(request.path);
+        const ownerPath = info.path;
+        if (request.contentVersion !== info.contentVersion) throw new Error('Placeholder content version is no longer current');
+        const end = Math.min(info.size, request.position + request.length);
+        for (let position = request.position; position < end;) {
+            const length = Math.min(FILER_READ_CHUNK_SIZE, end - position);
+            await filerReadBudget.consume(this.fileSystem, ownerPath, position, length, async bytes => {
+                if (bytes.byteLength !== length) throw new Error('Unexpected EOF during hydration');
+                if ((await this.describe(ownerPath)).contentVersion !== info.contentVersion) throw new Error('File changed during hydration');
+                if (!this.provider.writeData(request.id, Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength), position)) {
+                    throw new DOMException('Read was cancelled', 'AbortError');
+                }
+            }, signal);
+            position += length;
+            // Owner cache hits may resolve synchronously for thousands of chunks.
+            // Yield to native cancellation/shutdown callbacks without a timed delay.
+            await yieldToCallbacks();
+        }
+    }
+
+    /** Commit local imports in notification order so parent directories precede children. */
+    async importRequest(request) {
+        const target = canonical(request.path);
+        if (this.imported.has(target)) return;
+        if (!this.importLocal) throw new Error('This mount has no file import owner');
+        if (this.imports.has(target)) return this.imports.get(target);
+        const parent = this.imports.get(path.posix.dirname(target));
+        const operation = (async () => {
+            await parent;
+            const localPath = path.join(this.virtualRoot, ...target.slice(1).split('/'));
+            let ancestor = this.virtualRoot;
+            for (const component of target.slice(1).split('/')) {
+                ancestor = path.join(ancestor, component);
+                if ((await lstat(ancestor)).isSymbolicLink()) throw new Error('Cannot import through a reparse point');
+            }
+            const local = await lstat(localPath);
+            if (local.isSymbolicLink()) throw new Error('Cannot import a reparse point');
+            await this.importLocal(target, localPath, request.isDirectory);
+            if (!request.isDirectory) await chmod(localPath, 0o444);
+            this.imported.add(target);
+            this.emit('imported', target);
+        })();
+        this.imports.set(target, operation);
+        try { await operation; } finally { this.imports.delete(target); }
+    }
+
+    /** Native callback entry; every promise is tracked and every command is completed. */
+    dispatch(request) {
+        if (process.env.ONE_PROJFS_DEBUG) console.error('[ProjFS]', request);
+        if (request.operation === 'cancel') {
+            this.requests.get(request.id)?.abort();
             return;
         }
-
-        const timestamp = new Date().toISOString();
-        const logMessage = `[${timestamp}] ${message}\n`;
-
-        if (!shouldSuppressConsoleLogging()) {
-            console.log(message);
-        }
-
-        if (!this.logFile) {
-            return;
-        }
-
-        if (!this.logStream) {
+        const controller = new AbortController();
+        if (this.closing) controller.abort();
+        if (request.id !== undefined) this.requests.set(request.id, controller);
+        const operation = (async () => {
             try {
-                const dir = path.dirname(this.logFile);
-                if (!fs.existsSync(dir)) {
-                    fs.mkdirSync(dir, { recursive: true });
+                controller.signal.throwIfAborted();
+                let result;
+                switch (request.operation) {
+                    case 'list': result = await this.readDirectory(request.path); break;
+                    case 'query': case 'stat': result = await this.getFileInfo(request.path); break;
+                    case 'read': await this.readRequest(request, controller.signal); break;
+                    case 'import': await this.importRequest(request); return;
+                    default: throw new Error('Unknown ProjFS request');
                 }
-                this.logStream = fs.createWriteStream(this.logFile, { flags: 'a' });
+                this.provider.complete(request.id, result, undefined);
             } catch (error) {
-                if (!shouldSuppressConsoleLogging()) {
-                    console.error(`Failed to create ProjFS log file: ${error.message}`);
+                const winErr = windowsError(error);
+                if (request.id !== undefined) this.provider.complete(request.id, undefined, winErr);
+                // Routine OS probes (e.g. desktop.ini, folder.jpg) return ENOENT on query/stat;
+                // only surface actual I/O failures and import errors.
+                const isBenignLookupMiss = (request.operation === 'query' || request.operation === 'stat') && winErr === 2;
+                if (error.name !== 'AbortError' && !isBenignLookupMiss) {
+                    this.emit('operationError', {operation: request.operation, path: request.path, error});
                 }
-                this.logFile = null;
-                return;
-            }
-        }
-
-        this.logStream.write(logMessage);
+            } finally { this.requests.delete(request.id); }
+        })();
+        this.work.add(operation);
+        void operation.finally(() => this.work.delete(operation));
     }
 
-    onDebugMessage(message) {
-        this.log(`[Native] ${message}`);
+    /** Mount without deleting or resetting existing filesystem state. */
+    async start(virtualRoot = this.virtualRoot) {
+        if (this.isRunning()) throw new Error('Already mounted');
+        this.virtualRoot = path.resolve(virtualRoot);
+        await mkdir(this.virtualRoot, {recursive: true});
+        this.closing = false;
+        this.provider.start(this.virtualRoot, this.dispatch.bind(this), Boolean(this.importLocal));
     }
-
-    normalizePath(inputPath) {
-        if (!inputPath || typeof inputPath !== 'string') {
-            return ROOT_PATH;
-        }
-
-        let normalized = inputPath
-            .replace(/\\/g, '/')
-            .replace(/^[A-Z]:/i, '')
-            .replace(/^\/+OneFiler/i, '')
-            .replace(/\/+/g, '/');
-
-        if (!normalized.startsWith('/')) {
-            normalized = '/' + normalized;
-        }
-
-        if (normalized.length > 1 && normalized.endsWith('/')) {
-            normalized = normalized.slice(0, -1);
-        }
-
-        return normalized || ROOT_PATH;
-    }
-
-    getHandler(methodName) {
-        const callbackMap = {
-            createFile: 'createFile',
-            readDir: 'readDirectory',
-            readFile: 'readFile',
-            stat: 'getFileInfo',
-            writeFile: 'createFile'
-        };
-
-        if (this.fileSystem && typeof this.fileSystem[methodName] === 'function') {
-            return this.fileSystem[methodName].bind(this.fileSystem);
-        }
-
-        const callbackName = callbackMap[methodName];
-        if (callbackName && typeof this.callbacks[callbackName] === 'function') {
-            return this.callbacks[callbackName];
-        }
-
-        return null;
-    }
-
-    async callFileSystem(methodName, ...args) {
-        const handler = this.getHandler(methodName);
-        if (!handler) {
-            throw new Error(`No file system handler available for ${methodName}`);
-        }
-        return handler(...args);
-    }
-
-    async getFileInfo(filePath) {
-        const normalizedPath = this.normalizePath(filePath);
-        this.log(`getFileInfo: "${filePath}" -> "${normalizedPath}"`);
-
-        try {
-            const name = String(filePath ?? '').split(/[\\/]/).filter(Boolean).pop() || '';
-
-            if (normalizedPath === ROOT_PATH) {
-                return {
-                    hash: '',
-                    isBlobOrClob: false,
-                    isDirectory: true,
-                    mode: ROOT_DIRECTORY_MODE,
-                    name: '',
-                    size: 0
-                };
-            }
-
-            const info = await this.callFileSystem('stat', normalizedPath);
-            const isDir = info.isDirectory || isDirectoryMode(info.mode);
-
-            return {
-                hash: info.hash || '',
-                isBlobOrClob: false,
-                isDirectory: isDir,
-                mode: info.mode || (isDir ? ROOT_DIRECTORY_MODE : DEFAULT_FILE_MODE),
-                name,
-                size: info.size || 0
-            };
-        } catch (error) {
-            this.log(`getFileInfo ERROR: ${error.message}`);
-            return null;
-        }
-    }
-
-    async readFile(filePath) {
-        const normalizedPath = this.normalizePath(filePath);
-        this.log(`readFile: "${filePath}" -> "${normalizedPath}"`);
-
-        if (normalizedPath.startsWith('/objects/')) {
-            this.log(`Skipping JS read for ${normalizedPath}; native layer handles /objects paths`);
-            return null;
-        }
-
-        try {
-            const file = await this.callFileSystem('readFile', normalizedPath);
-            if (!file || !file.content) {
-                this.log(`readFile: No content returned for ${normalizedPath}`);
-                return null;
-            }
-
-            let buffer;
-            if (Buffer.isBuffer(file.content)) {
-                buffer = file.content;
-            } else if (file.content instanceof ArrayBuffer) {
-                buffer = Buffer.from(file.content);
-            } else if (ArrayBuffer.isView(file.content)) {
-                buffer = Buffer.from(file.content.buffer, file.content.byteOffset, file.content.byteLength);
-            } else {
-                buffer = Buffer.from(file.content);
-            }
-
-            this.log(`readFile SUCCESS: ${buffer.length} bytes for ${normalizedPath}`);
-
-            if (typeof this.provider.setCachedContent === 'function') {
-                this.provider.setCachedContent(normalizedPath, buffer);
-            }
-
-            if (typeof this.provider.completePendingFileRequests === 'function') {
-                this.provider.completePendingFileRequests(normalizedPath);
-            }
-
-            return buffer;
-        } catch (error) {
-            this.log(`readFile ERROR: ${error.message}`);
-            return null;
-        }
-    }
-
-    async readDirectory(directoryPath) {
-        enumerationCount.count++;
-
-        const normalizedPath = this.normalizePath(directoryPath);
-        this.log(`readDirectory #${enumerationCount.count}: "${directoryPath}" -> "${normalizedPath}"`);
-
-        try {
-            const dir = await this.callFileSystem('readDir', normalizedPath);
-            if (!dir?.children || !Array.isArray(dir.children)) {
-                this.log(`readDirectory: No children for ${normalizedPath}`);
-                return [];
-            }
-
-            const rootChildNames = new Set(
-                normalizedPath === ROOT_PATH
-                    ? dir.children.filter(child => typeof child === 'string').map(child => String(child).trim())
-                    : []
-            );
-
-            const entries = [];
-            const seen = new Set();
-
-            for (const child of dir.children) {
-                const name = String(getEntryName(child)).trim();
-                if (!name || name.includes('/') || name.includes('\\') || seen.has(name)) {
-                    continue;
-                }
-
-                seen.add(name);
-                const childPath = normalizedPath === ROOT_PATH ? `/${name}` : `${normalizedPath}/${name}`;
-
-                try {
-                    const info = await this.callFileSystem('stat', childPath);
-                    const isDirectory = normalizedPath === ROOT_PATH
-                        ? rootChildNames.has(name)
-                        : info.isDirectory || isDirectoryMode(info.mode);
-
-                    entries.push({
-                        hash: info.hash || '',
-                        isBlobOrClob: false,
-                        isDirectory,
-                        mode: info.mode || (isDirectory ? ROOT_DIRECTORY_MODE : DEFAULT_FILE_MODE),
-                        name,
-                        size: info.size || 0
-                    });
-                } catch (error) {
-                    this.log(`Failed to stat ${childPath}: ${error.message}`);
-                }
-            }
-
-            const validEntries = entries.filter(entry => entry.name.length > 0);
-            this.setCachedDirectory(normalizedPath, validEntries);
-
-            for (const entry of validEntries) {
-                const entryPath = normalizedPath === ROOT_PATH ? `/${entry.name}` : `${normalizedPath}/${entry.name}`;
-                this.setCachedFileInfo(entryPath, entry);
-            }
-
-            return validEntries;
-        } catch (error) {
-            this.log(`readDirectory ERROR: ${error.message}`);
-            return [];
-        }
-    }
-
-    async createFile(filePath, content) {
-        const normalizedPath = this.normalizePath(filePath);
-        this.log(`createFile: "${filePath}" -> "${normalizedPath}"`);
-        await this.callFileSystem('writeFile', normalizedPath, content);
-    }
-
-    getCacheStats() {
-        if (this.provider && typeof this.provider.getCacheStats === 'function') {
-            return this.provider.getCacheStats();
-        }
-
-        return {
-            contentCount: 0,
-            directoryCount: 0,
-            fileInfoCount: 0
-        };
-    }
-
-    setCachedContent(filePath, content) {
-        const normalizedPath = this.normalizePath(filePath);
-        this.log(`setCachedContent: ${content ? content.length : 0} bytes for "${normalizedPath}"`);
-
-        if (typeof this.provider.setCachedContent === 'function') {
-            this.provider.setCachedContent(normalizedPath, content);
-        }
-    }
-
-    setCachedDirectory(directoryPath, entries) {
-        const normalizedPath = this.normalizePath(directoryPath);
-        this.log(`setCachedDirectory: ${entries ? entries.length : 0} entries for "${normalizedPath}"`);
-
-        if (typeof this.provider.setCachedDirectory === 'function') {
-            this.provider.setCachedDirectory(normalizedPath, entries);
-        }
-    }
-
-    setCachedFileInfo(filePath, fileInfo) {
-        const normalizedPath = this.normalizePath(filePath);
-        this.log(`setCachedFileInfo: "${normalizedPath}"`);
-
-        if (typeof this.provider.setCachedFileInfo === 'function') {
-            this.provider.setCachedFileInfo(normalizedPath, fileInfo);
-        }
-    }
-
-    async waitForInviteEnumeration(invitesPath) {
-        for (let attempt = 0; attempt < INVITES_RETRY_COUNT; attempt++) {
-            try {
-                const files = fs.readdirSync(invitesPath);
-                if (files.length > 0) {
-                    this.log(`Windows enumerated /invites with ${files.length} files`);
-                    return files;
-                }
-            } catch (error) {
-                this.log(`Retry ${attempt + 1} reading /invites: ${error.message}`);
-            }
-
-            await delay(INVITES_RETRY_DELAY_MS);
-        }
-
-        this.log('/invites enumeration returned 0 files after retries', true);
-        return [];
-    }
-
-    invalidateInviteCaches(virtualPath) {
-        if (typeof this.provider.clearCachedFileInfo === 'function') {
-            this.provider.clearCachedFileInfo(virtualPath);
-        }
-
-        if (typeof this.provider.clearCachedContent === 'function') {
-            this.provider.clearCachedContent(virtualPath);
-        }
-
-        if (typeof this.provider.invalidateTombstone === 'function') {
-            const success = this.provider.invalidateTombstone(virtualPath);
-            if (!success) {
-                this.log(`Failed to invalidate tombstone for ${virtualPath}`, true);
-            }
-        }
-    }
-
-    async mount() {
-        this.log(`Mounting at ${this.virtualRoot}`, true);
-        enumerationCount.count = 0;
-
-        if (this.fileSystem || this.callbacks.readDirectory) {
-            try {
-                const rootEntries = await this.readDirectory(ROOT_PATH);
-                this.log(`Pre-populated root with ${rootEntries.length} entries`);
-            } catch (error) {
-                this.log(`Failed to pre-populate root: ${error.message}`, true);
-            }
-
-            try {
-                const inviteEntries = await this.readDirectory('/invites');
-                this.log(`Pre-populated /invites with ${inviteEntries.length} entries`);
-            } catch (error) {
-                this.log(`Could not pre-populate /invites: ${error.message}`);
-            }
-        }
-
-        await this.provider.start(this.virtualRoot);
-        this.log('Mount completed', true);
-
-        try {
-            const invitesPath = path.join(this.virtualRoot, 'invites');
-            await this.waitForInviteEnumeration(invitesPath);
-
-            this.inviteWatcher = fs.watch(invitesPath, (eventType, filename) => {
-                if (eventType !== 'rename' || !filename) {
-                    return;
-                }
-
-                const filePath = path.join(invitesPath, filename);
-                if (fs.existsSync(filePath)) {
-                    this.log(`Invite file created or restored: ${filename}`);
-                    return;
-                }
-
-                const virtualPath = `/invites/${filename}`;
-                this.log(`Invite file deleted: ${filename}`, true);
-                this.invalidateInviteCaches(virtualPath);
-            });
-
-            this.log('Invite file monitoring active');
-        } catch (error) {
-            this.log(`Failed to set up invite monitoring: ${error.message}`, true);
-        }
-    }
-
-    async start(virtualRoot) {
-        this.virtualRoot = virtualRoot || this.virtualRoot;
-        return this.mount();
-    }
-
-    async unmount() {
-        this.log(`Unmounting from ${this.virtualRoot} after ${enumerationCount.count} enumerations`, true);
-
-        if (this.inviteWatcher) {
-            try {
-                this.inviteWatcher.close();
-            } catch (error) {
-                this.log(`Failed to close invite watcher: ${error.message}`, true);
-            }
-            this.inviteWatcher = null;
-        }
-
-        await this.provider.stop();
-
-        if (this.logStream) {
-            this.logStream.end();
-            this.logStream = null;
-        }
-    }
-
+    /** Alias used by native provider callers. */
+    async mount() { await this.start(); }
+    /** Stop incoming OS callbacks, then drain active owner reads before runtime shutdown. */
     async stop() {
-        return this.unmount();
+        this.closing = true;
+        for (const controller of this.requests.values()) controller.abort();
+        this.provider.stop();
+        await Promise.all([...this.work]);
     }
-
-    isRunning() {
-        return this.provider && typeof this.provider.isRunning === 'function'
-            ? this.provider.isRunning()
-            : false;
+    /** Alias used by native provider callers. */
+    async unmount() { await this.stop(); }
+    /** Refresh clean projected children while preserving locally modified/full files. */
+    async refresh(containers) {
+        const paths = [...new Set(containers.map(canonical))].sort((a, b) => a.length - b.length);
+        const roots = [];
+        for (const target of paths) {
+            if (!roots.some(root => root === '/' || target.startsWith(root + '/'))) roots.push(target);
+        }
+        for (const target of roots) this.provider.invalidate(target);
     }
-
-    getStats() {
-        return this.provider && typeof this.provider.getStats === 'function'
-            ? this.provider.getStats()
-            : {};
-    }
-
-    setDebug(enabled) {
-        this.debug = enabled === true;
-    }
-
-    registerCallbacks(callbacks) {
-        if (callbacks.createFile) {
-            this.callbacks.createFile = callbacks.createFile;
-        }
-        if (callbacks.getFileInfo) {
-            this.callbacks.getFileInfo = callbacks.getFileInfo;
-        }
-        if (callbacks.readDirectory) {
-            this.callbacks.readDirectory = callbacks.readDirectory;
-        }
-        if (callbacks.readFile) {
-            this.callbacks.readFile = callbacks.readFile;
-        }
-
-        if (this.provider && typeof this.provider.registerCallbacks === 'function') {
-            this.provider.registerCallbacks({
-                createFile: this.createFile.bind(this),
-                getFileInfo: this.getFileInfo.bind(this),
-                onDebugMessage: this.onDebugMessage.bind(this),
-                readDirectory: this.readDirectory.bind(this),
-                readFile: this.readFile.bind(this)
-            });
-        }
-    }
-
-    completePendingFileRequests(filePath) {
-        if (this.provider && typeof this.provider.completePendingFileRequests === 'function') {
-            this.provider.completePendingFileRequests(filePath);
-        }
-    }
+    /** Whether ProjFS currently accepts OS requests. */
+    isRunning() { return this.provider.isRunning(); }
+    /** Native request counts and the shared process-wide read reservations. */
+    getStats() { return {...this.provider.getStats(), reads: filerReadBudget.getUsage()}; }
 }
 
 export default IFSProjFSProvider;

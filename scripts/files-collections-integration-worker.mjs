@@ -37,6 +37,14 @@ for (const [field, method] of [['multiUser', 'loginOrRegister'], ['leuteModel', 
   };
 }
 const fs = await runtime.init();
+let nativeMount;
+if (config.mountPoint) {
+  const {NativeFilerMount} = await import('../../one/packages/refinio.api/dist/src/filer/NativeFilerMount.js');
+  const {IFSProjFSProvider} = await import('../one.projfs/IFSProjFSProvider.js');
+  nativeMount = new NativeFilerMount(runtime, fs, options => new IFSProjFSProvider(options),
+    error => { console.error(error); process.exitCode = 1; });
+  await nativeMount.start(config.mountPoint);
+}
 console.log('BOOT runtime complete');
 const rpc = new FileProviderOperations(fs, new Map(), runtime.getModelWeightsPlan().getProjection());
 // The headless sharing endpoint (/objects, /contacts) is served apart from the Filer UI.
@@ -219,7 +227,8 @@ process.on('message', async ({id, method, params = {}}) => {
         result = {idHash: params.idHash, hash: found.hash, obj: found.obj};
         break;
       }
-      case 'stop': stop(); await runtime.shutdown(); break;
+      case 'nativeSettled': await nativeMount?.refreshes; break;
+      case 'stop': stop(); await nativeMount?.stop(); await runtime.shutdown(); break;
       default: throw new Error(`Unknown command ${method}`);
     }
     process.send({id, result: result ?? null});

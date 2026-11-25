@@ -1,4 +1,8 @@
-# ONE Filer Windows Installer
+# Retired WSL Windows installer
+
+This installer is no longer supported and refuses to run. Use the
+[native Windows package](../../windows/README.md). Linux/FUSE and Debian
+packaging remain supported. The material below is historical documentation.
 
 This installer package provides automated setup of ONE Filer on Windows systems, enabling seamless integration between ONE's federated database and Windows Explorer through WSL2.
 
@@ -213,4 +217,4 @@ See LICENSE.md for license information.
 
 ---
 
-**ONE Filer** - Making federated databases accessible through familiar file system interfaces. 
+**ONE Filer** - Making federated databases accessible through familiar file system interfaces.

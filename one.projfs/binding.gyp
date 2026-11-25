@@ -3,18 +3,14 @@
     {
       "target_name": "ifsprojfs",
       "sources": [
-        "src/ifsprojfs_bridge.cpp",
-        "src/projfs_provider.cpp",
-        "src/sync_storage.cpp",
-        "src/content_cache.cpp",
-        "src/async_bridge.cpp"
+        "src/native_provider.cpp"
       ],
       "include_dirs": [
         "<!@(node -p \"require('node-addon-api').include\")",
         "src"
       ],
       "libraries": [
-        "ProjectedFSLib.lib"
+        "ProjectedFSLib.lib", "Shell32.lib", "Ole32.lib"
       ],
       "defines": [
         "NAPI_CPP_EXCEPTIONS"

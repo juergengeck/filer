@@ -1,5 +1,11 @@
 # CLAUDE.md
 
+> The native implementation described below was retired on 2026-09-10.
+> Current guidance is in [README.md](README.md) and
+> [the Windows update](../docs/windows-update.md). Use `src/native_provider.cpp`,
+> the shared `filer.core/reads` budget and `pnpm test`; do not restore the retired
+> native storage/cache layers.
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview

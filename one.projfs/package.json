@@ -7,16 +7,14 @@
   "types": "index.d.ts",
   "exports": {
     ".": "./index.js",
-    "./IFSProjFSProvider.js": "./IFSProjFSProvider.js"
+    "./IFSProjFSProvider.js": {"types": "./index.d.ts", "import": "./IFSProjFSProvider.js"}
   },
   "scripts": {
     "install": "node-gyp rebuild",
     "build": "node-gyp rebuild",
     "rebuild": "node-gyp rebuild",
     "clean": "node-gyp clean",
-    "test": "node test/integration/connection-test.js",
-    "test:clean": "npm run clean:test && npm test",
-    "clean:test": "node -e \"const fs = require('fs'); const path = require('path'); try { fs.rmSync('C:/Temp/refinio-api-server-instance', { recursive: true, force: true }); fs.rmSync('C:/Temp/refinio-api-client-instance', { recursive: true, force: true }); fs.rmSync('C:/OneFiler-Test', { recursive: true, force: true }); console.log('Test directories cleaned'); } catch(e) { console.log('Cleanup complete (some dirs may not exist)'); }\""
+    "test": "node --test test/*.test.js"
   },
   "repository": {
     "type": "git",
@@ -38,11 +36,15 @@
     "node-addon-api": "^8.5.0"
   },
   "devDependencies": {
+    "@refinio/filer.core": "link:../../one/packages/filer.core",
     "node-gyp": "^10.0.0"
   },
   "os": [
     "win32"
   ],
+  "peerDependencies": {
+    "@refinio/filer.core": "*"
+  },
   "engines": {
     "node": ">=20.0.0"
   }

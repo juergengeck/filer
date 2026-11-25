@@ -1,5 +1,8 @@
 # Integration with refinio.api and one.filer
 
+> Historical integration. Use [README.md](README.md) for the current native host
+> and shared runtime. The `FilerWithProjFS` class is no longer present.
+
 ## Overview
 
 The `one.projfs` module provides native Windows ProjFS integration, replacing complex multi-layer abstraction stacks. It enables users to access their ONE database through Windows Explorer as a virtual drive with direct filesystem access.

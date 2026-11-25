@@ -4,6 +4,13 @@ Monorepo for the current Filer workspace and platform-specific filesystem provid
 
 The root workspace consumes and evolves the shared ONE packages in `../one/packages/*`. This is Filer's canonical platform base, including `one.core`, `trie.core`, `chat.core`, and `refinio.api`. `../one-experimental` remains the base for Flexibel only; Filer must not depend on or make shared-platform changes there.
 
+Native Windows development uses ProjFS and the same private runtime as macOS.
+See the [Windows update and validation record](docs/windows-update.md) and
+[build/run instructions](one.projfs/README.md). `pnpm test:windows` runs disposable
+native mounts; the full host additionally requires the canonical Fotos checkout.
+The [native Windows package](windows/README.md) includes the desktop host and
+per-user installer. Linux continues to use FUSE; WSL Windows installation is retired.
+
 ## Filesystem Layout
 
 The root exposes content folders dynamically. `Files` is visible by default for BLOB-backed imports, while `Fotos` and `Gesundheit/Flexibel` appear when their verified publications contain content. See [Files and Fotos](docs/files-and-fotos.md) and [Dynamic folder configuration](docs/dynamic-folder-configuration.md).
@@ -38,7 +45,7 @@ pnpm test
 pnpm clean
 ```
 
-`pnpm build` builds sibling `../one` dependencies first (`one.core`, `one.models`, `trie.core`, `chat.core`, `refinio.api`), then the local Filer packages. The workspace runner skips packages whose `os` field does not match the current machine, so macOS builds `one.filer` and `one.provider` while leaving the Linux FUSE3 and Windows ProjFS native addons alone.
+`pnpm build` builds sibling `../one` dependencies first, then the local packages for the current platform. Linux retains `one.filer` and `one.fuse3`; macOS retains `one.filer` and `one.provider`; Windows builds `one.projfs`.
 
 `pnpm test` runs the macOS provider IPC smoke test. The legacy FUSE tests are available as `pnpm test:filer`, but they require a working `fuse-native` build for the current Node/platform combination.
 

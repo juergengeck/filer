@@ -1,5 +1,8 @@
 # Testing Guide for one.projfs
 
+> Historical tests. The old connection harness targets a retired API CLI and has
+> been removed. See [README.md](README.md) for current native and shared tests.
+
 This document describes how to test the one.projfs Windows ProjFS integration module.
 
 ## Prerequisites

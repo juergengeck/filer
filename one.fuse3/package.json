@@ -34,11 +34,15 @@
     "node-addon-api": "^5.0.0"
   },
   "devDependencies": {
+    "@refinio/filer.core": "link:../../one/packages/filer.core",
     "node-gyp": "^9.0.0"
   },
   "os": [
     "linux"
   ],
+  "peerDependencies": {
+    "@refinio/filer.core": "*"
+  },
   "engines": {
     "node": ">=20.0.0"
   }

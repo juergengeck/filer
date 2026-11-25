@@ -1,5 +1,8 @@
 # ERROR_IO_PENDING Implementation
 
+> Historical design, superseded by `src/native_provider.cpp`.
+> Current behavior and validation are documented in [README.md](README.md).
+
 This document describes the implementation of the ERROR_IO_PENDING pattern in the one.projfs native module for Windows ProjFS.
 
 ## Overview

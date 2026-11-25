@@ -17,6 +17,9 @@ importers:
       '@refinio/api':
         specifier: link:../one/packages/refinio.api
         version: link:../one/packages/refinio.api
+      '@refinio/filer.runtime':
+        specifier: link:../one/packages/filer.runtime
+        version: link:../one/packages/filer.runtime
       '@refinio/fotos.core':
         specifier: link:../fotos/fotos.core
         version: link:../fotos/fotos.core
@@ -357,6 +360,9 @@ importers:
         specifier: ^5.0.0
         version: 5.1.0
     devDependencies:
+      '@refinio/filer.core':
+        specifier: link:../../one/packages/filer.core
+        version: link:../../one/packages/filer.core
       node-gyp:
         specifier: ^9.0.0
         version: 9.4.1
@@ -370,6 +376,9 @@ importers:
         specifier: ^8.5.0
         version: 8.8.0
     devDependencies:
+      '@refinio/filer.core':
+        specifier: link:../../one/packages/filer.core
+        version: link:../../one/packages/filer.core
       node-gyp:
         specifier: ^10.0.0
         version: 10.3.1

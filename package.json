@@ -5,6 +5,11 @@
   "type": "module",
   "description": "Workspace orchestration for the ONE Filer platform providers",
   "scripts": {
+    "package:windows": "npm --prefix windows run package",
+    "test:windows": "pnpm --dir one.projfs test",
+    "test:windows:runtime": "node --test scripts/test-windows-runtime.mjs",
+    "test:windows:collections": "node scripts/test-files-collections-integration.mjs --native",
+    "start:windows": "node scripts/windows-filer.mjs",
     "build": "node ./scripts/run-workspace-script.mjs build",
     "test": "pnpm test:provider:ipc",
     "test:filer": "pnpm --dir one.filer test",
@@ -45,6 +50,7 @@
   "packageManager": "pnpm@9.15.4",
   "devDependencies": {
     "@refinio/api": "link:../one/packages/refinio.api",
+    "@refinio/filer.runtime": "link:../one/packages/filer.runtime",
     "@refinio/fotos.core": "link:../fotos/fotos.core",
     "@refinio/one.core": "workspace:*"
   }

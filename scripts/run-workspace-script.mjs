@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { platform } from 'node:os';
 import { resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import {localPackages, supportsPlatform} from './platform-packages.mjs';
 
 const siblingDependencyPackages = [
     {directory: '../one/packages/one.core'},
@@ -15,13 +16,6 @@ const siblingDependencyPackages = [
     {directory: '../fotos/fotos.core'},
     {directory: '../one/packages/settings.core'},
     {directory: '../one/packages/refinio.api'}
-];
-
-const localPackages = [
-    {directory: 'one.filer'},
-    {directory: 'one.provider'},
-    {directory: 'one.fuse3'},
-    {directory: 'one.projfs'}
 ];
 
 const [scriptName, ...rawScriptArgs] = process.argv.slice(2);
@@ -44,7 +38,7 @@ for (const packageConfig of workspacePackages) {
     const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
     const packageScriptName = packageConfig.scripts?.[scriptName] ?? scriptName;
 
-    if (!isPackageSupportedOnPlatform(packageJson.os, currentPlatform)) {
+    if (!supportsPlatform(packageConfig, packageJson, currentPlatform)) {
         console.log(`- ${packageJson.name ?? packageDir}: skipped on ${currentPlatform}`);
         continue;
     }
@@ -57,9 +51,13 @@ for (const packageConfig of workspacePackages) {
     console.log(`\n> ${packageJson.name ?? packageDir}: ${packageScriptName}`);
     ranAnyScript = true;
 
+    const pnpmEntry = process.env.npm_execpath;
+    if (currentPlatform === 'win32' && !pnpmEntry) {
+        throw new Error('Run workspace scripts through pnpm so its Node entry point is available on Windows.');
+    }
     const result = spawnSync(
-        'pnpm',
-        ['--dir', packageDir, 'run', packageScriptName, ...scriptArgs],
+        currentPlatform === 'win32' ? process.execPath : 'pnpm',
+        [...(currentPlatform === 'win32' ? [pnpmEntry] : []), '--dir', packageDir, 'run', packageScriptName, ...scriptArgs],
         {
             cwd: rootDir,
             stdio: 'inherit'
@@ -79,20 +77,4 @@ for (const packageConfig of workspacePackages) {
 if (!ranAnyScript) {
     console.error(`No package ran script "${scriptName}".`);
     process.exit(1);
-}
-
-function isPackageSupportedOnPlatform(osField, current) {
-    if (!Array.isArray(osField) || osField.length === 0) {
-        return true;
-    }
-
-    const blocked = osField.some(entry => entry === `!${current}`);
-
-    if (blocked) {
-        return false;
-    }
-
-    const allowList = osField.filter(entry => !entry.startsWith('!'));
-
-    return allowList.length === 0 || allowList.includes(current);
 }
